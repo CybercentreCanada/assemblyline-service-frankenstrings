@@ -1,1 +1,1 @@
-from assemblyline.al.service.frankenstrings.frankenstrings import FrankenStrings
+from al_services.alsvc_frankenstrings.frankenstrings import FrankenStrings

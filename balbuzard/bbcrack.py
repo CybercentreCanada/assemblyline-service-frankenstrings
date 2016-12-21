@@ -46,8 +46,8 @@ __version__ = '0.13'
 
 # --- IMPORTS ------------------------------------------------------------------
 
-from assemblyline.al.service.frankenstrings.balbuzard.balbuzard import Balbuzard
-from assemblyline.al.service.frankenstrings.balbuzard.patterns import PatternMatch
+from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Balbuzard
+from al_services.alsvc_frankenstrings.balbuzard.patterns import PatternMatch
 
 #--- CLASSES ------------------------------------------------------------------
 

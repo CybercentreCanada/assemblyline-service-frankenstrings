@@ -34,7 +34,7 @@ For more info and updates: http://www.decalage.info/balbuzard
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import re
-from assemblyline.al.service.frankenstrings.balbuzard.balbuzard import Pattern, Pattern_re
+from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Pattern, Pattern_re
 from xml.etree import ElementTree
 
 class PatternMatch:

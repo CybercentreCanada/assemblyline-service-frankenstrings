@@ -35,8 +35,8 @@ Result Output:
 """
 from assemblyline.al.service.base import ServiceBase   #, skip_low_scoring
 from assemblyline.al.common.result import Result, ResultSection, SCORE, TAG_TYPE, TAG_WEIGHT, TEXT_FORMAT
-from assemblyline.al.service.frankenstrings.balbuzard.bbcrack import bbcrack
-from assemblyline.al.service.frankenstrings.balbuzard.patterns import PatternMatch
+from al_services.alsvc_frankenstrings.balbuzard.bbcrack import bbcrack
+from al_services.alsvc_frankenstrings.balbuzard.patterns import PatternMatch
 from collections import namedtuple
 import binascii
 import hashlib
