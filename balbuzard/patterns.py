@@ -206,7 +206,7 @@ class PatternMatch:
 
 # --- PEStudio Patterns ------------------------------------------------------------------------------------------------
 
-        with open('/opt/al/pkg/assemblyline/al/service/frankenstrings/pestudio/xml/strings.xml', 'rt') as f:
+        with open('/opt/al/pkg/al_services/alsvc_frankenstrings/pestudio/xml/strings.xml', 'rt') as f:
             tree = ElementTree.parse(f)
 
         # Adding a min length for less FPs
@@ -262,7 +262,7 @@ class PatternMatch:
                 self.pest_blacklist.setdefault('string', set()).add(st.text)
 
         # Adding Popular API
-        with open('/opt/al/pkg/assemblyline/al/service/frankenstrings/pestudio/xml/functions.xml', 'rt') as f:
+        with open('/opt/al/pkg/al_services/alsvc_frankenstrings/pestudio/xml/functions.xml', 'rt') as f:
             tree = ElementTree.parse(f)
 
         for fun in tree.findall(".//fct"):
