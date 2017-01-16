@@ -1,37 +1,5 @@
-"""
-Licences:
-FIREEYE FLARE-FLOSS: See flarefloss.LICENSE.txt
-BALBUZARD: BSD 2-Clause Licence, see top of code
-
-This service does the following:
-    1. String Extraction:
-            -executable/windows files:
-                FireEye Flare-FLOSS static strings modules (unicode and ascii)
-                FireEye Flare-FLOSS stacked strings modules
-                FireEye Flare-FLOSS decoded strings modules
-            -other file types:
-                FireEye Flare-FLOSS static strings modules (unicode and ascii)
-                Base64Dump.py B64, Unicode and Hex modules
-                Balbuzard's bbcrack level 1 XOR transform modules search for IOC patterns (see patterns.py)
-
-    2. File Extraction:
-            -all file types:
-                Base64 string module for PE Header with file extraction
-                Balbuzard's bbcrack level 1 XOR transform modules for PE Header with file extraction
-
-Result Output:
-        1. Static Strings (ASCII, BASE64, HEX AND UNICODE):
-            - Strings matching IOC patterns of interest (see patterns.py) [Result Text & Tag]
-            - Decoded BASE64 PE File [Extracted File]
-        2. Decoded Strings:
-            - All strings [Result Text & Tag]
-            - Strings matching IOC patterns of interest [Tag]
-        3. Stacked Strings:
-            - All strings, group by likeness [Result Text]
-            - Strings matching IOC patterns of interest (see patterns.py) [Tag]
-        4. XOR Strings:
-            - All strings matching bbcrack stage 2 patterns of interest (see patterns.py) [Result Text]
-            - Decoded XOR'd PE File [Extracted File]
+""" FrankenStrings Service
+See README.md for details about this service.
 """
 from assemblyline.al.service.base import ServiceBase   #, skip_low_scoring
 from assemblyline.al.common.result import Result, ResultSection, SCORE, TAG_TYPE, TAG_WEIGHT, TEXT_FORMAT
