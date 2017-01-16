@@ -47,7 +47,7 @@ __version__ = '0.13'
 # --- IMPORTS ------------------------------------------------------------------
 
 from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Balbuzard
-from al_services.alsvc_frankenstrings.balbuzard.patterns import PatternMatch
+from al_services.alsvc_frankenstrings.frankenstrings.balbuzard.patterns import PatternMatch
 
 #--- CLASSES ------------------------------------------------------------------
 
@@ -697,13 +697,17 @@ transform_classes1 = [
     Transform_XOR,
     Transform_ADD,
     Transform_ROL,
+    ]
+
+# Transforms level 2
+transform_classes2 = [
     Transform_XOR_ROL,
     Transform_ADD_ROL,
     Transform_ROL_ADD,
     ]
 
-# Transforms level 2
-transform_classes2 = [
+# Transforms level 3
+transform_classes3 = [
     Transform_XOR_ADD,
     Transform_ADD_XOR,
     Transform_XOR_INC,
@@ -711,10 +715,6 @@ transform_classes2 = [
     Transform_SUB_INC,
     Transform_XOR_Chained,
     Transform_XOR_RChained,
-    ]
-
-# Transforms level 3
-transform_classes3 = [
     Transform_XOR_INC_ROL,
     Transform_XOR_RChainedAll,
     ]
@@ -742,7 +742,7 @@ def read_file(filename):
     return raw_data
 
 
-def bbcrack(file_data, level, exe=False):
+def bbcrack(file_data, level):
 
     raw_data = file_data
     if level == 1:
@@ -753,40 +753,32 @@ def bbcrack(file_data, level, exe=False):
         transform_classes = transform_classes_all
 
     bbc = PatternMatch()
-    bbcrack_patterns, bbcrack_patterns_justexe = bbc.bbcr()
+    bbcrack_patterns = bbc.bbcr()
 
     results = []
 
-    # Run bbcrack patterns if not windows/executable
-    if not exe:
+    # Run bbcrack patterns against transforms
 
-        bbz = Balbuzard(bbcrack_patterns)
-
-        for Transform_class in transform_classes:
-            for params in Transform_class.iter_params():
-                transform = Transform_class(params)
-                data = transform.transform_string(raw_data)
-                score = 0
-                for pattern, matches in bbz.scan(data):
-                    for index, match in matches:
-                        print match
-                        score += len(match)*pattern.weight
-                        regex = pattern.name
-                        smatch = match
-                        results.append((transform.shortname, regex, index, score, smatch[0:50]))
-
-    # Run MZ Header check on all files
-    bbz2 = Balbuzard(bbcrack_patterns_justexe)
+    bbz = Balbuzard(bbcrack_patterns)
 
     for Transform_class in transform_classes:
         for params in Transform_class.iter_params():
             transform = Transform_class(params)
             data = transform.transform_string(raw_data)
-            for pattern, matches in bbz2.scan(data):
+            score = 0
+            for pattern, matches in bbz.scan(data):
                 for index, match in matches:
-                    score = 100000
                     regex = pattern.name
-                    results.append((transform.shortname, regex, index, score, data))
+                    smatch = match
+                    if regex == 'EXE_HEAD':
+                        score = 100000
+                        results.append((transform.shortname, regex, index, score, data))
+                    elif transform.shortname == "xor20":
+                        #for basic alpha characters, will essentially convert lower and uppercase.
+                        continue
+                    else:
+                        score += len(match) * pattern.weight
+                        results.append((transform.shortname, regex, index, score, smatch[0:50]))
 
     return results
 # This was coded while listening to The Walkmen "Heaven". --Philippe Lagadec

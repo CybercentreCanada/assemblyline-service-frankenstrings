@@ -582,50 +582,24 @@ class PatternMatch:
 
     def bbcr(self):
 
-        bbcrack_patterns_stage1 = [
-            Pattern('newlines', '\x0D\x0A', weight=100),
-            Pattern('spaces blob', ' '*32, weight=100),
-            Pattern('nulls blob', '\x00'*32, weight=100),
-            Pattern('http URL start', 'http://', weight=1000),
-            Pattern('https URL start', 'https://', weight=1000),
-            Pattern('ftp URL start', 'ftp://', weight=1000),
-            Pattern('EXE PE section', ['.text', '.data', '.rdata', '.rsrc', '.reloc'], weight=1000),
-            Pattern('Frequent strings in EXE', ['program', 'cannot', 'mode', 'microsoft', 'kernel32', 'version',
-                                                'assembly', 'xmlns', 'schemas', 'manifestVersion', 'security',
-                                                'win32'], nocase=True, filt=self.str_filter, weight=1000),
-            Pattern('Common English words likely to be found in malware', ['this',
-                'file', 'open', 'enter', 'password', 'service', 'process', 'type',
-                'system', 'error'], nocase=True, filt=self.str_filter, weight=1000),
-            Pattern('Common file extensions in malware', ['.exe', '.dll'],
-                nocase=True, filt=self.str_filter, weight=1000),
-            Pattern('Common TLDs in domain names', ['.com', '.org', '.net', '.edu', '.ru', '.cn', '.co.uk'],
-                    nocase=True, filt=self.str_filter, weight=1000),
-            Pattern('Common hostnames in URLs', ['www.', 'smtp.', 'pop.'],
-                nocase=True, filt=self.str_filter, weight=1000),
-            ]
-
-
         bbcrack_patterns = [
             Pattern("EXE_DOS", self.pat_exedos, nocase=True, weight=10000),
+            Pattern_re("EXE_HEAD", self.pat_exeheader, weight=100),
             Pattern_re('NET_FULL_URI', self.pat_url, weight=10000),
-            Pattern_re("NET_IP", self.pat_ip, weight=100, filt=self.ipv4_filter),
         ]
 
         # Add PEStudio's API String list, weight will default to 1
         for k, i in self.pest_api.iteritems():
             if k == "topapi" or k == "lib":
                 for e in i:
-                    bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
+                    if len(e) > 7:
+                        bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
 
         # Add some of PEStudio's Blacklist, weight will default to 1
         for k, i in self.pest_blacklist.iteritems():
-            if k == "av" or k == "agent" or k == "reg" or k == "insult":
+            if k == "av" or k == "agent" or k == "reg":
                 for e in i:
-                    bbcrack_patterns.append(Pattern('PESTUDIO_BLACKLIST_STRING', e, nocase=True, weight=1000))
+                    if len(e) > 7:
+                        bbcrack_patterns.append(Pattern('PESTUDIO_BLACKLIST_STRING', e, nocase=True, weight=1000))
 
-        bbcrack_patterns_justexe = [Pattern_re("EXE_HEAD", self.pat_exeheader, weight=100)]
-
-        return bbcrack_patterns, bbcrack_patterns_justexe
-
-
-
+        return bbcrack_patterns

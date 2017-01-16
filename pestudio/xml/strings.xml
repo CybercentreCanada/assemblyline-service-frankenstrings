@@ -1641,14 +1641,8 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">MSXML2.DOMDocument.3.0</string>
     <string score="0">Word.Document.8</string>
     <string score="0">PROJECT.THISDOCUMENT.AUTOOPEN</string>
-    <string score="0">Microsoft Office</string>
-    <string score="0">Root Entry</string>
     <string score="0">1Table</string>
-    <string score="0">WordDocument</string>
-    <string score="0">SummaryInformation</string>
-    <string score="0">DocumentSummaryInformation</string>
     <string score="0">Macros</string>
-    <string score="0">ThisDocument</string>
     <string score="0">__SRP_2</string>
     <string score="0">__SRP_3</string>
     <string score="0">Module1</string>
@@ -1656,7 +1650,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">__SRP_0</string>
     <string score="0">__SRP_1</string>
     <string score="0">PROJECTwm</string>
-    
+
     <string score="1">webcam</string>
     <string score="1">Please Enable Content* to see this document.</string>
     <string score="1">Enable Content</string>
@@ -1668,8 +1662,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="1">Embedded Control</string>
     <string score="1">Microsoft Word 10.0</string>
     <string score="1">OCXNAME</string>
-    <string score="1">movie</string>
-    <string score="1">money</string>
     <string score="0">Accept-Language: </string>
     <string score="0">Accept-Encoding: </string>
     <string score="0">Mr.Black</string>
@@ -1745,7 +1737,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">IEHistory</string>
     <string score="0">BUILTIN</string>
     <string score="0">NT AUTHORITY</string>
-    
+
     <!-- Firefox -->
     <string score="0">PR_Bind</string>
     <string score="0">PR_Accept</string>
@@ -3280,13 +3272,9 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">AppData\Roaming\Microsoft\Windows\Start Menu</string>
     <string score="0">AppData\Roaming\Microsoft\Windows\Start Menu\Programs</string>
     <string score="0">AppData\Roaming\Microsoft\Windows\Templates</string>
-    <string score="0">Default</string>
-    <string score="0">Documents</string>
     <string score="0">Microsoft\Windows\Start Menu</string>
     <string score="0">Microsoft\Windows\Start Menu\Programs</string>
     <string score="0">Microsoft\Windows\Templates</string>
-    <string score="0">Music</string>
-    <string score="0">Pictures</string>
     <string score="0">Public\Desktop</string>
     <string score="0">Public\Documents</string>
     <string score="0">Public\Favorites</string>
