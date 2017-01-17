@@ -47,7 +47,7 @@ __version__ = '0.13'
 # --- IMPORTS ------------------------------------------------------------------
 
 from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Balbuzard
-from al_services.alsvc_frankenstrings.frankenstrings.balbuzard.patterns import PatternMatch
+from al_services.alsvc_frankenstrings.balbuzard.patterns import PatternMatch
 
 #--- CLASSES ------------------------------------------------------------------
 
