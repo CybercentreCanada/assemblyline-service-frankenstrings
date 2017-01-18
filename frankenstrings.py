@@ -355,8 +355,9 @@ class FrankenStrings(ServiceBase):
             matchbuf = ""
             for match in re.findall('[0-9a-fA-F]{128,}', data):
                 matchbuf += match
-            if len(matchbuf) % 2 != 0:
-                matchbuf = matchbuf[:-1]
+            if len(matchbuf) > 0:
+                if len(matchbuf) % 2 != 0:
+                    matchbuf = matchbuf[:-1]
                 binstr = binascii.unhexlify(matchbuf)
                 ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
                                                  .format(hashlib.md5(binstr).hexdigest()))
