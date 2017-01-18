@@ -357,13 +357,13 @@ class FrankenStrings(ServiceBase):
                 matchbuf += match
             if len(matchbuf) % 2 != 0:
                 matchbuf = matchbuf[:-1]
-            binstr = binascii.unhexlify(matchbuf)
-            ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
-                                             .format(hashlib.md5(binstr).hexdigest()))
-            request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
-            with open(ascihex_file_path, 'wb') as fh:
-                fh.write(binstr)
-            request.add_extracted(ascihex_file_path, 'Hex-decoded ascii')
+                binstr = binascii.unhexlify(matchbuf)
+                ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
+                                                 .format(hashlib.md5(binstr).hexdigest()))
+                request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
+                with open(ascihex_file_path, 'wb') as fh:
+                    fh.write(binstr)
+                request.add_extracted(ascihex_file_path, 'Hex-decoded ascii')
         except:
             return
         return
@@ -529,7 +529,6 @@ class FrankenStrings(ServiceBase):
             for s in strings.extract_ascii_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
                     ascii_al_results.append(s.s)
-
             for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
                     unicode_al_results.append(s.s)
@@ -547,7 +546,7 @@ class FrankenStrings(ServiceBase):
 
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/files of interest
             xresult = []
-            if (request.task.size or 0) < 2000000:
+            if (request.task.size or 0) < 3000000:
                 if request.deep_scan:
                     xresult = bbcrack(file_data, level=2)
                 else:
@@ -570,7 +569,6 @@ class FrankenStrings(ServiceBase):
 
             # Unicode/Hex Strings -- Non-executable files
             if not request.tag.startswith("executable/"):
-
                 # base64dump.py unicode extract
                 bu_uni_decoded = self.DecodeDataBU(file_data)
                 if bu_uni_decoded != '':
@@ -623,7 +621,7 @@ class FrankenStrings(ServiceBase):
             orig_submitted_file.close()
 
             # Encoded/Stacked strings -- Windows executable file types
-            if (request.task.size or 0) < 2000000 and request.tag.startswith("executable/windows/"):
+            if (request.task.size or 0) < 3000000 and request.tag.startswith("executable/windows/"):
 
                 try:
                     vw = viv_utils.getWorkspace(alfile, should_save=False)
@@ -635,7 +633,6 @@ class FrankenStrings(ServiceBase):
                 selected_plugins = self.get_all_plugins()
                 ds_min_length = 5
                 al_min_length = 6
-
                 # Encoded strings
                 decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins, selected_functions)
                 candidates = decoding_functions_candidates.get_top_candidate_functions(10)
@@ -655,7 +652,6 @@ class FrankenStrings(ServiceBase):
                         offset_string = hex(ds.va or 0)
                     encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
                     encoded_al_tags.add(s)
-
                 # Stacked Strings
                 # s.s = stacked string
                 # s.fva = Function
@@ -721,7 +717,6 @@ class FrankenStrings(ServiceBase):
                             fuzresults = al_tuples(stringl=sstrings, funoffl=funoffs)
                             # Add namedtuple to final result list
                             stacked_al_results.append(fuzresults)
-
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
