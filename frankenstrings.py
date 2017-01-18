@@ -16,7 +16,7 @@ import re
 
 
 class FrankenStrings(ServiceBase):
-    SERVICE_CATEGORY = 'Test'
+    SERVICE_CATEGORY = 'Static'
     SERVICE_ACCEPTS = '.*'
     SERVICE_DESCRIPTION = "Suspicious String Monster"
     SERVICE_REVISION = ServiceBase.parse_revision('$Id$')

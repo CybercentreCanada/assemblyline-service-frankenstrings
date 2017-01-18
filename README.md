@@ -16,7 +16,9 @@ This service does the following:
                 FireEye Flare-FLOSS static strings modules (unicode and ascii). Matches IOC's only (see patterns.py)
                 Base64Dump.py's B64, Unicode and Hex modules
                 Ascii-hex module
-                Balbuzard's bbcrack level 1 XOR transform modules (see patterns.py). Matches IOC's only (see patterns.py)
+                Balbuzard's bbcrack level 1 XOR transform modules (see patterns.py, bbcrack.py)
+                [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR transform modules
+                (see patterns.py, bbcrack.py) -- No guarantee that the service will not timeout!
 
     2. File Extraction:
             * all file types:
