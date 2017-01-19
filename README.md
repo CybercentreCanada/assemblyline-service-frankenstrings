@@ -20,7 +20,7 @@ This service does the following:
 
 2. File Extraction:
     * executable/windows files:
-        - Base64Dump.py's B64, Unicode and Hex modules           
+        - Base64Dump.py's B64 module          
     * other file types:
         - Base64Dump.py's B64, Unicode and Hex modules
         - Ascii-hex extraction module
