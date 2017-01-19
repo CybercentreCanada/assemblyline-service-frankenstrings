@@ -19,7 +19,9 @@ This service does the following:
         - [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR transform modules (see patterns.py, bbcrack.py) *__No guarantee that the service will not timeout!__*
 
 2. File Extraction:
-    * all file types:
+    * executable/windows files:
+        - Base64Dump.py's B64, Unicode and Hex modules           
+    * other file types:
         - Base64Dump.py's B64, Unicode and Hex modules
         - Ascii-hex extraction module
         - Balbuzard's bbcrack level 1 XOR transform modules for PE Header with file extraction
