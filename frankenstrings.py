@@ -622,7 +622,11 @@ class FrankenStrings(ServiceBase):
             orig_submitted_file.close()
 
             # Encoded/Stacked strings -- Windows executable file types
-            if (request.task.size or 0) < 3000000 and request.tag.startswith("executable/windows/"):
+            m = magic.Magic()
+            file_magic = m.from_buffer(file_data)
+            if (request.task.size or 0) < 3000000 \
+                    and request.tag.startswith("executable/windows/") \
+                    and not file_magic.endswith("compressed"):
 
                 try:
                     vw = viv_utils.getWorkspace(alfile, should_save=False)
@@ -653,6 +657,7 @@ class FrankenStrings(ServiceBase):
                         offset_string = hex(ds.va or 0)
                     encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
                     encoded_al_tags.add(s)
+
                 # Stacked Strings
                 # s.s = stacked string
                 # s.fva = Function
@@ -729,7 +734,7 @@ class FrankenStrings(ServiceBase):
                     or len(stacked_al_results) > 0 \
                     or unicode_found:
 
-                res = (ResultSection(SCORE.LOW, "FLARE FLOSS Detected Strings of Interest:",
+                res = (ResultSection(SCORE.LOW, "FrankenStrings Detected Strings of Interest:",
                                      body_format=TEXT_FORMAT.MEMORY_DUMP))
                 patterns = PatternMatch()
 
@@ -785,7 +790,7 @@ class FrankenStrings(ServiceBase):
 
                 # Store B64 Results
                 if len(b64_al_results) > 0:
-                    b64_res = (ResultSection(SCORE.NULL, "FLARE FLOSS ASCII Base64 Strings:",
+                    b64_res = (ResultSection(SCORE.NULL, "ASCII Base64 Strings:",
                                              body_format=TEXT_FORMAT.MEMORY_DUMP,
                                              parent=res))
                     # Add b64 table header to results
