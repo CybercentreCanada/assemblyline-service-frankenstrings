@@ -1827,7 +1827,6 @@ It contains the functions and libraries that will be detected as blackListed by 
         <fct dp="0" un="0" pv="0" bl="1" ad="0">InternetGetCookieEx</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">InternetGetLastResponseInfo</fct>
 
-        <fct dp="0" un="0" pv="0" bl="1" ad="0">settings</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">commands</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">httpshots</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">formgrabber</fct>

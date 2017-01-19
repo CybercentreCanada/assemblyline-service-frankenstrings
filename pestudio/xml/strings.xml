@@ -1098,7 +1098,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <reg>\Device\KeyboardClass0</reg>
     <reg>Software\Skype\Phone</reg>
     <reg>\registry\machine\system\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\</reg>
-    <reg>SYSTEM\CurrentControlSet</reg>
     <reg>Software\Microsoft</reg>
     <reg>System\WPA\</reg>
     <reg>HARDWARE\DEVICEMAP\SERIALCOMM</reg>
@@ -1126,20 +1125,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <reg>Software\ESET</reg>
     <reg>Software\Classes\TypeLib\{F9043C88-F6F2-101A-A3C9-08002B2F49FB}\1.2\0\win32</reg>
     <reg>CurrentVersion\Run</reg>
-    <reg>HKEY_CLASSES_ROOT</reg>
-    <reg>HKEY_CURRENT_USER</reg>
-    <reg>HKEY_LOCAL_MACHINE</reg>
-    <reg>HKEY_USERS</reg>
-    <reg>HKEY_PERFORMANCE_DATA</reg>
-    <reg>HKEY_CURRENT_CONFIG</reg>
-    <reg>HKEY_DYN_DATA</reg>
-    <reg>HKCR</reg>
-    <reg>HKCU</reg>
-    <reg>HKLM</reg>
-    <reg>HKPD</reg>
-    <reg>HKDD</reg>
-    <reg>HKCC</reg>
-    <reg>HKCU</reg>
     <reg>Hardware\Description\System\CentralProcessor</reg>
     <reg>Hardware\ACPI\DSDT</reg>
     <reg>HARDWARE\DEVICEMAP</reg>
@@ -1641,14 +1626,8 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">MSXML2.DOMDocument.3.0</string>
     <string score="0">Word.Document.8</string>
     <string score="0">PROJECT.THISDOCUMENT.AUTOOPEN</string>
-    <string score="0">Microsoft Office</string>
-    <string score="0">Root Entry</string>
     <string score="0">1Table</string>
-    <string score="0">WordDocument</string>
-    <string score="0">SummaryInformation</string>
-    <string score="0">DocumentSummaryInformation</string>
     <string score="0">Macros</string>
-    <string score="0">ThisDocument</string>
     <string score="0">__SRP_2</string>
     <string score="0">__SRP_3</string>
     <string score="0">Module1</string>
@@ -1656,7 +1635,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">__SRP_0</string>
     <string score="0">__SRP_1</string>
     <string score="0">PROJECTwm</string>
-    
+
     <string score="1">webcam</string>
     <string score="1">Please Enable Content* to see this document.</string>
     <string score="1">Enable Content</string>
@@ -1668,8 +1647,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="1">Embedded Control</string>
     <string score="1">Microsoft Word 10.0</string>
     <string score="1">OCXNAME</string>
-    <string score="1">movie</string>
-    <string score="1">money</string>
     <string score="0">Accept-Language: </string>
     <string score="0">Accept-Encoding: </string>
     <string score="0">Mr.Black</string>
@@ -1745,7 +1722,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">IEHistory</string>
     <string score="0">BUILTIN</string>
     <string score="0">NT AUTHORITY</string>
-    
+
     <!-- Firefox -->
     <string score="0">PR_Bind</string>
     <string score="0">PR_Accept</string>
@@ -3280,13 +3257,9 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">AppData\Roaming\Microsoft\Windows\Start Menu</string>
     <string score="0">AppData\Roaming\Microsoft\Windows\Start Menu\Programs</string>
     <string score="0">AppData\Roaming\Microsoft\Windows\Templates</string>
-    <string score="0">Default</string>
-    <string score="0">Documents</string>
     <string score="0">Microsoft\Windows\Start Menu</string>
     <string score="0">Microsoft\Windows\Start Menu\Programs</string>
     <string score="0">Microsoft\Windows\Templates</string>
-    <string score="0">Music</string>
-    <string score="0">Pictures</string>
     <string score="0">Public\Desktop</string>
     <string score="0">Public\Documents</string>
     <string score="0">Public\Favorites</string>

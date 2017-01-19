@@ -40,21 +40,6 @@ from xml.etree import ElementTree
 class PatternMatch:
 
     def __init__(self):
-        # Registry Key strings:
-        self.registrykeys = set((
-            'controlset001',
-            'controlset002',
-            'currentcontrolset',
-            'currentversion',
-            'HKCU',
-            'hkey_current_user',
-            'hkey_local_machine',
-            'internet settings',
-            'sam',
-            'software',
-            'system',
-            'userinit',
-        ))
         # TLDs registered at IANA:
         #from http://data.iana.org/TLD/tlds-alpha-by-domain.txt
         # Version 2016070500, Last Updated Tue Jul  5 07:07:01 2016 UTC
@@ -88,7 +73,7 @@ class PatternMatch:
                          'csc', 'cu', 'cuisinella', 'cv', 'cw', 'cx', 'cy', 'cymru', 'cyou', 'cz', 'dabur', 'dad',
                          'dance', 'date', 'dating', 'datsun', 'day', 'dclk', 'dds', 'de', 'deal', 'dealer', 'deals',
                          'degree', 'delivery', 'dell', 'deloitte', 'delta', 'democrat', 'dental', 'dentist', 'desi',
-                         'design', 'dev', 'dhl', 'diamonds', 'diet', 'digital', 'direct', 'directory', 'discount',
+                         'dev', 'dhl', 'diamonds', 'diet', 'digital', 'direct', 'directory', 'discount',
                          'dj', 'dk', 'dm', 'dnp', 'do', 'docs', 'dog', 'doha', 'domains', 'download', 'drive',
                          'dtv', 'dubai', 'dunlop', 'dupont', 'durban', 'dvag', 'dz', 'earth', 'eat', 'ec', 'edeka',
                          'edu', 'education', 'email', 'emerck', 'energy', 'engineer', 'engineering',
@@ -125,11 +110,11 @@ class PatternMatch:
                          'lincoln', 'linde', 'link', 'lipsy', 'live', 'living', 'lixil', 'lk', 'loan', 'loans',
                          'locker', 'locus', 'lol', 'london', 'lotte', 'lotto', 'love', 'lr', 'ls', 'lt', 'ltd', 'ltda',
                          'lu', 'lupin', 'luxe', 'luxury', 'lv', 'ly', 'ma', 'madrid', 'maif', 'maison', 'makeup', 'man',
-                         'management', 'mango', 'market', 'marketing', 'markets', 'marriott', 'mattel', 'mba', 'mc',
+                         'mango', 'market', 'marketing', 'markets', 'marriott', 'mattel', 'mba', 'mc',
                          'md', 'me', 'med', 'meet', 'melbourne', 'meme', 'memorial', 'men', 'meo',
                          'metlife', 'mg', 'mh', 'miami', 'microsoft', 'mil', 'mini', 'mk', 'ml', 'mlb', 'mls',
                          'mma', 'mn', 'mo', 'mobi', 'mobily', 'moda', 'moe', 'moi', 'mom', 'monash', 'money',
-                         'montblanc', 'mormon', 'mortgage', 'moscow', 'motorcycles', 'mov', 'movie', 'movistar', 'mp',
+                         'montblanc', 'mormon', 'mortgage', 'moscow', 'mov', 'movie', 'movistar', 'mp',
                          'mq', 'mr', 'ms', 'mt', 'mtn', 'mtpc', 'mtr', 'mu', 'museum', 'mutual', 'mutuelle', 'mv', 'mw',
                          'mx', 'my', 'mz', 'na', 'nadex', 'nagoya', 'natura', 'navy', 'nc', 'ne', 'nec', 'net',
                          'netbank', 'netflix', 'network', 'neustar', 'new', 'news', 'next', 'nextdirect', 'nexus', 'nf',
@@ -143,7 +128,7 @@ class PatternMatch:
                          'pics', 'pictet', 'pictures', 'pid', 'pin', 'ping', 'pink', 'pioneer', 'pizza', 'pk', 'pl',
                          'place', 'play', 'playstation', 'plumbing', 'plus', 'pm', 'pn', 'pnc', 'pohl', 'poker',
                          'politie', 'porn', 'post', 'pr', 'praxi', 'press', 'prime', 'pro', 'prod', 'productions',
-                         'prof', 'progressive', 'promo', 'properties', 'property', 'protection', 'ps', 'pt', 'pub',
+                         'prof', 'progressive', 'promo', 'protection', 'ps', 'pt', 'pub',
                          'pw', 'pwc', 'py', 'qa', 'qpon', 'quebec', 'quest', 'racing', 're', 'read', 'realestate',
                          'realtor', 'realty', 'recipes', 'red', 'redstone', 'redumbrella', 'rehab', 'reise', 'reisen',
                          'reit', 'ren', 'rent', 'rentals', 'repair', 'report', 'republican', 'rest', 'restaurant',
@@ -154,7 +139,7 @@ class PatternMatch:
                          'sc', 'sca', 'scb', 'schaeffler', 'schmidt', 'scholarships', 'school', 'schule', 'schwarz',
                          'science', 'scor', 'scot', 'sd', 'se', 'seat', 'seek', 'select', 'sener',
                          'seven', 'sew', 'sex', 'sexy', 'sfr', 'sg', 'sh', 'shangrila', 'sharp', 'shaw',
-                         'shell', 'shia', 'shiksha', 'shoes', 'shop', 'shopping', 'shouji', 'show', 'shriram', 'si',
+                         'shia', 'shiksha', 'shoes', 'shop', 'shopping', 'shouji', 'show', 'shriram', 'si',
                          'silk', 'sina', 'singles', 'site', 'sj', 'sk', 'ski', 'skin', 'sky', 'skype', 'sl', 'sm',
                          'smile', 'sn', 'sncf', 'so', 'soccer', 'social', 'softbank', 'software', 'sohu', 'solar',
                          'solutions', 'song', 'sony', 'soy', 'space', 'spiegel', 'spot', 'spreadbetting', 'sr', 'srl',
@@ -165,7 +150,7 @@ class PatternMatch:
                          'tatar', 'tattoo', 'tax', 'taxi', 'tc', 'tci', 'td', 'tdk', 'team', 'tech', 'technology',
                          'tel', 'telecity', 'telefonica', 'temasek', 'tennis', 'teva', 'tf', 'tg', 'th', 'thd',
                          'theater', 'theatre', 'tickets', 'tienda', 'tiffany', 'tips', 'tires', 'tirol', 'tj', 'tk',
-                         'tl', 'tm', 'tmall', 'tn', 'to', 'today', 'tokyo', 'tools', 'toray', 'toshiba',
+                         'tl', 'tm', 'tmall', 'tn', 'to', 'today', 'tokyo', 'toray', 'toshiba',
                          'total', 'tours', 'town', 'toyota', 'toys', 'tr', 'trade', 'trading', 'training', 'travel',
                          'travelchannel', 'travelers', 'travelersinsurance', 'trust', 'trv', 'tt', 'tube', 'tui',
                          'tunes', 'tushu', 'tv', 'tvs', 'tw', 'tz', 'ua', 'ubs', 'ug', 'uk', 'unicom', 'university',
@@ -224,9 +209,6 @@ class PatternMatch:
         for ev in tree.findall('.//event'):
             if len(ev.text) > pest_minlen:
                 self.pest_blacklist.setdefault('event', set()).add(ev.text)
-        for fo in tree.findall('.//folder'):
-            if len(fo.text) > pest_minlen:
-                self.pest_blacklist.setdefault('folder', set()).add(fo.text)
         for gu in tree.findall('.//guid'):
             if len(gu.text) > pest_minlen:
                 self.pest_blacklist.setdefault('guid', set()).add(gu.text)
@@ -281,17 +263,24 @@ class PatternMatch:
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
         self.pat_domain = r'(?i)\b(?:[A-Z0-9-]+\.)+(?:[A-Z]{2,12}|XN--[A-Z0-9]{4,18})\b'
-        self.pat_filecom = r'(?i)\b[- _A-Z0-9.\\]{1,200}' \
-                           r'(?:APPDATA|CommonProgramFiles|ProgramFiles|SYSTEMROOT|USERPROFILE|WINDIR)' \
-                           r'[-_A-Z0-9\.\\]{1,200}\b'
-        self.pat_fileext = r'(?i)\b[-_A-Z0-9.\\]{0,200}\w{1,200}\.' \
+        self.pat_filecom = r'(?i)\b[- _A-Z0-9.\\]{0,75}[%]?' \
+                           r'(?:ALLUSERPROFILE|APPDATA|commonappdata|CommonProgramFiles|HOMEPATH|LOCALAPPDATA|' \
+                           r'ProgramData|ProgramFiles|PUBLIC|SystemDrive|SystemRoot|\\TEMP|USERPROFILE|' \
+                           r'windir|system32|syswow64|\\user)' \
+                           r'[%]?\\[-_A-Z0-9\.\\]{1,200}\b'
+        self.pat_fileext = r'(?i)\b[a-z]?[:]?[-_A-Z0-9.\\]{0,200}\w\.' \
                            r'(?:7Z|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPG|JS|JSE|LOG|MSI|PDF|PNG|PPT|PPTX' \
                            r'|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|XLS|XLSX|ZIP)\b'
-        self.pat_filepdb = r'(?i)\b[-_A-Z0-9.\\]{0,200}\w{1,200}\.PDB\b'
+        self.pat_filepdb = r'(?i)\b[-_A-Z0-9.\\]{0,200}\w\.PDB\b'
         self.pat_email = r'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:[A-Z]{2,12}|XN--[A-Z0-9]{4,18})\b'
         self.pat_ip = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
-        self.pat_regis = r'\b(?i)(\\{0,4}[ _A-Z0-9]{1,30}\\{1,4}[ _A-Z0-9]{1,30}\\{1,4}[ _A-Z0-9]{1,30}[\\ _\.A-Z0-9]{0,200}){10,250}\b'
-        self.pat_url = r'(?i)(?:http|https|ftp)://[A-Z0-9/\-\.&%\$#=~\?]{3,}'
+        self.pat_regis = r'(?i)\b[- _A-Z0-9.\\]{0,25}' \
+                         r'(?:controlset001|controlset002|currentcontrolset|currentversion|HKCC|HKCR|HKCU|HKDD|' \
+                         r'hkey_classes_root|hkey_current_config|hkey_current_user|hkey_dyn_data|hkey_local_machine|' \
+                         r'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
+                         r'\\userinit)' \
+                         r'\\[-_A-Z0-9.\\]{1,200}\b'
+        self.pat_url = r'(?i)(?:http|https|ftp)://[A-Z0-9/\-\.&%\$#=~\?]{3,200}'
         self.pat_exedos = r'This program cannot be run in DOS mode'
         self.pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
 
@@ -309,6 +298,7 @@ class PatternMatch:
         # Pattern_re("IP addresses", r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", weight=10),
         # Here I use \b to make sure there is no other digit around and to speedup search
         #print("ips")
+        final_values = ""
         find_ip = re.findall(self.pat_ip, value)
         if len(find_ip) > 0:
             longeststring = max(find_ip, key=len)
@@ -322,6 +312,7 @@ class PatternMatch:
         # ------------------------------------------------------------------------------
         # URLs
         #print("urls")
+        final_values = ""
         find_url = re.findall(self.pat_url, value)
         if len(find_url) > 0:
             longeststring = max(find_url, key=len)
@@ -336,6 +327,7 @@ class PatternMatch:
         # changed to catch all current TLDs registered at IANA (in combination with filter function):
         # TLD = either only chars from 2 to 12, or 'XN--' followed by up to 18 chars and digits
         #print("emails")
+        final_values = ""
         find_email = re.findall(self.pat_email, value)
         if len(find_email) > 0:
             longeststring = max(find_email, key=len)
@@ -351,8 +343,9 @@ class PatternMatch:
         # Old: r'(?=^.{1,254}$)(^(?:(?!\d+\.|-)[a-zA-Z0-9_\-]{1,63}(?<!-)\.?)+(?:[a-zA-Z]{2,})$)'
         # Below is taken from email regex above
         #print("domains")
+        final_values = ""
         find_domain = re.findall(self.pat_domain, value)
-        if len(find_domain) > 0 and len(max(find_domain, key=len)) >= 12:
+        if len(find_domain) > 0 and len(max(find_domain, key=len)) > 11:
             longeststring = max(find_domain, key=len)
             like_ls = process.extract(longeststring, find_domain, limit=50)
             final_values = filter(lambda ls: ls[1] < 95, like_ls)
@@ -366,6 +359,7 @@ class PatternMatch:
         # Check length
         # Ends with extension of interest or contains strings of interest
         #print("files")
+        final_values = ""
         if len(value) > 6:
             filefind_pdb = re.findall(self.pat_filepdb, value)
             if len(filefind_pdb) > 0:
@@ -397,19 +391,19 @@ class PatternMatch:
         # REGISTRYKEYS
         # Looks for alpha numeric characters seperated by at least two sets of '\'s
         #print("reg")
+        final_values = ""
         regfind = re.findall(self.pat_regis, value)
-        if len(regfind) > 0 and len(max(regfind, key=len)) > 20:
+        if len(regfind) > 0 and len(max(regfind, key=len)) > 15:
             longeststring = max(regfind, key=len)
             like_ls = process.extract(longeststring, regfind, limit=50)
-            final_values = filter(lambda ls: ls[1] < 95, like_ls)
+            final_values = filter(lambda ls: ls[1] < 90, like_ls)
             final_values.append((longeststring, 100))
             for val in final_values:
-                not_filtered = self.registry_filter(val[0])
-                if not_filtered:
-                    value_extract.setdefault('REGISTRY_KEY', set()).add(val[0])
+                value_extract.setdefault('REGISTRY_KEY', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # PEStudio Blacklist
         # Flags strings from PEStudio's Blacklist
+        final_values = ""
         for k, i in self.pest_blacklist.iteritems():
             for e in i:
                 psblfind = []
@@ -425,6 +419,7 @@ class PatternMatch:
         # -----------------------------------------------------------------------------
         # Function/Library Strings
         # Win API strings from PEStudio's Blacklist
+        final_values = ""
         for k, i in self.pest_api.iteritems():
             for e in i:
                 pswinfind = []
@@ -558,20 +553,6 @@ class PatternMatch:
         if value.isupper() or value[1:].islower(): return True
         #Note: we could also use istitle() if strings are not only alphabetical.
 
-    def registry_filter(self, value, index=0, pattern=None):
-        # check length
-        # check strings against registry set
-        if len(value) < 10:
-            return False
-        condense = re.sub(r'[\\]+', '\\\\', value)
-        str_list = condense.split("\\")
-        for st in str_list:
-            if st.lower() not in self.registrykeys:
-                pass
-            else:
-                return True
-        return False
-
     @staticmethod
     def len_filter(value, index=0, pattern=None, bogon=None):
         if len(value) < 10:
@@ -582,50 +563,16 @@ class PatternMatch:
 
     def bbcr(self):
 
-        bbcrack_patterns_stage1 = [
-            Pattern('newlines', '\x0D\x0A', weight=100),
-            Pattern('spaces blob', ' '*32, weight=100),
-            Pattern('nulls blob', '\x00'*32, weight=100),
-            Pattern('http URL start', 'http://', weight=1000),
-            Pattern('https URL start', 'https://', weight=1000),
-            Pattern('ftp URL start', 'ftp://', weight=1000),
-            Pattern('EXE PE section', ['.text', '.data', '.rdata', '.rsrc', '.reloc'], weight=1000),
-            Pattern('Frequent strings in EXE', ['program', 'cannot', 'mode', 'microsoft', 'kernel32', 'version',
-                                                'assembly', 'xmlns', 'schemas', 'manifestVersion', 'security',
-                                                'win32'], nocase=True, filt=self.str_filter, weight=1000),
-            Pattern('Common English words likely to be found in malware', ['this',
-                'file', 'open', 'enter', 'password', 'service', 'process', 'type',
-                'system', 'error'], nocase=True, filt=self.str_filter, weight=1000),
-            Pattern('Common file extensions in malware', ['.exe', '.dll'],
-                nocase=True, filt=self.str_filter, weight=1000),
-            Pattern('Common TLDs in domain names', ['.com', '.org', '.net', '.edu', '.ru', '.cn', '.co.uk'],
-                    nocase=True, filt=self.str_filter, weight=1000),
-            Pattern('Common hostnames in URLs', ['www.', 'smtp.', 'pop.'],
-                nocase=True, filt=self.str_filter, weight=1000),
-            ]
-
-
         bbcrack_patterns = [
             Pattern("EXE_DOS", self.pat_exedos, nocase=True, weight=10000),
-            Pattern_re('NET_FULL_URI', self.pat_url, weight=10000),
-            Pattern_re("NET_IP", self.pat_ip, weight=100, filt=self.ipv4_filter),
+            Pattern_re("EXE_HEAD", self.pat_exeheader, weight=100),
         ]
 
         # Add PEStudio's API String list, weight will default to 1
         for k, i in self.pest_api.iteritems():
             if k == "topapi" or k == "lib":
                 for e in i:
-                    bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
+                    if len(e) > 7:
+                        bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
 
-        # Add some of PEStudio's Blacklist, weight will default to 1
-        for k, i in self.pest_blacklist.iteritems():
-            if k == "av" or k == "agent" or k == "reg" or k == "insult":
-                for e in i:
-                    bbcrack_patterns.append(Pattern('PESTUDIO_BLACKLIST_STRING', e, nocase=True, weight=1000))
-
-        bbcrack_patterns_justexe = [Pattern_re("EXE_HEAD", self.pat_exeheader, weight=100)]
-
-        return bbcrack_patterns, bbcrack_patterns_justexe
-
-
-
+        return bbcrack_patterns
