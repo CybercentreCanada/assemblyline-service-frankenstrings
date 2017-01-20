@@ -7,6 +7,9 @@ FIREEYE FLARE-FLOSS: See flarefloss.LICENSE.txt
 BALBUZARD: BSD 2-Clause Licence, see top of balbuzard code files
 
 #### Service Details
+
+NOTE: This service does not require you to buy any licence and is preinstalled and working after a default installation.
+
 This service does the following:
 
 1. String Extraction:
