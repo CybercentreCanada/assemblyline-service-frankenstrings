@@ -279,7 +279,7 @@ class PatternMatch:
                          r'hkey_classes_root|hkey_current_config|hkey_current_user|hkey_dyn_data|hkey_local_machine|' \
                          r'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
                          r'\\userinit)' \
-                         r'\\[-_A-Z0-9.\\]{1,200}\b'
+                         r'\\[-_A-Z0-9.\\ ]{1,200}\b'
         self.pat_url = r'(?i)(?:http|https|ftp)://[A-Z0-9/\-\.&%\$#=~\?]{3,200}'
         self.pat_exedos = r'This program cannot be run in DOS mode'
         self.pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
