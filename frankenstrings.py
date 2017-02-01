@@ -16,7 +16,7 @@ import re
 
 
 class FrankenStrings(ServiceBase):
-    SERVICE_CATEGORY = 'Static'
+    SERVICE_CATEGORY = 'Static Analysis'
     SERVICE_ACCEPTS = '.*'
     SERVICE_DESCRIPTION = "Suspicious String Monster"
     SERVICE_REVISION = ServiceBase.parse_revision('$Id$')
@@ -38,16 +38,6 @@ class FrankenStrings(ServiceBase):
 
     def __init__(self, cfg=None):
         super(FrankenStrings, self).__init__(cfg)
-        self.tagtypes = ['FILE_NAME',
-                         'FILE_PDB_STRING',
-                         'NET_EMAIL',
-                         'NET_FULL_URI',
-                         'NET_DOMAIN_NAME',
-                         'NET_IP',
-                         'PESTUDIO_BLACKLIST_STRING',
-                         'REGISTRY_KEY',
-                         'WIN_API_STRING',
-                         ]
         self.filetypes = ['application',
                           'exec',
                           'text',
@@ -506,20 +496,20 @@ class FrankenStrings(ServiceBase):
             unicode_found = False
 
             alfile = request.download()
-            st_min_length = 5
+            st_min_length = 7
             st_max_length = 301
 
-            ascii_al_results = []
+            ascii_dict = {}
             b64_al_results = []
             b64_al_tags = set()
             encoded_al_results = []
             encoded_al_tags = set()
             stacked_al_results = []
-            unicode_al_results = []
+            unicode_dict = {}
             xor_al_results = []
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
-
+            patterns = PatternMatch()
             # Static strings -- all file types
 
             with open(alfile, "rb") as f:
@@ -527,12 +517,35 @@ class FrankenStrings(ServiceBase):
                 file_data = f.read()
 
             # FLOSS string extract
+            dup = set()
             for s in strings.extract_ascii_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
-                    ascii_al_results.append(s.s)
+                    if s.s not in dup:
+                        dup.add(s.s)
+                        st_value = patterns.ioc_match(s.s, bogon_ip=True)
+                        if len(st_value) > 0:
+                            for ty, val in st_value.iteritems():
+                                if val == "":
+                                    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                                    ascii_dict.setdefault(ty, set()).add(asc_asc)
+                                else:
+                                    for v in val:
+                                        ascii_dict.setdefault(ty, set()).add(v)
+
+            dup = set()
             for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
-                    unicode_al_results.append(s.s)
+                    if s.s not in dup:
+                        dup.add(s.s)
+                        st_value = patterns.ioc_match(s.s, bogon_ip=True)
+                        if len(st_value) > 0:
+                            for ty, val in st_value.iteritems():
+                                if val == "":
+                                    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                                    unicode_dict.setdefault(ty, set()).add(asc_asc)
+                                else:
+                                    for v in val:
+                                        unicode_dict.setdefault(ty, set()).add(v)
 
             # Find Base64 ASCII and files of interest
             for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){3,})', file_data):
@@ -547,7 +560,7 @@ class FrankenStrings(ServiceBase):
 
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/files of interest
             xresult = []
-            if (request.task.size or 0) < 3000000:
+            if (request.task.size or 0) < 2000000:
                 if request.deep_scan:
                     xresult = bbcrack(file_data, level=2)
                 else:
@@ -726,8 +739,8 @@ class FrankenStrings(ServiceBase):
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
-            if len(ascii_al_results) > 0 \
-                    or len(unicode_al_results) > 0 \
+            if len(ascii_dict) > 0 \
+                    or len(unicode_dict) > 0 \
                     or len(b64_al_results) > 0 \
                     or len(xor_al_results) > 0 \
                     or len(encoded_al_results) > 0 \
@@ -739,54 +752,24 @@ class FrankenStrings(ServiceBase):
                 patterns = PatternMatch()
 
                 # Store ASCII String Results
-                if len(ascii_al_results) > 0:
-                    ascii_dict = {}
-                    for ast in ascii_al_results:
-                        st_value = patterns.ioc_match(ast, bogon_ip=True)
-                        if len(st_value) > 0:
-                            for ty, val in st_value.iteritems():
-                                if ty in self.tagtypes:
-                                    if val == "":
-                                        asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                        ascii_dict.setdefault(ty, set()).add(asc_asc)
-                                        res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
-                                    else:
-                                        for v in val:
-                                            ascii_dict.setdefault(ty, set()).add(v)
-                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
-
-                    if len(ascii_dict) > 0:
-                        ascii_res = (ResultSection(SCORE.NULL, "FLARE FLOSS ASCII IOC Strings:",
-                                                   body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                   parent=res))
-                        for k, l in sorted(ascii_dict.iteritems()):
-                            for i in sorted(l):
-                                ascii_res.add_line("Found %s string: %s" % (k.replace("_", " "), i))
+                if len(ascii_dict) > 0:
+                    ascii_res = (ResultSection(SCORE.NULL, "FLARE FLOSS ASCII IOC Strings:",
+                                               body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                               parent=res))
+                    for k, l in sorted(ascii_dict.iteritems()):
+                        for i in sorted(l):
+                            ascii_res.add_line("Found %s string: %s" % (k.replace("_", " "), i))
+                            res.add_tag(TAG_TYPE[k], i, TAG_WEIGHT.LOW)
 
                 # Store Unicode String Results
-                if len(unicode_al_results) > 0:
-                    unicode_dict = {}
-                    for ust in unicode_al_results:
-                        asc_ust = unicodedata.normalize('NFKC', ust).encode('ascii', 'ignore')
-                        st_value = patterns.ioc_match(asc_ust, bogon_ip=True)
-                        if len(st_value) > 0:
-                            for ty, val in st_value.iteritems():
-                                if ty in self.tagtypes:
-                                    if val == "":
-                                        unicode_dict.setdefault(ty, set()).add(asc_ust)
-                                        res.add_tag(TAG_TYPE[ty], asc_ust, TAG_WEIGHT.LOW)
-                                    else:
-                                        for v in val:
-                                            unicode_dict.setdefault(ty, set()).add(v)
-                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
-
-                    if len(unicode_dict) > 0:
-                        unicode_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Unicode IOC Strings:",
-                                                     body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                     parent=res))
-                        for k, l in sorted(unicode_dict.iteritems()):
-                            for i in sorted(l):
-                                unicode_res.add_line("Found %s string: %s" % (k.replace("_", " "), i))
+                if len(unicode_dict) > 0:
+                    unicode_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Unicode IOC Strings:",
+                                               body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                               parent=res))
+                    for k, l in sorted(unicode_dict.iteritems()):
+                        for i in sorted(l):
+                            unicode_res.add_line("Found %s string: %s" % (k.replace("_", " "), i))
+                            res.add_tag(TAG_TYPE[k], i, TAG_WEIGHT.LOW)
 
                 # Store B64 Results
                 if len(b64_al_results) > 0:
