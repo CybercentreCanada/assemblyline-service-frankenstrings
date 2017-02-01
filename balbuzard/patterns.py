@@ -197,52 +197,52 @@ class PatternMatch:
 
         # Adding a min length for less FPs
 
-        #pest_minlen = 6
+        pest_minlen = 6
 
         self.pest_blacklist = {}
         self.pest_api = {}
         for ag in tree.findall('.//agent'):
-            #if len(ag.text) > pest_minlen:
-            self.pest_blacklist.setdefault('agent', set()).add(ag.text)
+            if len(ag.text) > pest_minlen:
+                self.pest_blacklist.setdefault('agent', set()).add(ag.text)
         for av in tree.findall('.//av'):
-            #if len(av.text) > pest_minlen:
-            self.pest_blacklist.setdefault('av', set()).add(av.text)
+            if len(av.text) > pest_minlen:
+                self.pest_blacklist.setdefault('av', set()).add(av.text)
         for ev in tree.findall('.//event'):
-            #if len(ev.text) > pest_minlen:
-            self.pest_blacklist.setdefault('event', set()).add(ev.text)
+            if len(ev.text) > pest_minlen:
+                self.pest_blacklist.setdefault('event', set()).add(ev.text)
         for gu in tree.findall('.//guid'):
-            #if len(gu.text) > pest_minlen:
-            self.pest_blacklist.setdefault('guid', set()).add(gu.text)
+            if len(gu.text) > pest_minlen:
+                self.pest_blacklist.setdefault('guid', set()).add(gu.text)
         for ins in tree.findall('.//insult'):
-            #if len(ins.text) > pest_minlen:
-            self.pest_blacklist.setdefault('insult', set()).add(ins.text)
+            if len(ins.text) > pest_minlen:
+                self.pest_blacklist.setdefault('insult', set()).add(ins.text)
         for ke in tree.findall('.//key'):
-            #if len(ke.text) > pest_minlen:
-            self.pest_blacklist.setdefault('key', set()).add(ke.text)
+            if len(ke.text) > pest_minlen:
+                self.pest_blacklist.setdefault('key', set()).add(ke.text)
         for oi in tree.findall('.//oid'):
-            #if len(oi.text) > pest_minlen:
-            self.pest_blacklist.setdefault('oid', set()).add(oi.text)
+            if len(oi.text) > pest_minlen:
+                self.pest_blacklist.setdefault('oid', set()).add(oi.text)
         for os in tree.findall('.//os'):
-            #if len(os.text) > pest_minlen:
-            self.pest_blacklist.setdefault('os', set()).add(os.text)
+            if len(os.text) > pest_minlen:
+                self.pest_blacklist.setdefault('os', set()).add(os.text)
         for pr in tree.findall('.//priv'):
-            #if len(pr.text) > pest_minlen:
-            self.pest_blacklist.setdefault('priv', set()).add(pr.text)
+            if len(pr.text) > pest_minlen:
+                self.pest_blacklist.setdefault('priv', set()).add(pr.text)
         for pro in tree.findall('.//product'):
-            #if len(pro.text) > pest_minlen:
-            self.pest_blacklist.setdefault('product', set()).add(pro.text)
+            if len(pro.text) > pest_minlen:
+                self.pest_blacklist.setdefault('product', set()).add(pro.text)
         for reg in tree.findall('.//reg'):
-            #if len(reg.text) > pest_minlen:
-            self.pest_blacklist.setdefault('reg', set()).add(reg.text)
+            if len(reg.text) > pest_minlen:
+                self.pest_blacklist.setdefault('reg', set()).add(reg.text)
         for si in tree.findall('.//sid'):
-            #if len(si.text) > pest_minlen:
-            self.pest_blacklist.setdefault('sid', set()).add(si.text)
+            if len(si.text) > pest_minlen:
+                self.pest_blacklist.setdefault('sid', set()).add(si.text)
         for ssd in tree.findall('.//ssdl'):
-            #if len(ssd.text) > pest_minlen:
-            self.pest_blacklist.setdefault('ssdl', set()).add(ssd.text)
+            if len(ssd.text) > pest_minlen:
+                self.pest_blacklist.setdefault('ssdl', set()).add(ssd.text)
         for st in tree.findall('.//string'):
-            #if len(st.text) > pest_minlen:
-            self.pest_blacklist.setdefault('string', set()).add(st.text)
+            if len(st.text) > pest_minlen:
+                self.pest_blacklist.setdefault('string', set()).add(st.text)
 
         # Adding Popular API
         with open('/opt/al/pkg/al_services/alsvc_frankenstrings/pestudio/xml/functions.xml', 'rt') as f:
@@ -250,17 +250,16 @@ class PatternMatch:
 
         for fun in tree.findall(".//fct"):
             if fun.text is not None:
-                #if len(fun.text) > pest_minlen and fun.text is not None:
-                if fun.text is not None:
+                if len(fun.text) > pest_minlen and fun.text is not None:
                     self.pest_api.setdefault('fct', set()).add(fun.text.split('::', 1)[0])
         for li in tree.findall(".//lib"):
             if hasattr(li, 'name') and li.name is not None:
-                #if len(li.name) > pest_minlen:
-                self.pest_api.setdefault('lib', set()).add(li.get("name"))
+                if len(li.name) > pest_minlen:
+                    self.pest_api.setdefault('lib', set()).add(li.get("name"))
         for tapi in tree.findall('.//topapi'):
             if tapi.text is not None:
-                #if len(tapi.text) > pest_minlen:
-                self.pest_api.setdefault('topapi', set()).add(tapi.text)
+                if len(tapi.text) > pest_minlen:
+                    self.pest_api.setdefault('topapi', set()).add(tapi.text)
 
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
@@ -572,6 +571,7 @@ class PatternMatch:
         for k, i in self.pest_api.iteritems():
             if k == "topapi" or k == "lib":
                 for e in i:
-                    bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
+                    if len(e) > 6:
+                        bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
 
         return bbcrack_patterns
