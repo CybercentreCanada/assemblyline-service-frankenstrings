@@ -40,6 +40,7 @@ class FrankenStrings(ServiceBase):
         super(FrankenStrings, self).__init__(cfg)
         self.filetypes = ['application',
                           'exec',
+                          'image',
                           'text',
                           ]
         self.shcode_strings = ['9090',# nop nop
