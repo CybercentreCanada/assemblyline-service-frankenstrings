@@ -36,6 +36,7 @@ For more info and updates: http://www.decalage.info/balbuzard
 import re
 from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Pattern, Pattern_re
 from xml.etree import ElementTree
+from fuzzywuzzy import process
 
 class PatternMatch:
 
@@ -196,52 +197,52 @@ class PatternMatch:
 
         # Adding a min length for less FPs
 
-        pest_minlen = 6
+        #pest_minlen = 6
 
         self.pest_blacklist = {}
         self.pest_api = {}
         for ag in tree.findall('.//agent'):
-            if len(ag.text) > pest_minlen:
-                self.pest_blacklist.setdefault('agent', set()).add(ag.text)
+            #if len(ag.text) > pest_minlen:
+            self.pest_blacklist.setdefault('agent', set()).add(ag.text)
         for av in tree.findall('.//av'):
-            if len(av.text) > pest_minlen:
-                self.pest_blacklist.setdefault('av', set()).add(av.text)
+            #if len(av.text) > pest_minlen:
+            self.pest_blacklist.setdefault('av', set()).add(av.text)
         for ev in tree.findall('.//event'):
-            if len(ev.text) > pest_minlen:
-                self.pest_blacklist.setdefault('event', set()).add(ev.text)
+            #if len(ev.text) > pest_minlen:
+            self.pest_blacklist.setdefault('event', set()).add(ev.text)
         for gu in tree.findall('.//guid'):
-            if len(gu.text) > pest_minlen:
-                self.pest_blacklist.setdefault('guid', set()).add(gu.text)
+            #if len(gu.text) > pest_minlen:
+            self.pest_blacklist.setdefault('guid', set()).add(gu.text)
         for ins in tree.findall('.//insult'):
-            if len(ins.text) > pest_minlen:
-                self.pest_blacklist.setdefault('insult', set()).add(ins.text)
+            #if len(ins.text) > pest_minlen:
+            self.pest_blacklist.setdefault('insult', set()).add(ins.text)
         for ke in tree.findall('.//key'):
-            if len(ke.text) > pest_minlen:
-                self.pest_blacklist.setdefault('key', set()).add(ke.text)
+            #if len(ke.text) > pest_minlen:
+            self.pest_blacklist.setdefault('key', set()).add(ke.text)
         for oi in tree.findall('.//oid'):
-            if len(oi.text) > pest_minlen:
-                self.pest_blacklist.setdefault('oid', set()).add(oi.text)
+            #if len(oi.text) > pest_minlen:
+            self.pest_blacklist.setdefault('oid', set()).add(oi.text)
         for os in tree.findall('.//os'):
-            if len(os.text) > pest_minlen:
-                self.pest_blacklist.setdefault('os', set()).add(os.text)
+            #if len(os.text) > pest_minlen:
+            self.pest_blacklist.setdefault('os', set()).add(os.text)
         for pr in tree.findall('.//priv'):
-            if len(pr.text) > pest_minlen:
-                self.pest_blacklist.setdefault('priv', set()).add(pr.text)
+            #if len(pr.text) > pest_minlen:
+            self.pest_blacklist.setdefault('priv', set()).add(pr.text)
         for pro in tree.findall('.//product'):
-            if len(pro.text) > pest_minlen:
-                self.pest_blacklist.setdefault('product', set()).add(pro.text)
+            #if len(pro.text) > pest_minlen:
+            self.pest_blacklist.setdefault('product', set()).add(pro.text)
         for reg in tree.findall('.//reg'):
-            if len(reg.text) > pest_minlen:
-                self.pest_blacklist.setdefault('reg', set()).add(reg.text)
+            #if len(reg.text) > pest_minlen:
+            self.pest_blacklist.setdefault('reg', set()).add(reg.text)
         for si in tree.findall('.//sid'):
-            if len(si.text) > pest_minlen:
-                self.pest_blacklist.setdefault('sid', set()).add(si.text)
+            #if len(si.text) > pest_minlen:
+            self.pest_blacklist.setdefault('sid', set()).add(si.text)
         for ssd in tree.findall('.//ssdl'):
-            if len(ssd.text) > pest_minlen:
-                self.pest_blacklist.setdefault('ssdl', set()).add(ssd.text)
+            #if len(ssd.text) > pest_minlen:
+            self.pest_blacklist.setdefault('ssdl', set()).add(ssd.text)
         for st in tree.findall('.//string'):
-            if len(st.text) > pest_minlen:
-                self.pest_blacklist.setdefault('string', set()).add(st.text)
+            #if len(st.text) > pest_minlen:
+            self.pest_blacklist.setdefault('string', set()).add(st.text)
 
         # Adding Popular API
         with open('/opt/al/pkg/al_services/alsvc_frankenstrings/pestudio/xml/functions.xml', 'rt') as f:
@@ -249,16 +250,17 @@ class PatternMatch:
 
         for fun in tree.findall(".//fct"):
             if fun.text is not None:
-                if len(fun.text) > pest_minlen and fun.text is not None:
+                #if len(fun.text) > pest_minlen and fun.text is not None:
+                if fun.text is not None:
                     self.pest_api.setdefault('fct', set()).add(fun.text.split('::', 1)[0])
         for li in tree.findall(".//lib"):
             if hasattr(li, 'name') and li.name is not None:
-                if len(li.name) > pest_minlen:
-                    self.pest_api.setdefault('lib', set()).add(li.get("name"))
+                #if len(li.name) > pest_minlen:
+                self.pest_api.setdefault('lib', set()).add(li.get("name"))
         for tapi in tree.findall('.//topapi'):
             if tapi.text is not None:
-                if len(tapi.text) > pest_minlen:
-                    self.pest_api.setdefault('topapi', set()).add(tapi.text)
+                #if len(tapi.text) > pest_minlen:
+                self.pest_api.setdefault('topapi', set()).add(tapi.text)
 
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
@@ -287,7 +289,6 @@ class PatternMatch:
 # --- Find Match for IOC Regex, Return Dictionary: {[AL Tag Type:(Match Values)]} --------------------------------------
 
     def ioc_match(self, value, bogon_ip=None):
-        from fuzzywuzzy import process
         # NOTES:
         # '(?i)' makes a regex case-insensitive
         # \b matches a word boundary, it can help speeding up regex search and avoiding some false positives.
@@ -360,33 +361,32 @@ class PatternMatch:
         # Ends with extension of interest or contains strings of interest
         #print("files")
         final_values = ""
-        if len(value) > 6:
-            filefind_pdb = re.findall(self.pat_filepdb, value)
-            if len(filefind_pdb) > 0:
-                if len(max(filefind_pdb, key=len)) > 6:
-                    longeststring = max(filefind_pdb, key=len)
-                    like_ls = process.extract(longeststring, filefind_pdb, limit=50)
-                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                    final_values.append((longeststring, 100))
-                    for val in final_values:
-                        value_extract.setdefault('FILE_PDB_STRING', set()).add(val[0])
-            filefind_ext = re.findall(self.pat_fileext, value)
-            if len(filefind_ext) > 0:
-                if len(max(filefind_ext, key=len)) > 6:
-                    longeststring = max(filefind_ext, key=len)
-                    like_ls = process.extract(longeststring, filefind_ext, limit=50)
-                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                    final_values.append((longeststring, 100))
-                    for val in final_values:
-                        value_extract.setdefault('FILE_NAME', set()).add(val[0])
-            filefind_com = re.findall(self.pat_filecom, value)
-            if len(filefind_com) > 0 and len(max(filefind_com, key=len)) > 6:
-                longeststring = max(filefind_com, key=len)
-                like_ls = process.extract(longeststring, filefind_com, limit=50)
+        filefind_pdb = re.findall(self.pat_filepdb, value)
+        if len(filefind_pdb) > 0:
+            if len(max(filefind_pdb, key=len)) > 6:
+                longeststring = max(filefind_pdb, key=len)
+                like_ls = process.extract(longeststring, filefind_pdb, limit=50)
+                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                final_values.append((longeststring, 100))
+                for val in final_values:
+                    value_extract.setdefault('FILE_PDB_STRING', set()).add(val[0])
+        filefind_ext = re.findall(self.pat_fileext, value)
+        if len(filefind_ext) > 0:
+            if len(max(filefind_ext, key=len)) > 6:
+                longeststring = max(filefind_ext, key=len)
+                like_ls = process.extract(longeststring, filefind_ext, limit=50)
                 final_values = filter(lambda ls: ls[1] < 95, like_ls)
                 final_values.append((longeststring, 100))
                 for val in final_values:
                     value_extract.setdefault('FILE_NAME', set()).add(val[0])
+        filefind_com = re.findall(self.pat_filecom, value)
+        if len(filefind_com) > 0 and len(max(filefind_com, key=len)) > 6:
+            longeststring = max(filefind_com, key=len)
+            like_ls = process.extract(longeststring, filefind_com, limit=50)
+            final_values = filter(lambda ls: ls[1] < 95, like_ls)
+            final_values.append((longeststring, 100))
+            for val in final_values:
+                value_extract.setdefault('FILE_NAME', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # REGISTRYKEYS
         # Looks for alpha numeric characters seperated by at least two sets of '\'s
@@ -447,8 +447,8 @@ class PatternMatch:
         """
         ip = value
         # check if string length is >7 (e.g. not just 4 digits and 3 dots)
-        if len(ip) < 8:
-            return False
+        #if len(ip) < 8:
+            #return False
 
         # 0.0.0.0 255.0.0.0e
         if ip.startswith('0'): return False
@@ -509,7 +509,7 @@ class PatternMatch:
         # optionally, DNS MX query with caching?
 
         user, domain = value.split('@', 1)
-        if len(user) < 2:
+        if len(user) < 3:
             return False
         if len(domain) < 5:
             return False
@@ -572,7 +572,6 @@ class PatternMatch:
         for k, i in self.pest_api.iteritems():
             if k == "topapi" or k == "lib":
                 for e in i:
-                    if len(e) > 7:
-                        bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
+                    bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
 
         return bbcrack_patterns
