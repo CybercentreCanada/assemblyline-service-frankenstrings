@@ -789,16 +789,15 @@ class FrankenStrings(ServiceBase):
                         st_value = patterns.ioc_match(btt, bogon_ip=True)
                         if len(st_value) > 0:
                             for ty, val in st_value.iteritems():
-                                if ty in self.tagtypes:
-                                    if val == "":
-                                        asc_asc = unicodedata.normalize('NFKC', val).encode('ascii',
-                                                                                            'ignore')
-                                        ascii_dict.setdefault(ty, set()).add(asc_asc)
-                                        res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
-                                    else:
-                                        for v in val:
-                                            ascii_dict.setdefault(ty, set()).add(v)
-                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                if val == "":
+                                    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii',
+                                                                                        'ignore')
+                                    ascii_dict.setdefault(ty, set()).add(asc_asc)
+                                    res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                                else:
+                                    for v in val:
+                                        ascii_dict.setdefault(ty, set()).add(v)
+                                        res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                 # Store XOR embedded results
                 # Result Graph:
@@ -814,9 +813,8 @@ class FrankenStrings(ServiceBase):
                         x_res.add_line(xst)
                 # Result Tags:
                 for transform, regex, offset, score, smatch in xresult:
-                    if regex in self.tagtypes:
-                        res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
-                        res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
+                    res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
+                    res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
 
                 # Store Unicode Encoded Data:
                 if unicode_found:
@@ -839,12 +837,11 @@ class FrankenStrings(ServiceBase):
                         st_value = patterns.ioc_match(st, bogon_ip=True)
                         if len(st_value) > 0:
                             for ty, val in st_value.iteritems():
-                                if ty in self.tagtypes:
-                                    if val == "":
-                                        res.add_tag(TAG_TYPE[ty], st, TAG_WEIGHT.LOW)
-                                    else:
-                                        for v in val:
-                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                if val == "":
+                                    res.add_tag(TAG_TYPE[ty], st, TAG_WEIGHT.LOW)
+                                else:
+                                    for v in val:
+                                        res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                 # Store Stacked String Results
                 if len(stacked_al_results) > 0:
@@ -864,11 +861,10 @@ class FrankenStrings(ServiceBase):
                             st_value = patterns.ioc_match(extract_st, bogon_ip=True)
                             if len(st_value) > 0:
                                 for ty, val in st_value.iteritems():
-                                    if ty in self.tagtypes:
-                                        if val == "":
-                                            res.add_tag(TAG_TYPE[ty], extract_st, TAG_WEIGHT.LOW)
-                                        else:
-                                            for v in val:
-                                                res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                    if val == "":
+                                        res.add_tag(TAG_TYPE[ty], extract_st, TAG_WEIGHT.LOW)
+                                    else:
+                                        for v in val:
+                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                 result.add_result(res)
