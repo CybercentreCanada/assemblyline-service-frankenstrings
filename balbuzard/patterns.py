@@ -36,6 +36,7 @@ For more info and updates: http://www.decalage.info/balbuzard
 import re
 from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Pattern, Pattern_re
 from xml.etree import ElementTree
+from fuzzywuzzy import process
 
 class PatternMatch:
 
@@ -287,7 +288,6 @@ class PatternMatch:
 # --- Find Match for IOC Regex, Return Dictionary: {[AL Tag Type:(Match Values)]} --------------------------------------
 
     def ioc_match(self, value, bogon_ip=None):
-        from fuzzywuzzy import process
         # NOTES:
         # '(?i)' makes a regex case-insensitive
         # \b matches a word boundary, it can help speeding up regex search and avoiding some false positives.
@@ -360,33 +360,32 @@ class PatternMatch:
         # Ends with extension of interest or contains strings of interest
         #print("files")
         final_values = ""
-        if len(value) > 6:
-            filefind_pdb = re.findall(self.pat_filepdb, value)
-            if len(filefind_pdb) > 0:
-                if len(max(filefind_pdb, key=len)) > 6:
-                    longeststring = max(filefind_pdb, key=len)
-                    like_ls = process.extract(longeststring, filefind_pdb, limit=50)
-                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                    final_values.append((longeststring, 100))
-                    for val in final_values:
-                        value_extract.setdefault('FILE_PDB_STRING', set()).add(val[0])
-            filefind_ext = re.findall(self.pat_fileext, value)
-            if len(filefind_ext) > 0:
-                if len(max(filefind_ext, key=len)) > 6:
-                    longeststring = max(filefind_ext, key=len)
-                    like_ls = process.extract(longeststring, filefind_ext, limit=50)
-                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                    final_values.append((longeststring, 100))
-                    for val in final_values:
-                        value_extract.setdefault('FILE_NAME', set()).add(val[0])
-            filefind_com = re.findall(self.pat_filecom, value)
-            if len(filefind_com) > 0 and len(max(filefind_com, key=len)) > 6:
-                longeststring = max(filefind_com, key=len)
-                like_ls = process.extract(longeststring, filefind_com, limit=50)
+        filefind_pdb = re.findall(self.pat_filepdb, value)
+        if len(filefind_pdb) > 0:
+            if len(max(filefind_pdb, key=len)) > 6:
+                longeststring = max(filefind_pdb, key=len)
+                like_ls = process.extract(longeststring, filefind_pdb, limit=50)
+                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                final_values.append((longeststring, 100))
+                for val in final_values:
+                    value_extract.setdefault('FILE_PDB_STRING', set()).add(val[0])
+        filefind_ext = re.findall(self.pat_fileext, value)
+        if len(filefind_ext) > 0:
+            if len(max(filefind_ext, key=len)) > 6:
+                longeststring = max(filefind_ext, key=len)
+                like_ls = process.extract(longeststring, filefind_ext, limit=50)
                 final_values = filter(lambda ls: ls[1] < 95, like_ls)
                 final_values.append((longeststring, 100))
                 for val in final_values:
                     value_extract.setdefault('FILE_NAME', set()).add(val[0])
+        filefind_com = re.findall(self.pat_filecom, value)
+        if len(filefind_com) > 0 and len(max(filefind_com, key=len)) > 6:
+            longeststring = max(filefind_com, key=len)
+            like_ls = process.extract(longeststring, filefind_com, limit=50)
+            final_values = filter(lambda ls: ls[1] < 95, like_ls)
+            final_values.append((longeststring, 100))
+            for val in final_values:
+                value_extract.setdefault('FILE_NAME', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # REGISTRYKEYS
         # Looks for alpha numeric characters seperated by at least two sets of '\'s
@@ -447,8 +446,8 @@ class PatternMatch:
         """
         ip = value
         # check if string length is >7 (e.g. not just 4 digits and 3 dots)
-        if len(ip) < 8:
-            return False
+        #if len(ip) < 8:
+            #return False
 
         # 0.0.0.0 255.0.0.0e
         if ip.startswith('0'): return False
@@ -509,7 +508,7 @@ class PatternMatch:
         # optionally, DNS MX query with caching?
 
         user, domain = value.split('@', 1)
-        if len(user) < 2:
+        if len(user) < 3:
             return False
         if len(domain) < 5:
             return False
@@ -572,7 +571,7 @@ class PatternMatch:
         for k, i in self.pest_api.iteritems():
             if k == "topapi" or k == "lib":
                 for e in i:
-                    if len(e) > 7:
+                    if len(e) > 6:
                         bbcrack_patterns.append(Pattern('WIN_API_STRING', e, nocase=True, weight=1000))
 
         return bbcrack_patterns
