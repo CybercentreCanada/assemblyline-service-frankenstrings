@@ -287,7 +287,7 @@ class PatternMatch:
 
 # --- Find Match for IOC Regex, Return Dictionary: {[AL Tag Type:(Match Values)]} --------------------------------------
 
-    def ioc_match(self, value, bogon_ip=None):
+    def ioc_match(self, value, bogon_ip=None, just_network=None):
         # NOTES:
         # '(?i)' makes a regex case-insensitive
         # \b matches a word boundary, it can help speeding up regex search and avoiding some false positives.
@@ -302,13 +302,25 @@ class PatternMatch:
         find_ip = re.findall(self.pat_ip, value)
         if len(find_ip) > 0:
             longeststring = max(find_ip, key=len)
-            like_ls = process.extract(longeststring, find_ip, limit=50)
-            final_values = filter(lambda ls: ls[1] < 99, like_ls)
-            final_values.append((longeststring, 100))
-            for val in final_values:
-                not_filtered = self.ipv4_filter(val[0], bogon=bogon_ip)
+            if len(longeststring) == len(value):
+                not_filtered = self.ipv4_filter(value, bogon=bogon_ip)
                 if not_filtered:
-                    value_extract.setdefault('NET_IP', set()).add(val[0])
+                    value_extract.setdefault('NET_IP', set()).add(value)
+                # If the complete value matches the IP regex, not interested in other regex values
+                return value_extract
+            if len(find_ip) == 1:
+                for val in find_ip:
+                    not_filtered = self.ipv4_filter(val, bogon=bogon_ip)
+                    if not_filtered:
+                        value_extract.setdefault('NET_IP', set()).add(val)
+            else:
+                like_ls = process.extract(longeststring, find_ip, limit=50)
+                final_values = filter(lambda ls: ls[1] < 99, like_ls)
+                final_values.append((longeststring, 100))
+                for val in final_values:
+                    not_filtered = self.ipv4_filter(val[0], bogon=bogon_ip)
+                    if not_filtered:
+                        value_extract.setdefault('NET_IP', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # URLs
         #print("urls")
@@ -316,11 +328,18 @@ class PatternMatch:
         find_url = re.findall(self.pat_url, value)
         if len(find_url) > 0:
             longeststring = max(find_url, key=len)
-            like_ls = process.extract(longeststring, find_url, limit=50)
-            final_values = filter(lambda ls: ls[1] < 95, like_ls)
-            final_values.append((longeststring, 100))
-            for val in final_values:
-                value_extract.setdefault('NET_FULL_URI', set()).add(val[0])
+            if len(longeststring) == len(value):
+                value_extract.setdefault('NET_FULL_URI', set()).add(value)
+                return value_extract
+            if len(find_url) == 1:
+                for val in find_url:
+                    value_extract.setdefault('NET_FULL_URI', set()).add(val)
+            else:
+                like_ls = process.extract(longeststring, find_url, limit=50)
+                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                final_values.append((longeststring, 100))
+                for val in final_values:
+                    value_extract.setdefault('NET_FULL_URI', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # E-MAIL ADDRESSES
         # r'(?i)\b[A-Z0-9._%+-]+@(?:[A-Z0-9-]+\.)+(?:[A-Z]{2}|com|org|net|edu|gov|mil|int|biz|info|mobi|name|aero|asia|jobs|museum)\b',
@@ -331,13 +350,24 @@ class PatternMatch:
         find_email = re.findall(self.pat_email, value)
         if len(find_email) > 0:
             longeststring = max(find_email, key=len)
-            like_ls = process.extract(longeststring, find_email, limit=50)
-            final_values = filter(lambda ls: ls[1] < 95, like_ls)
-            final_values.append((longeststring, 100))
-            for val in final_values:
-                not_filtered = self.email_filter(val[0])
+            if len(longeststring) == len(value):
+                not_filtered = self.email_filter(value)
                 if not_filtered:
-                    value_extract.setdefault('NET_EMAIL', set()).add(val[0])
+                    value_extract.setdefault('NET_EMAIL', set()).add(value)
+                    return value_extract
+            if len(find_email) == 1:
+                for val in find_email:
+                    not_filtered = self.email_filter(val)
+                    if not_filtered:
+                        value_extract.setdefault('NET_EMAIL', set()).add(val)
+            else:
+                like_ls = process.extract(longeststring, find_email, limit=50)
+                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                final_values.append((longeststring, 100))
+                for val in final_values:
+                    not_filtered = self.email_filter(val[0])
+                    if not_filtered:
+                        value_extract.setdefault('NET_EMAIL', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # DOMAIN NAMES
         # Old: r'(?=^.{1,254}$)(^(?:(?!\d+\.|-)[a-zA-Z0-9_\-]{1,63}(?<!-)\.?)+(?:[a-zA-Z]{2,})$)'
@@ -347,13 +377,28 @@ class PatternMatch:
         find_domain = re.findall(self.pat_domain, value)
         if len(find_domain) > 0 and len(max(find_domain, key=len)) > 11:
             longeststring = max(find_domain, key=len)
-            like_ls = process.extract(longeststring, find_domain, limit=50)
-            final_values = filter(lambda ls: ls[1] < 95, like_ls)
-            final_values.append((longeststring, 100))
-            for val in final_values:
-                not_filtered = self.domain_filter(val[0])
+            if len(longeststring) == len(value):
+                not_filtered = self.domain_filter(value)
                 if not_filtered:
-                    value_extract.setdefault('NET_DOMAIN_NAME', set()).add(val[0])
+                    value_extract.setdefault('NET_DOMAIN_NAME', set()).add(value)
+                    return value_extract
+            if len(find_domain) == 1:
+                for val in find_domain:
+                    not_filtered = self.domain_filter(val)
+                    if not_filtered:
+                        value_extract.setdefault('NET_DOMAIN_NAME', set()).add(val)
+            else:
+                like_ls = process.extract(longeststring, find_domain, limit=50)
+                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                final_values.append((longeststring, 100))
+                for val in final_values:
+                    not_filtered = self.domain_filter(val[0])
+                    if not_filtered:
+                        value_extract.setdefault('NET_DOMAIN_NAME', set()).add(val[0])
+
+        if just_network:
+            return value_extract
+
         # ------------------------------------------------------------------------------
         # FILENAMES
         # Check length
@@ -364,28 +409,49 @@ class PatternMatch:
         if len(filefind_pdb) > 0:
             if len(max(filefind_pdb, key=len)) > 6:
                 longeststring = max(filefind_pdb, key=len)
-                like_ls = process.extract(longeststring, filefind_pdb, limit=50)
-                final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                final_values.append((longeststring, 100))
-                for val in final_values:
-                    value_extract.setdefault('FILE_PDB_STRING', set()).add(val[0])
+                if len(longeststring) == len(value):
+                    value_extract.setdefault('FILE_PDB_STRING', set()).add(value)
+                    return value_extract
+                if len(filefind_pdb) == 1:
+                    for val in filefind_pdb:
+                        value_extract.setdefault('FILE_PDB_STRING', set()).add(val)
+                else:
+                    like_ls = process.extract(longeststring, filefind_pdb, limit=50)
+                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                    final_values.append((longeststring, 100))
+                    for val in final_values:
+                        value_extract.setdefault('FILE_PDB_STRING', set()).add(val[0])
         filefind_ext = re.findall(self.pat_fileext, value)
         if len(filefind_ext) > 0:
             if len(max(filefind_ext, key=len)) > 6:
                 longeststring = max(filefind_ext, key=len)
-                like_ls = process.extract(longeststring, filefind_ext, limit=50)
+                if len(longeststring) == len(value):
+                    value_extract.setdefault('FILE_NAME', set()).add(value)
+                    return value_extract
+                if len(filefind_ext) == 1:
+                    for val in filefind_ext:
+                        value_extract.setdefault('FILE_NAME', set()).add(val)
+                else:
+                    like_ls = process.extract(longeststring, filefind_ext, limit=50)
+                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                    final_values.append((longeststring, 100))
+                    for val in final_values:
+                        value_extract.setdefault('FILE_NAME', set()).add(val[0])
+        filefind_com = re.findall(self.pat_filecom, value)
+        if len(filefind_com) > 0 and len(max(filefind_com, key=len)) > 6:
+            longeststring = max(filefind_com, key=len)
+            if len(longeststring) == len(value):
+                value_extract.setdefault('FILE_NAME', set()).add(value)
+                return value_extract
+            if len(filefind_com) == 1:
+                for val in filefind_com:
+                    value_extract.setdefault('FILE_NAME', set()).add(val)
+            else:
+                like_ls = process.extract(longeststring, filefind_com, limit=50)
                 final_values = filter(lambda ls: ls[1] < 95, like_ls)
                 final_values.append((longeststring, 100))
                 for val in final_values:
                     value_extract.setdefault('FILE_NAME', set()).add(val[0])
-        filefind_com = re.findall(self.pat_filecom, value)
-        if len(filefind_com) > 0 and len(max(filefind_com, key=len)) > 6:
-            longeststring = max(filefind_com, key=len)
-            like_ls = process.extract(longeststring, filefind_com, limit=50)
-            final_values = filter(lambda ls: ls[1] < 95, like_ls)
-            final_values.append((longeststring, 100))
-            for val in final_values:
-                value_extract.setdefault('FILE_NAME', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # REGISTRYKEYS
         # Looks for alpha numeric characters seperated by at least two sets of '\'s
@@ -394,11 +460,18 @@ class PatternMatch:
         regfind = re.findall(self.pat_regis, value)
         if len(regfind) > 0 and len(max(regfind, key=len)) > 15:
             longeststring = max(regfind, key=len)
-            like_ls = process.extract(longeststring, regfind, limit=50)
-            final_values = filter(lambda ls: ls[1] < 90, like_ls)
-            final_values.append((longeststring, 100))
-            for val in final_values:
-                value_extract.setdefault('REGISTRY_KEY', set()).add(val[0])
+            if len(longeststring) == len(value):
+                value_extract.setdefault('REGISTRY_KEY', set()).add(value)
+                return value_extract
+            if len(regfind) == 1:
+                for val in regfind:
+                    value_extract.setdefault('REGISTRY_KEY', set()).add(val)
+            else:
+                like_ls = process.extract(longeststring, regfind, limit=50)
+                final_values = filter(lambda ls: ls[1] < 90, like_ls)
+                final_values.append((longeststring, 100))
+                for val in final_values:
+                    value_extract.setdefault('REGISTRY_KEY', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # PEStudio Blacklist
         # Flags strings from PEStudio's Blacklist
@@ -410,11 +483,18 @@ class PatternMatch:
                     psblfind.append(e)
                 if len(psblfind) > 0:
                     longeststring = max(psblfind, key=len)
-                    like_ls = process.extract(longeststring, psblfind, limit=50)
-                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                    final_values.append((longeststring, 100))
-                    for val in final_values:
-                        value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(val[0])
+                    if len(longeststring) == len(value):
+                        value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(value)
+                        return value_extract
+                    if len(psblfind) == 1:
+                        for val in psblfind:
+                            value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(val)
+                    else:
+                        like_ls = process.extract(longeststring, psblfind, limit=50)
+                        final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                        final_values.append((longeststring, 100))
+                        for val in final_values:
+                            value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(val[0])
         # -----------------------------------------------------------------------------
         # Function/Library Strings
         # Win API strings from PEStudio's Blacklist
@@ -426,11 +506,18 @@ class PatternMatch:
                     pswinfind.append(e)
                 if len(pswinfind) > 0:
                     longeststring = max(pswinfind, key=len)
-                    like_ls = process.extract(longeststring, pswinfind, limit=50)
-                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                    final_values.append((longeststring, 100))
-                    for val in final_values:
-                        value_extract.setdefault('WIN_API_STRING', set()).add(val[0])
+                    if len(longeststring) == len(value):
+                        value_extract.setdefault('WIN_API_STRING', set()).add(value)
+                        return value_extract
+                    if len(pswinfind) == 1:
+                        for val in pswinfind:
+                            value_extract.setdefault('WIN_API_STRING', set()).add(val)
+                    else:
+                        like_ls = process.extract(longeststring, pswinfind, limit=50)
+                        final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                        final_values.append((longeststring, 100))
+                        for val in final_values:
+                            value_extract.setdefault('WIN_API_STRING', set()).add(val[0])
 
         return value_extract
 

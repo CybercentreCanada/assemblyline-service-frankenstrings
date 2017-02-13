@@ -519,35 +519,43 @@ class FrankenStrings(ServiceBase):
                 file_data = f.read()
 
             # FLOSS string extract
-            dup = set()
+            astrings = set()
             for s in strings.extract_ascii_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
-                    if s.s not in dup:
-                        dup.add(s.s)
-                        st_value = patterns.ioc_match(s.s, bogon_ip=True)
-                        if len(st_value) > 0:
-                            for ty, val in st_value.iteritems():
-                                if val == "":
-                                    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                    ascii_dict.setdefault(ty, set()).add(asc_asc)
-                                else:
-                                    for v in val:
-                                        ascii_dict.setdefault(ty, set()).add(v)
+                    astrings.add(s.s)
 
-            dup = set()
+            for s in astrings:
+                if len(astrings) > 6000 and not request.deep_scan:
+                    st_value = patterns.ioc_match(s, bogon_ip=True, just_network=True)
+                else:
+                    st_value = patterns.ioc_match(s, bogon_ip=True)
+                if len(st_value) > 0:
+                    for ty, val in st_value.iteritems():
+                        if val == "":
+                            asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                            ascii_dict.setdefault(ty, set()).add(asc_asc)
+                        else:
+                            for v in val:
+                                ascii_dict.setdefault(ty, set()).add(v)
+
+            ustrings = set()
             for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
-                    if s.s not in dup:
-                        dup.add(s.s)
-                        st_value = patterns.ioc_match(s.s, bogon_ip=True)
-                        if len(st_value) > 0:
-                            for ty, val in st_value.iteritems():
-                                if val == "":
-                                    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                    unicode_dict.setdefault(ty, set()).add(asc_asc)
-                                else:
-                                    for v in val:
-                                        unicode_dict.setdefault(ty, set()).add(v)
+                    ustrings.add(s.s)
+
+            for s in ustrings:
+                if len(ustrings) > 6000 and not request.deep_scan:
+                    st_value = patterns.ioc_match(s, bogon_ip=True, just_network=True)
+                else:
+                    st_value = patterns.ioc_match(s, bogon_ip=True)
+                if len(st_value) > 0:
+                    for ty, val in st_value.iteritems():
+                        if val == "":
+                            asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                            unicode_dict.setdefault(ty, set()).add(asc_asc)
+                        else:
+                            for v in val:
+                                unicode_dict.setdefault(ty, set()).add(v)
 
             # Find Base64 ASCII and files of interest
             for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){3,})', file_data):
@@ -639,7 +647,7 @@ class FrankenStrings(ServiceBase):
             # Encoded/Stacked strings -- Windows executable file types
             m = magic.Magic()
             file_magic = m.from_buffer(file_data)
-            if (request.task.size or 0) < 3000000 \
+            if (request.task.size or 0) < 200000 \
                     and request.tag.startswith("executable/windows/") \
                     and not file_magic.endswith("compressed"):
 
