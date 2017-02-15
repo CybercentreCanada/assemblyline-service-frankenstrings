@@ -824,8 +824,9 @@ class FrankenStrings(ServiceBase):
                         x_res.add_line(xst)
                 # Result Tags:
                 for transform, regex, offset, score, smatch in xresult:
-                    res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
-                    res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
+                    if not regex.startswith("EXE_"):
+                        res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
+                        res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
 
                 # Store Unicode Encoded Data:
                 if unicode_found:
