@@ -383,9 +383,9 @@ class FrankenStrings(ServiceBase):
             if lsize > 0:
                 pe_extract = pedata[0:lsize]
             else:
-                pe_extract = mm
+                pe_extract = pedata
         except:
-            pe_extract = mm
+            pe_extract = pedata
 
         xpe_file_path = os.path.join(self.working_directory, "{}_xorpe_decoded"
                                      .format(hashlib.md5(pe_extract).hexdigest()))
