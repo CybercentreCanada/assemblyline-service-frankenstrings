@@ -383,9 +383,9 @@ class FrankenStrings(ServiceBase):
             if lsize > 0:
                 pe_extract = pedata[0:lsize]
             else:
-                pe_extract = mm
+                pe_extract = pedata
         except:
-            pe_extract = mm
+            pe_extract = pedata
 
         xpe_file_path = os.path.join(self.working_directory, "{}_xorpe_decoded"
                                      .format(hashlib.md5(pe_extract).hexdigest()))
@@ -654,98 +654,100 @@ class FrankenStrings(ServiceBase):
                 try:
                     vw = viv_utils.getWorkspace(alfile, should_save=False)
                 except Exception, e:
+                    vw = False
                     self.log.exception('VIV Utils getWorkspace failed: {0}' .format(e.message))
-                    return
 
-                selected_functions = set(vw.getFunctions())
-                selected_plugins = self.get_all_plugins()
-                ds_min_length = 5
-                al_min_length = 6
-                # Encoded strings
-                decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins, selected_functions)
-                candidates = decoding_functions_candidates.get_top_candidate_functions(10)
-                function_index = viv_utils.InstructionFunctionIndex(vw)
-                decoded_strings = self.decode_strings(vw, function_index, candidates)
-                decoded_strings = self.filter_unique_decoded(decoded_strings)
+                if vw:
+                    selected_functions = set(vw.getFunctions())
+                    selected_plugins = self.get_all_plugins()
+                    ds_min_length = 5
+                    al_min_length = 6
+                    # Encoded strings
+                    decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins,
+                                                                                   selected_functions)
+                    candidates = decoding_functions_candidates.get_top_candidate_functions(10)
+                    function_index = viv_utils.InstructionFunctionIndex(vw)
+                    decoded_strings = self.decode_strings(vw, function_index, candidates)
+                    decoded_strings = self.filter_unique_decoded(decoded_strings)
 
-                long_strings = filter(lambda l_ds: len(l_ds.s) >= ds_min_length, decoded_strings)
+                    long_strings = filter(lambda l_ds: len(l_ds.s) >= ds_min_length, decoded_strings)
 
-                for ds in long_strings:
-                    s = self.sanitize_string_for_printing(ds.s)
-                    if ds.characteristics["location_type"] == decoding_manager.LocationType.STACK:
-                        offset_string = "[STACK]"
-                    elif ds.characteristics["location_type"] == decoding_manager.LocationType.HEAP:
-                        offset_string = "[HEAP]"
-                    else:
-                        offset_string = hex(ds.va or 0)
-                    encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
-                    encoded_al_tags.add(s)
-
-                # Stacked Strings
-                # s.s = stacked string
-                # s.fva = Function
-                # s.frame_offset = Frame Offset
-                stack_strings = list(set(stackstrings.extract_stackstrings(vw, selected_functions)))
-                # Final stacked result list
-                if len(stack_strings) > 0:
-                    # Filter min string length
-                    extracted_strings = list(filter(lambda l_s: len(l_s.s) >= al_min_length, stack_strings))
-
-                    # Set up list to ensure stacked strings are not compared twice
-                    picked = set()
-                    # Create namedtuple for groups of like-stacked strings
-                    al_tuples = namedtuple('Group', 'stringl funoffl')
-
-                    # Create set of stacked strings for fuzzywuzzy to compare
-                    choices = set()
-                    for s in extracted_strings:
-                        choices.add(s.s)
-
-                    # Begin Comparison
-                    for s in extracted_strings:
-                        if s.s in picked:
-                            pass
+                    for ds in long_strings:
+                        s = self.sanitize_string_for_printing(ds.s)
+                        if ds.characteristics["location_type"] == decoding_manager.LocationType.STACK:
+                            offset_string = "[STACK]"
+                        elif ds.characteristics["location_type"] == decoding_manager.LocationType.HEAP:
+                            offset_string = "[HEAP]"
                         else:
-                            # Add stacked string to used-value list (picked)
-                            picked.add(s.s)
-                            # Create lists for 'strings' and 'function:frame offset' results
-                            sstrings = []
-                            funoffs = []
-                            # Append initial stacked string tuple values to lists
-                            indexnum = 1
-                            sstrings.append('{0}:::{1}' .format(indexnum, s.s.encode()))
-                            funoffs.append('{0}:::{1}:{2}' .format(indexnum, hex(s.fva), hex(s.frame_offset)))
-                            # Use fuzzywuzzy process module to compare initial stacked string to remaining
-                            # stack string values
-                            like_ss = process.extract(s.s, choices, limit=50)
+                            offset_string = hex(ds.va or 0)
+                        encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
+                        encoded_al_tags.add(s)
 
-                            if len(like_ss) > 0:
-                                # Filter scores in like_ss with string compare scores less than 75
-                                filtered_likess = filter(lambda ls: ls[1] > 74, like_ss)
-                                if len(filtered_likess) > 0:
-                                    for likestring in filtered_likess:
-                                        for subs in extracted_strings:
-                                            if subs == s or subs.s != likestring[0]:
-                                                pass
-                                            else:
-                                                indexnum += 1
-                                                # Add all similar strings to picked list and remove from future
-                                                # comparison list (choices)
-                                                picked.add(subs.s)
-                                                if subs.s in choices:
-                                                    choices.remove(subs.s)
-                                                # For all similar stacked strings add values to lists
-                                                sstrings.append('{0}:::{1}' .format(indexnum, subs.s.encode()))
-                                                funoffs.append('{0}:::{1}:{2}' .format(indexnum, hex(subs.fva),
-                                                                                       hex(subs.frame_offset)))
+                    # Stacked Strings
+                    # s.s = stacked string
+                    # s.fva = Function
+                    # s.frame_offset = Frame Offset
+                    stack_strings = list(set(stackstrings.extract_stackstrings(vw, selected_functions)))
+                    # Final stacked result list
+                    if len(stack_strings) > 0:
+                        # Filter min string length
+                        extracted_strings = list(filter(lambda l_s: len(l_s.s) >= al_min_length, stack_strings))
 
-                            # Remove initial stacked string from comparison list (choices)
-                            if s.s in choices:
-                                choices.remove(s.s)
-                            # Create namedtuple to add to final results
-                            fuzresults = al_tuples(stringl=sstrings, funoffl=funoffs)
-                            # Add namedtuple to final result list
-                            stacked_al_results.append(fuzresults)
+                        # Set up list to ensure stacked strings are not compared twice
+                        picked = set()
+                        # Create namedtuple for groups of like-stacked strings
+                        al_tuples = namedtuple('Group', 'stringl funoffl')
+
+                        # Create set of stacked strings for fuzzywuzzy to compare
+                        choices = set()
+                        for s in extracted_strings:
+                            choices.add(s.s)
+
+                        # Begin Comparison
+                        for s in extracted_strings:
+                            if s.s in picked:
+                                pass
+                            else:
+                                # Add stacked string to used-value list (picked)
+                                picked.add(s.s)
+                                # Create lists for 'strings' and 'function:frame offset' results
+                                sstrings = []
+                                funoffs = []
+                                # Append initial stacked string tuple values to lists
+                                indexnum = 1
+                                sstrings.append('{0}:::{1}' .format(indexnum, s.s.encode()))
+                                funoffs.append('{0}:::{1}:{2}' .format(indexnum, hex(s.fva), hex(s.frame_offset)))
+                                # Use fuzzywuzzy process module to compare initial stacked string to remaining
+                                # stack string values
+                                like_ss = process.extract(s.s, choices, limit=50)
+
+                                if len(like_ss) > 0:
+                                    # Filter scores in like_ss with string compare scores less than 75
+                                    filtered_likess = filter(lambda ls: ls[1] > 74, like_ss)
+                                    if len(filtered_likess) > 0:
+                                        for likestring in filtered_likess:
+                                            for subs in extracted_strings:
+                                                if subs == s or subs.s != likestring[0]:
+                                                    pass
+                                                else:
+                                                    indexnum += 1
+                                                    # Add all similar strings to picked list and remove from future
+                                                    # comparison list (choices)
+                                                    picked.add(subs.s)
+                                                    if subs.s in choices:
+                                                        choices.remove(subs.s)
+                                                    # For all similar stacked strings add values to lists
+                                                    sstrings.append('{0}:::{1}' .format(indexnum, subs.s.encode()))
+                                                    funoffs.append('{0}:::{1}:{2}' .format(indexnum, hex(subs.fva),
+                                                                                           hex(subs.frame_offset)))
+
+                                # Remove initial stacked string from comparison list (choices)
+                                if s.s in choices:
+                                    choices.remove(s.s)
+                                # Create namedtuple to add to final results
+                                fuzresults = al_tuples(stringl=sstrings, funoffl=funoffs)
+                                # Add namedtuple to final result list
+                                stacked_al_results.append(fuzresults)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
@@ -822,8 +824,9 @@ class FrankenStrings(ServiceBase):
                         x_res.add_line(xst)
                 # Result Tags:
                 for transform, regex, offset, score, smatch in xresult:
-                    res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
-                    res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
+                    if not regex.startswith("EXE_"):
+                        res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
+                        res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
 
                 # Store Unicode Encoded Data:
                 if unicode_found:
