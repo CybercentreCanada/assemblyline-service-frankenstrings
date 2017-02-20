@@ -293,7 +293,7 @@ class FrankenStrings(ServiceBase):
         Using some selected code from 'base64dump.py' by Didier Stevens@https://DidierStevens.com
         """
         results = 0
-        tags = 0
+        tag = 0
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
             try:
                 base64data = binascii.a2b_base64(b64_string)
@@ -313,15 +313,16 @@ class FrankenStrings(ServiceBase):
                                                                    "Omitted",
                                                                    "[Possible {0} file contents, See extracted files.]"
                                                                    .format(ft),  hashlib.md5(base64data).hexdigest()))
-                            return results, tags
+                            return results, tag
                 if all(ord(c) < 128 for c in base64data):
+                    asc_b64 = self.ascii_dump(base64data)
                     results = ('%-7d %-50s %-60s %-32s' % (len(b64_string), b64_string[0:50],
-                                                           self.ascii_dump(base64data[0:60]),
+                                                           asc_b64[0:60],
                                                            hashlib.md5(base64data).hexdigest()))
-                    tags = (self.ascii_dump(base64data))
+                    tag = asc_b64
             except:
-                return results, tags
-        return results, tags
+                return results, tag
+        return results, tag
 
     # Plain ascii shellcode extract
     # noinspection PyBroadException
@@ -471,16 +472,30 @@ class FrankenStrings(ServiceBase):
         result = Result()
         request.result = result
 
+        # Filters for streaming mode. Change at will!
+
         if request.deep_scan:
             strs_max_size = 1000000
             max_size = 8000000
             bb_max_size = 3000000
             ff_max_size = 3000000
+            ff_enc_min_length = 6
+            ff_stack_min_length = 6
+            st_max_length = 1000000
+            # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
+            st_min_length = 7
         else:
             strs_max_size = 500
             max_size = 5000000
             bb_max_size = 1500000
             ff_max_size = 300000
+            ff_enc_min_length = 6
+            ff_stack_min_length = 6
+            st_max_length = 1000
+            # Unless patterns are added/adjust to patterns.py, the following should remain at 7:
+            st_min_length = 7
+
+        # Begin analysis
 
         if (request.task.size or 0) < max_size and not request.tag.startswith("archive/"):
             # Generate section in results set
@@ -490,9 +505,6 @@ class FrankenStrings(ServiceBase):
             from tabulate import tabulate
             import viv_utils
             import unicodedata
-
-            st_min_length = 7
-            st_max_length = 1000
 
             ascii_dict = {}
             b64_al_results = []
@@ -514,12 +526,21 @@ class FrankenStrings(ServiceBase):
                 orig_submitted_file = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
                 file_data = f.read()
 
-            # FLOSS string extract
+            # FLOSS ascii string extract
             astrings = set()
             for s in strings.extract_ascii_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
                     astrings.add(s.s)
 
+            # FLOSS unicode string extract
+            ustrings = set()
+            for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
+                if len(s.s) < st_max_length:
+                    ustrings.add(s.s)
+
+            orig_submitted_file.close()
+
+            # Examine ascii
             if len(astrings) > strs_max_size:
                 jn = True
             else:
@@ -536,13 +557,7 @@ class FrankenStrings(ServiceBase):
                             for v in val:
                                 ascii_dict.setdefault(ty, set()).add(v)
 
-            ustrings = set()
-            for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
-                if len(s.s) < st_max_length:
-                    ustrings.add(s.s)
-
-            orig_submitted_file.close()
-
+            # Examine unicode
             if len(ustrings) > strs_max_size:
                 jn = True
             else:
@@ -568,9 +583,9 @@ class FrankenStrings(ServiceBase):
                     if b64result != 0:
                         b64_al_results.append(b64result)
                     if b64tag != 0:
-                        b64_al_tags.add(self.ascii_dump(b64tag))
+                        b64_al_tags.add(b64tag)
 
-            # Balbuzard's bbcrack XOR'd strings to find embedded patterns/files of interest
+            # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
             xresult = []
             if (request.task.size or 0) < bb_max_size:
                 if request.deep_scan:
@@ -602,7 +617,8 @@ class FrankenStrings(ServiceBase):
                         unicode_found = True
                         unibu_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
                                                        .format(hashlib.md5(bu_uni_decoded).hexdigest()))
-                        request.add_extracted(unibu_file_path, "Extracted \u_unicode file during FrankenStrings analysis.")
+                        request.add_extracted(unibu_file_path,
+                                              "Extracted \u_unicode file during FrankenStrings analysis.")
                         with open(unibu_file_path, 'wb') as unibu_file:
                             unibu_file.write(bu_uni_decoded)
                             self.log.debug("Submitted dropped file for analysis: %s" % unibu_file_path)
@@ -613,7 +629,8 @@ class FrankenStrings(ServiceBase):
                         unicode_found = True
                         unipu_file_path = os.path.join(self.working_directory, "{}_unipu_decoded"
                                                        .format(hashlib.md5(pu_uni_decoded).hexdigest()))
-                        request.add_extracted(unipu_file_path, "Extracted %u_unicode file during FrankenStrings analysis.")
+                        request.add_extracted(unipu_file_path,
+                                              "Extracted %u_unicode file during FrankenStrings analysis.")
                         with open(unipu_file_path, 'wb') as unipu_file:
                             unipu_file.write(pu_uni_decoded)
                             self.log.debug("Submitted dropped file for analysis: %s" % unipu_file_path)
@@ -624,7 +641,8 @@ class FrankenStrings(ServiceBase):
                         unicode_found = True
                         unix_file_path = os.path.join(self.working_directory,
                                                       "{}_uni0x_decoded".format(hashlib.md5(x_uni_decoded).hexdigest()))
-                        request.add_extracted(unix_file_path, "Extracted 0x_unicode file during FrankenStrings analysis.")
+                        request.add_extracted(unix_file_path,
+                                              "Extracted 0x_unicode file during FrankenStrings analysis.")
                         with open(unix_file_path, 'wb') as unix_file:
                             unix_file.write(x_uni_decoded)
                             self.log.debug("Submitted dropped file for analysis: %s" % unix_file_path)
@@ -635,7 +653,8 @@ class FrankenStrings(ServiceBase):
                         unicode_found = True
                         unifx_file_path = os.path.join(self.working_directory, "{}_uni2fx_decoded"
                                                        .format(hashlib.md5(fx_uni_decoded).hexdigest()))
-                        request.add_extracted(unifx_file_path, "Extracted /x_unicode file during FrankenStrings analysis.")
+                        request.add_extracted(unifx_file_path,
+                                              "Extracted /x_unicode file during FrankenStrings analysis.")
                         with open(unifx_file_path, 'wb') as unifx_file:
                             unifx_file.write(fx_uni_decoded)
                             self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
@@ -663,8 +682,7 @@ class FrankenStrings(ServiceBase):
                     if vw:
                         selected_functions = set(vw.getFunctions())
                         selected_plugins = self.get_all_plugins()
-                        ds_min_length = 5
-                        al_min_length = 6
+
                         # Encoded strings
                         decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins,
                                                                                        selected_functions)
@@ -673,7 +691,7 @@ class FrankenStrings(ServiceBase):
                         decoded_strings = self.decode_strings(vw, function_index, candidates)
                         decoded_strings = self.filter_unique_decoded(decoded_strings)
 
-                        long_strings = filter(lambda l_ds: len(l_ds.s) >= ds_min_length, decoded_strings)
+                        long_strings = filter(lambda l_ds: len(l_ds.s) >= ff_enc_min_length, decoded_strings)
 
                         for ds in long_strings:
                             s = self.sanitize_string_for_printing(ds.s)
@@ -694,7 +712,8 @@ class FrankenStrings(ServiceBase):
                         # Final stacked result list
                         if len(stack_strings) > 0:
                             # Filter min string length
-                            extracted_strings = list(filter(lambda l_s: len(l_s.s) >= al_min_length, stack_strings))
+                            extracted_strings = \
+                                list(filter(lambda l_s: len(l_s.s) >= ff_stack_min_length, stack_strings))
 
                             # Set up list to ensure stacked strings are not compared twice
                             picked = set()
@@ -788,7 +807,7 @@ class FrankenStrings(ServiceBase):
 
                 # Store B64 Results
                 if len(b64_al_results) > 0:
-                    b64_res = (ResultSection(SCORE.NULL, "ASCII Base64 Strings:",
+                    b64_res = (ResultSection(SCORE.NULL, "Base64 Strings:",
                                              body_format=TEXT_FORMAT.MEMORY_DUMP,
                                              parent=res))
                     # Add b64 table header to results
@@ -849,14 +868,15 @@ class FrankenStrings(ServiceBase):
                     for st in encoded_al_tags:
                         res.add_tag(TAG_TYPE['FILE_DECODED_STRING'], st, TAG_WEIGHT.LOW)
                         # Create tags for strings matching indicators of interest
-                        st_value = patterns.ioc_match(st, bogon_ip=True)
-                        if len(st_value) > 0:
-                            for ty, val in st_value.iteritems():
-                                if val == "":
-                                    res.add_tag(TAG_TYPE[ty], st, TAG_WEIGHT.LOW)
-                                else:
-                                    for v in val:
-                                        res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                        if len(st) > st_min_length:
+                            st_value = patterns.ioc_match(st, bogon_ip=True)
+                            if len(st_value) > 0:
+                                for ty, val in st_value.iteritems():
+                                    if val == "":
+                                        res.add_tag(TAG_TYPE[ty], st, TAG_WEIGHT.LOW)
+                                    else:
+                                        for v in val:
+                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                 # Store Stacked String Results
                 if len(stacked_al_results) > 0:
@@ -873,13 +893,14 @@ class FrankenStrings(ServiceBase):
                         # Create tags for strings matching indicators of interest
                         for st in s.stringl:
                             extract_st = re.sub(r'^[0-9]+:::', '', st)
-                            st_value = patterns.ioc_match(extract_st, bogon_ip=True)
-                            if len(st_value) > 0:
-                                for ty, val in st_value.iteritems():
-                                    if val == "":
-                                        res.add_tag(TAG_TYPE[ty], extract_st, TAG_WEIGHT.LOW)
-                                    else:
-                                        for v in val:
-                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                            if len(extract_st) > st_min_length:
+                                st_value = patterns.ioc_match(extract_st, bogon_ip=True)
+                                if len(st_value) > 0:
+                                    for ty, val in st_value.iteritems():
+                                        if val == "":
+                                            res.add_tag(TAG_TYPE[ty], extract_st, TAG_WEIGHT.LOW)
+                                        else:
+                                            for v in val:
+                                                res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                 result.add_result(res)
