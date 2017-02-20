@@ -486,13 +486,13 @@ class FrankenStrings(ServiceBase):
             st_max_length = 1000000
             # String list maximum size
             # List produced by basic ASCII and UNICODE module results and will determine
-            # if patterns.py will only evaulate network IOC patterns:
+            # if patterns.py will only evaluate network IOC patterns:
             strs_max_size = 1000000
             # BBcrack maximum size of submitted file to run module:
             bb_max_size = 3000000
-            # BBcrack maximum size of submitted file to run module:
+            # Flare Floss  maximum size of submitted file to run encoded/stacked string modules:
             ff_max_size = 3000000
-            # Flare Floss sminimum string size for encoded and stacked string modules:
+            # Flare Floss minimum string size for encoded/stacked string modules:
             ff_enc_min_length = 6
             ff_stack_min_length = 6
         else:
