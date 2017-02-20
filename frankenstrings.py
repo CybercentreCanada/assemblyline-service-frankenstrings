@@ -642,10 +642,8 @@ class FrankenStrings(ServiceBase):
                 shstr_match = False
                 for shstr in self.shcode_strings:
                     if orig_submitted_file.find(shstr) != -1:
-                        shstr_match = True
+                        self.unhexlify_shellcode(request, file_data)
                         break
-                if shstr_match:
-                    self.unhexlify_shellcode(request, file_data)
 
             orig_submitted_file.close()
 
