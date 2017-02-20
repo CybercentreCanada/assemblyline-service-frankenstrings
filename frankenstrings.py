@@ -132,7 +132,7 @@ class FrankenStrings(ServiceBase):
         maxstr = len(max(lisdata, key=len))
         newstr = ""
 
-        # Test if all (if by chance the data was separated by a character --i.e. ','--).
+        # Test if all match size of longest string (if by chance the data was separated by a character --i.e. ','--).
         # if true, combine all data and return string,
         # else return longest string if greater than 50 bytes,
         # else return empty string
@@ -157,22 +157,22 @@ class FrankenStrings(ServiceBase):
         largest_str = ''
 
         qbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{16})+', data)
-        if len(qbu) > 0:
+        if len(qbu) > 3:
             qlstr = cls.unicode_longest_string(qbu)
             if qlstr != '':
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{8})+', data)
-        if len(dbu) > 0:
+        if len(dbu) > 6:
             dlstr = cls.unicode_longest_string(dbu)
             if dlstr != '':
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{4})+', data)
-        if len(wbu) > 0:
+        if len(wbu) > 12:
             wlstr = cls.unicode_longest_string(wbu)
             if wlstr != '':
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{2})+', data)
-        if len(bbu) > 0:
+        if len(bbu) > 24:
             blstr = cls.unicode_longest_string(bbu)
             if blstr != '':
                 decoded_list.append(cls.decode_bu(blstr, size=2))
@@ -196,12 +196,12 @@ class FrankenStrings(ServiceBase):
         largest_str = ''
 
         qbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{16})+', data)
-        if len(qbu) > 0:
+        if len(qbu) > 3:
             qlstr = cls.unicode_longest_string(qbu)
             if qlstr != '':
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{8})+', data)
-        if len(dbu) > 0:
+        if len(dbu) > 6:
             dlstr = cls.unicode_longest_string(dbu)
             if dlstr != '':
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
