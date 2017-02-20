@@ -472,28 +472,38 @@ class FrankenStrings(ServiceBase):
         result = Result()
         request.result = result
 
-        # Filters for streaming mode. Change at will!
-
+        # Filters for submission modes. Change at will! (Listed in order of use)
         if request.deep_scan:
-            strs_max_size = 1000000
+            # Maximum size of submitted file to run this service:
             max_size = 8000000
-            bb_max_size = 3000000
-            ff_max_size = 3000000
-            ff_enc_min_length = 6
-            ff_stack_min_length = 6
-            st_max_length = 1000000
+            # String length minimum
+            # Used in basic ASCII and UNICODE modules. Also the filter size for any code that sends strings
+            # to patterns.py
             # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
             st_min_length = 7
+            # String length maximum
+            # Used in basic ASCII and UNICODE modules:
+            st_max_length = 1000000
+            # String list maximum size
+            # List produced by basic ASCII and UNICODE module results and will determine
+            # if patterns.py will only evaulate network IOC patterns:
+            strs_max_size = 1000000
+            # BBcrack maximum size of submitted file to run module:
+            bb_max_size = 3000000
+            # BBcrack maximum size of submitted file to run module:
+            ff_max_size = 3000000
+            # Flare Floss sminimum string size for encoded and stacked string modules:
+            ff_enc_min_length = 6
+            ff_stack_min_length = 6
         else:
-            strs_max_size = 500
             max_size = 5000000
+            st_min_length = 7
+            st_max_length = 1000
+            strs_max_size = 500
             bb_max_size = 1500000
             ff_max_size = 300000
             ff_enc_min_length = 6
             ff_stack_min_length = 6
-            st_max_length = 1000
-            # Unless patterns are added/adjust to patterns.py, the following should remain at 7:
-            st_min_length = 7
 
         # Begin analysis
 
