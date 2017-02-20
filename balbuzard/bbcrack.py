@@ -753,7 +753,7 @@ def bbcrack(file_data, level):
         transform_classes = transform_classes_all
 
     bbc = PatternMatch()
-    bbcrack_patterns = bbc.bbcr()
+    bbcrack_patterns = bbc.bbcr(level=level)
 
     results = []
 
@@ -773,12 +773,12 @@ def bbcrack(file_data, level):
                     if regex == 'EXE_HEAD':
                         score = 100000
                         results.append((transform.shortname, regex, index, score, data))
-                    elif transform.shortname == "xor20":
+                        continue
+                    if transform.shortname == "xor20":
                         #for basic alpha characters, will essentially convert lower and uppercase.
                         continue
-                    else:
-                        score += len(match) * pattern.weight
-                        results.append((transform.shortname, regex, index, score, smatch[0:50]))
+                    score += len(match) * pattern.weight
+                    results.append((transform.shortname, regex, index, score, smatch[0:50]))
 
     return results
 # This was coded while listening to The Walkmen "Heaven". --Philippe Lagadec
