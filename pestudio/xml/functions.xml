@@ -1950,7 +1950,6 @@ It contains the functions and libraries that will be detected as blackListed by 
         <fct dp="0" un="0" pv="0" bl="1" ad="0">CheckTokenCapability</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">CheckTokenMembership</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">CheckTokenMembershipEx</fct>
-        <fct dp="0" un="0" pv="0" bl="1" ad="0">connect</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">ConnectNamedPipe</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">ControlService</fct>
         <fct dp="0" un="0" pv="0" bl="1" ad="0">ConvertSecurityDescriptorToStringSecurityDescriptor</fct>
@@ -4613,7 +4612,6 @@ It contains the functions and libraries that will be detected as blackListed by 
         <fct dp="1" bl="0" ad="0">lstrcatn</fct>
         <fct dp="1" bl="0" ad="0">lseek</fct>
         <fct dp="1" bl="0" ad="0">lsearch</fct>
-        <fct dp="1" bl="0" ad="0">locking</fct>
         <fct dp="1" bl="0" ad="0">localtime</fct>
         <fct dp="1" bl="0" ad="0">lfind</fct>
         <fct dp="1" bl="0" ad="0">kbhit</fct>
