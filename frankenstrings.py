@@ -541,6 +541,8 @@ class FrankenStrings(ServiceBase):
                 if len(s.s) < st_max_length:
                     ustrings.add(s.s)
 
+            orig_submitted_file.close()
+
             if len(ustrings) > strs_max_size:
                 jn = True
             else:
@@ -639,13 +641,10 @@ class FrankenStrings(ServiceBase):
                             self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
 
                 # Look for hex-string matches from list and run extraction module if any found
-                shstr_match = False
                 for shstr in self.shcode_strings:
-                    if orig_submitted_file.find(shstr) != -1:
+                    if file_data.find(shstr) != -1:
                         self.unhexlify_shellcode(request, file_data)
                         break
-
-            orig_submitted_file.close()
 
             # Encoded/Stacked strings -- Windows executable file types
             if (request.task.size or 0) < ff_max_size:
