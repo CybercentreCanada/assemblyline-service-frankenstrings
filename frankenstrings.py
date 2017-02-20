@@ -521,11 +521,13 @@ class FrankenStrings(ServiceBase):
                     astrings.add(s.s)
 
             size_astrings = len(astrings)
+            if size_astrings > strs_max_size:
+                jn = True
+            else:
+                jn = False
+
             for s in astrings:
-                if size_astrings > strs_max_size:
-                    st_value = patterns.ioc_match(s, bogon_ip=True, just_network=True)
-                else:
-                    st_value = patterns.ioc_match(s, bogon_ip=True)
+                st_value = patterns.ioc_match(s, bogon_ip=True, just_network=jn)
                 if len(st_value) > 0:
                     for ty, val in st_value.iteritems():
                         if val == "":
@@ -541,11 +543,13 @@ class FrankenStrings(ServiceBase):
                     ustrings.add(s.s)
 
             size_ustrings = len(ustrings)
+            if size_ustrings > strs_max_size:
+                jn = True
+            else:
+                jn = False
+
             for s in ustrings:
-                if size_ustrings > strs_max_size:
-                    st_value = patterns.ioc_match(s, bogon_ip=True, just_network=True)
-                else:
-                    st_value = patterns.ioc_match(s, bogon_ip=True)
+                st_value = patterns.ioc_match(s, bogon_ip=True, just_network=jn)
                 if len(st_value) > 0:
                     for ty, val in st_value.iteritems():
                         if val == "":
