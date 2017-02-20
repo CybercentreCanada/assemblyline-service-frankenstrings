@@ -154,34 +154,30 @@ class FrankenStrings(ServiceBase):
         """
         decoded_list = []
         decoded = ''
-        largest_str = ''
 
         qbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{16})+', data)
-        if len(qbu) > 3:
+        if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
-            if qlstr != '':
+            if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{8})+', data)
-        if len(dbu) > 6:
+        if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
-            if dlstr != '':
+            if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{4})+', data)
-        if len(wbu) > 12:
+        if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
-            if wlstr != '':
+            if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{2})+', data)
-        if len(bbu) > 24:
+        if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
-            if blstr != '':
+            if len(blstr) > 50:
                 decoded_list.append(cls.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
-            largest_str = max(decoded_list, key=len)
-
-        if len(largest_str) > 50:
-            decoded = largest_str
+            decoded = max(decoded_list, key=len)
 
         return decoded
 
@@ -193,34 +189,30 @@ class FrankenStrings(ServiceBase):
         """
         decoded_list = []
         decoded = ''
-        largest_str = ''
 
         qbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{16})+', data)
-        if len(qbu) > 3:
+        if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
-            if qlstr != '':
+            if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{8})+', data)
-        if len(dbu) > 6:
+        if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
-            if dlstr != '':
+            if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{4})+', data)
         if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
-            if wlstr != '':
+            if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{2})+', data)
         if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
-            if blstr != '':
+            if len(blstr) > 50:
                 decoded_list.append(cls.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
-            largest_str = max(decoded_list, key=len)
-
-        if len(largest_str) > 50:
-            decoded = largest_str
+            decoded = max(decoded_list, key=len)
 
         return decoded
 
@@ -232,34 +224,30 @@ class FrankenStrings(ServiceBase):
         """
         decoded = ''
         decoded_list = []
-        largest_str = ''
 
         qbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{16})+', data)
         if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
-            if qlstr != '':
+            if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{8})+', data)
         if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
-            if dlstr != '':
+            if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{4})+', data)
         if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
-            if wlstr != '':
+            if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{2})+', data)
         if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
-            if blstr != '':
+            if len(blstr) > 50:
                 decoded_list.append(cls.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
-            largest_str = max(decoded_list, key=len)
-
-        if len(largest_str) > 50:
-            decoded = largest_str
+            decoded = max(decoded_list, key=len)
 
         return decoded
 
@@ -271,34 +259,30 @@ class FrankenStrings(ServiceBase):
         """
         decoded = ''
         decoded_list = []
-        largest_str = ''
 
         qbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{16})+', data)
         if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
-            if qlstr != '':
+            if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{8})+', data)
         if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
-            if dlstr != '':
+            if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{4})+', data)
         if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
-            if wlstr != '':
+            if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{2})+', data)
         if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
-            if blstr != '':
+            if len(blstr) > 50:
                 decoded_list.append(cls.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
-            largest_str = max(decoded_list, key=len)
-
-        if len(largest_str) > 50:
-            decoded = largest_str
+            decoded = max(decoded_list, key=len)
 
         return decoded
 
@@ -486,7 +470,19 @@ class FrankenStrings(ServiceBase):
         """
         result = Result()
         request.result = result
-        if (request.task.size or 0) < 8000000 and not request.tag.startswith("archive/"):
+
+        if request.deep_scan:
+            strs_max_size = 1000000
+            max_size = 8000000
+            bb_max_size = 3000000
+            ff_max_size = 3000000
+        else:
+            strs_max_size = 500
+            max_size = 5000000
+            bb_max_size = 1500000
+            ff_max_size = 300000
+
+        if (request.task.size or 0) < max_size and not request.tag.startswith("archive/"):
             # Generate section in results set
             from floss import decoding_manager
             from floss import identification_manager as im, strings, stackstrings
@@ -495,11 +491,8 @@ class FrankenStrings(ServiceBase):
             import viv_utils
             import unicodedata
 
-            unicode_found = False
-
-            alfile = request.download()
             st_min_length = 7
-            st_max_length = 301
+            st_max_length = 1000
 
             ascii_dict = {}
             b64_al_results = []
@@ -510,10 +503,13 @@ class FrankenStrings(ServiceBase):
             unicode_dict = {}
             xor_al_results = []
 
+            unicode_found = False
+
 # --- Generate Results -------------------------------------------------------------------------------------------------
             patterns = PatternMatch()
             # Static strings -- all file types
 
+            alfile = request.download()
             with open(alfile, "rb") as f:
                 orig_submitted_file = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
                 file_data = f.read()
@@ -524,8 +520,9 @@ class FrankenStrings(ServiceBase):
                 if len(s.s) < st_max_length:
                     astrings.add(s.s)
 
+            size_astrings = len(astrings)
             for s in astrings:
-                if len(astrings) > 6000 and not request.deep_scan:
+                if size_astrings > strs_max_size:
                     st_value = patterns.ioc_match(s, bogon_ip=True, just_network=True)
                 else:
                     st_value = patterns.ioc_match(s, bogon_ip=True)
@@ -543,8 +540,9 @@ class FrankenStrings(ServiceBase):
                 if len(s.s) < st_max_length:
                     ustrings.add(s.s)
 
+            size_ustrings = len(ustrings)
             for s in ustrings:
-                if len(ustrings) > 6000 and not request.deep_scan:
+                if size_ustrings > strs_max_size:
                     st_value = patterns.ioc_match(s, bogon_ip=True, just_network=True)
                 else:
                     st_value = patterns.ioc_match(s, bogon_ip=True)
@@ -558,10 +556,10 @@ class FrankenStrings(ServiceBase):
                                 unicode_dict.setdefault(ty, set()).add(v)
 
             # Find Base64 ASCII and files of interest
-            for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){3,})', file_data):
+            for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', file_data):
                 b64_string = b64_tuple[0].replace('\n', '').replace('\r', '').replace(' ', '')
                 uniq_char = ''.join(set(b64_string))
-                if len(uniq_char) > 4:
+                if len(uniq_char) > 6:
                     b64result, b64tag = self.b64(request, b64_string)
                     if b64result != 0:
                         b64_al_results.append(b64result)
@@ -570,7 +568,7 @@ class FrankenStrings(ServiceBase):
 
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/files of interest
             xresult = []
-            if (request.task.size or 0) < 2000000:
+            if (request.task.size or 0) < bb_max_size:
                 if request.deep_scan:
                     xresult = bbcrack(file_data, level=2)
                 else:
@@ -594,51 +592,56 @@ class FrankenStrings(ServiceBase):
             # Unicode/Hex Strings -- Non-executable files
             if not request.tag.startswith("executable/"):
                 # base64dump.py unicode extract
-                bu_uni_decoded = self.decode_data_bu(file_data)
-                if bu_uni_decoded != '':
-                    unicode_found = True
-                    unibu_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
-                                                   .format(hashlib.md5(bu_uni_decoded).hexdigest()))
-                    request.add_extracted(unibu_file_path, "Extracted \u_unicode file during FrankenStrings analysis.")
-                    with open(unibu_file_path, 'wb') as unibu_file:
-                        unibu_file.write(bu_uni_decoded)
-                        self.log.debug("Submitted dropped file for analysis: %s" % unibu_file_path)
+                if re.search(r'\\u[A-Fa-f0-9]{2}', file_data) is not None:
+                    bu_uni_decoded = self.decode_data_bu(file_data)
+                    if bu_uni_decoded != '':
+                        unicode_found = True
+                        unibu_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
+                                                       .format(hashlib.md5(bu_uni_decoded).hexdigest()))
+                        request.add_extracted(unibu_file_path, "Extracted \u_unicode file during FrankenStrings analysis.")
+                        with open(unibu_file_path, 'wb') as unibu_file:
+                            unibu_file.write(bu_uni_decoded)
+                            self.log.debug("Submitted dropped file for analysis: %s" % unibu_file_path)
 
-                pu_uni_decoded = self.decode_data_pu(file_data)
-                if pu_uni_decoded != '':
-                    unicode_found = True
-                    unipu_file_path = os.path.join(self.working_directory, "{}_unipu_decoded"
-                                                   .format(hashlib.md5(pu_uni_decoded).hexdigest()))
-                    request.add_extracted(unipu_file_path, "Extracted %u_unicode file during FrankenStrings analysis.")
-                    with open(unipu_file_path, 'wb') as unipu_file:
-                        unipu_file.write(pu_uni_decoded)
-                        self.log.debug("Submitted dropped file for analysis: %s" % unipu_file_path)
+                if re.search(r'%u[A-Fa-f0-9]{2}', file_data) is not None:
+                    pu_uni_decoded = self.decode_data_pu(file_data)
+                    if pu_uni_decoded != '':
+                        unicode_found = True
+                        unipu_file_path = os.path.join(self.working_directory, "{}_unipu_decoded"
+                                                       .format(hashlib.md5(pu_uni_decoded).hexdigest()))
+                        request.add_extracted(unipu_file_path, "Extracted %u_unicode file during FrankenStrings analysis.")
+                        with open(unipu_file_path, 'wb') as unipu_file:
+                            unipu_file.write(pu_uni_decoded)
+                            self.log.debug("Submitted dropped file for analysis: %s" % unipu_file_path)
 
-                x_uni_decoded = self.decode_data_ox(file_data)
-                if x_uni_decoded != '':
-                    unicode_found = True
-                    unix_file_path = os.path.join(self.working_directory,
-                                                  "{}_uni0x_decoded".format(hashlib.md5(x_uni_decoded).hexdigest()))
-                    request.add_extracted(unix_file_path, "Extracted 0x_unicode file during FrankenStrings analysis.")
-                    with open(unix_file_path, 'wb') as unix_file:
-                        unix_file.write(x_uni_decoded)
-                        self.log.debug("Submitted dropped file for analysis: %s" % unix_file_path)
+                if re.search(r'0x[A-Fa-f0-9]{2}', file_data) is not None:
+                    x_uni_decoded = self.decode_data_ox(file_data)
+                    if x_uni_decoded != '':
+                        unicode_found = True
+                        unix_file_path = os.path.join(self.working_directory,
+                                                      "{}_uni0x_decoded".format(hashlib.md5(x_uni_decoded).hexdigest()))
+                        request.add_extracted(unix_file_path, "Extracted 0x_unicode file during FrankenStrings analysis.")
+                        with open(unix_file_path, 'wb') as unix_file:
+                            unix_file.write(x_uni_decoded)
+                            self.log.debug("Submitted dropped file for analysis: %s" % unix_file_path)
 
-                fx_uni_decoded = self.decode_data_2fx(file_data)
-                if fx_uni_decoded != '':
-                    unicode_found = True
-                    unifx_file_path = os.path.join(self.working_directory, "{}_uni2fx_decoded"
-                                                   .format(hashlib.md5(fx_uni_decoded).hexdigest()))
-                    request.add_extracted(unifx_file_path, "Extracted /x_unicode file during FrankenStrings analysis.")
-                    with open(unifx_file_path, 'wb') as unifx_file:
-                        unifx_file.write(fx_uni_decoded)
-                        self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
+                if re.search(r'\\x[A-Fa-f0-9]{2}', file_data) is not None:
+                    fx_uni_decoded = self.decode_data_2fx(file_data)
+                    if fx_uni_decoded != '':
+                        unicode_found = True
+                        unifx_file_path = os.path.join(self.working_directory, "{}_uni2fx_decoded"
+                                                       .format(hashlib.md5(fx_uni_decoded).hexdigest()))
+                        request.add_extracted(unifx_file_path, "Extracted /x_unicode file during FrankenStrings analysis.")
+                        with open(unifx_file_path, 'wb') as unifx_file:
+                            unifx_file.write(fx_uni_decoded)
+                            self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
 
                 # Look for hex-string matches from list and run extraction module if any found
                 shstr_match = False
                 for shstr in self.shcode_strings:
                     if orig_submitted_file.find(shstr) != -1:
                         shstr_match = True
+                        break
                 if shstr_match:
                     self.unhexlify_shellcode(request, file_data)
 
@@ -647,7 +650,7 @@ class FrankenStrings(ServiceBase):
             # Encoded/Stacked strings -- Windows executable file types
             m = magic.Magic()
             file_magic = m.from_buffer(file_data)
-            if (request.task.size or 0) < 200000 \
+            if (request.task.size or 0) < ff_max_size \
                     and request.tag.startswith("executable/windows/") \
                     and not file_magic.endswith("compressed"):
 
