@@ -520,8 +520,7 @@ class FrankenStrings(ServiceBase):
                 if len(s.s) < st_max_length:
                     astrings.add(s.s)
 
-            size_astrings = len(astrings)
-            if size_astrings > strs_max_size:
+            if len(astrings) > strs_max_size:
                 jn = True
             else:
                 jn = False
@@ -542,8 +541,7 @@ class FrankenStrings(ServiceBase):
                 if len(s.s) < st_max_length:
                     ustrings.add(s.s)
 
-            size_ustrings = len(ustrings)
-            if size_ustrings > strs_max_size:
+            if len(ustrings) > strs_max_size:
                 jn = True
             else:
                 jn = False
