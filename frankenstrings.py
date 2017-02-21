@@ -496,12 +496,13 @@ class FrankenStrings(ServiceBase):
             ff_enc_min_length = 6
             ff_stack_min_length = 6
         else:
-            max_size = 5000000
+            max_size = 3000000
             st_min_length = 7
-            st_max_length = 1000
-            strs_max_size = 500
-            bb_max_size = 1500000
-            ff_max_size = 300000
+            st_max_length = 500
+            # Default 0, meaning by default only network IOC patterns are matched:
+            strs_max_size = 0
+            bb_max_size = 500000
+            ff_max_size = 200000
             ff_enc_min_length = 6
             ff_stack_min_length = 6
 
