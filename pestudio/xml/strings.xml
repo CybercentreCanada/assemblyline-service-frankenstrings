@@ -2028,7 +2028,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">secret</string>
     <string score="0">superman</string>
     <string score="0">iloveyou</string>
-    <string score="0">hello</string>
     <string score="0">helpme</string>
     <string score="0">hockey</string>
     <string score="0">home123</string>
@@ -2037,8 +2036,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">HotTracking</string>
     <string score="0">OpenProcessToken fail</string>
     <string score="0">AdjustTokenPrivileges fail</string>
-    <string score="0">replacement</string>
-    <string score="0">settings</string>
     <string score="0">formgrabber</string>
     <string score="0">redirects</string>
     <string score="0">httpinjects</string>
@@ -2049,7 +2046,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">urlmon</string>
     <string score="0">Internet Explorer</string>
     <string score="0">inhibitPolicyMapping</string>
-    <string score="0">infinite</string>
     <string score="0">Bad time value</string>
     <string score="0">pubkey.bin</string>
     <string score="0">openssl</string>
@@ -2146,7 +2142,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">module</string>
     <string score="0">drop</string>
     <string score="0">loop</string>
-    <string score="0">wait</string>
     <string score="0">Download</string>
     <string score="0">Upload</string>
     <string score="0">CONNECT</string>
@@ -2158,7 +2153,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">application/x-www-form-urlencoded</string>
     <string score="0">LordPE</string>
     <string score="0">Silvana</string>
-    <string score="0">petite</string>
     <string score="0">deflate</string>
     <string score="0">60794-12b3-e4169440</string>
     <string score="0">Keep-Alive</string>
@@ -2181,7 +2175,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">termsrv_t</string>
     <string score="0">Winlogon</string>
     <string score="0">nsocket</string>
-    <string score="0">repeat</string>
     <string score="0">compression</string>
     <string score="0">dictionary</string>
     <string score="0">userprofile</string>
@@ -2292,11 +2285,9 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">pipedatacontinue</string>
     <string score="0">Shell</string>
     <string score="0">IE 8.5</string>
-    <string score="0">start</string>
     <string score="0">whoami</string>
     <string score="0">pidrun</string>
     <string score="0">geturl</string>
-    <string score="0">Sometimes</string>
     <string score="0">Destroy</string>
     <string score="0">likubes</string>
     <string score="0">fine musicians</string>

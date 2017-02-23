@@ -132,7 +132,7 @@ class FrankenStrings(ServiceBase):
         maxstr = len(max(lisdata, key=len))
         newstr = ""
 
-        # Test if all (if by chance the data was separated by a character --i.e. ','--).
+        # Test if all match size of longest string (if by chance the data was separated by a character --i.e. ','--).
         # if true, combine all data and return string,
         # else return longest string if greater than 50 bytes,
         # else return empty string
@@ -154,34 +154,30 @@ class FrankenStrings(ServiceBase):
         """
         decoded_list = []
         decoded = ''
-        largest_str = ''
 
         qbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{16})+', data)
         if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
-            if qlstr != '':
+            if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{8})+', data)
         if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
-            if dlstr != '':
+            if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{4})+', data)
         if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
-            if wlstr != '':
+            if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{2})+', data)
         if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
-            if blstr != '':
+            if len(blstr) > 50:
                 decoded_list.append(cls.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
-            largest_str = max(decoded_list, key=len)
-
-        if len(largest_str) > 50:
-            decoded = largest_str
+            decoded = max(decoded_list, key=len)
 
         return decoded
 
@@ -193,34 +189,30 @@ class FrankenStrings(ServiceBase):
         """
         decoded_list = []
         decoded = ''
-        largest_str = ''
 
         qbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{16})+', data)
         if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
-            if qlstr != '':
+            if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{8})+', data)
         if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
-            if dlstr != '':
+            if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{4})+', data)
         if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
-            if wlstr != '':
+            if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{2})+', data)
         if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
-            if blstr != '':
+            if len(blstr) > 50:
                 decoded_list.append(cls.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
-            largest_str = max(decoded_list, key=len)
-
-        if len(largest_str) > 50:
-            decoded = largest_str
+            decoded = max(decoded_list, key=len)
 
         return decoded
 
@@ -232,34 +224,30 @@ class FrankenStrings(ServiceBase):
         """
         decoded = ''
         decoded_list = []
-        largest_str = ''
 
         qbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{16})+', data)
         if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
-            if qlstr != '':
+            if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{8})+', data)
         if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
-            if dlstr != '':
+            if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{4})+', data)
         if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
-            if wlstr != '':
+            if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{2})+', data)
         if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
-            if blstr != '':
+            if len(blstr) > 50:
                 decoded_list.append(cls.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
-            largest_str = max(decoded_list, key=len)
-
-        if len(largest_str) > 50:
-            decoded = largest_str
+            decoded = max(decoded_list, key=len)
 
         return decoded
 
@@ -271,34 +259,30 @@ class FrankenStrings(ServiceBase):
         """
         decoded = ''
         decoded_list = []
-        largest_str = ''
 
         qbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{16})+', data)
         if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
-            if qlstr != '':
+            if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
         dbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{8})+', data)
         if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
-            if dlstr != '':
+            if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
         wbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{4})+', data)
         if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
-            if wlstr != '':
+            if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
         bbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{2})+', data)
         if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
-            if blstr != '':
+            if len(blstr) > 50:
                 decoded_list.append(cls.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
-            largest_str = max(decoded_list, key=len)
-
-        if len(largest_str) > 50:
-            decoded = largest_str
+            decoded = max(decoded_list, key=len)
 
         return decoded
 
@@ -309,7 +293,7 @@ class FrankenStrings(ServiceBase):
         Using some selected code from 'base64dump.py' by Didier Stevens@https://DidierStevens.com
         """
         results = 0
-        tags = 0
+        tag = 0
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
             try:
                 base64data = binascii.a2b_base64(b64_string)
@@ -329,15 +313,16 @@ class FrankenStrings(ServiceBase):
                                                                    "Omitted",
                                                                    "[Possible {0} file contents, See extracted files.]"
                                                                    .format(ft),  hashlib.md5(base64data).hexdigest()))
-                            return results, tags
+                            return results, tag
                 if all(ord(c) < 128 for c in base64data):
+                    asc_b64 = self.ascii_dump(base64data)
                     results = ('%-7d %-50s %-60s %-32s' % (len(b64_string), b64_string[0:50],
-                                                           self.ascii_dump(base64data[0:60]),
+                                                           asc_b64[0:60],
                                                            hashlib.md5(base64data).hexdigest()))
-                    tags = (self.ascii_dump(base64data))
+                    tag = asc_b64
             except:
-                return results, tags
-        return results, tags
+                return results, tag
+        return results, tag
 
     # Plain ascii shellcode extract
     # noinspection PyBroadException
@@ -486,7 +471,44 @@ class FrankenStrings(ServiceBase):
         """
         result = Result()
         request.result = result
-        if (request.task.size or 0) < 8000000 and not request.tag.startswith("archive/"):
+
+        # Filters for submission modes. Change at will! (Listed in order of use)
+        if request.deep_scan:
+            # Maximum size of submitted file to run this service:
+            max_size = 8000000
+            # String length minimum
+            # Used in basic ASCII and UNICODE modules. Also the filter size for any code that sends strings
+            # to patterns.py
+            # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
+            st_min_length = 7
+            # String length maximum
+            # Used in basic ASCII and UNICODE modules:
+            st_max_length = 1000000
+            # String list maximum size
+            # List produced by basic ASCII and UNICODE module results and will determine
+            # if patterns.py will only evaluate network IOC patterns:
+            strs_max_size = 1000000
+            # BBcrack maximum size of submitted file to run module:
+            bb_max_size = 3000000
+            # Flare Floss  maximum size of submitted file to run encoded/stacked string modules:
+            ff_max_size = 3000000
+            # Flare Floss minimum string size for encoded/stacked string modules:
+            ff_enc_min_length = 6
+            ff_stack_min_length = 6
+        else:
+            max_size = 3000000
+            st_min_length = 7
+            st_max_length = 500
+            # Default 0, meaning by default only network IOC patterns are matched:
+            strs_max_size = 0
+            bb_max_size = 500000
+            ff_max_size = 200000
+            ff_enc_min_length = 6
+            ff_stack_min_length = 6
+
+        # Begin analysis
+
+        if (request.task.size or 0) < max_size and not request.tag.startswith("archive/"):
             # Generate section in results set
             from floss import decoding_manager
             from floss import identification_manager as im, strings, stackstrings
@@ -494,12 +516,6 @@ class FrankenStrings(ServiceBase):
             from tabulate import tabulate
             import viv_utils
             import unicodedata
-
-            unicode_found = False
-
-            alfile = request.download()
-            st_min_length = 7
-            st_max_length = 301
 
             ascii_dict = {}
             b64_al_results = []
@@ -510,25 +526,39 @@ class FrankenStrings(ServiceBase):
             unicode_dict = {}
             xor_al_results = []
 
+            unicode_found = False
+
 # --- Generate Results -------------------------------------------------------------------------------------------------
             patterns = PatternMatch()
             # Static strings -- all file types
 
+            alfile = request.download()
             with open(alfile, "rb") as f:
                 orig_submitted_file = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
                 file_data = f.read()
 
-            # FLOSS string extract
+            # FLOSS ascii string extract
             astrings = set()
             for s in strings.extract_ascii_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
                     astrings.add(s.s)
 
+            # FLOSS unicode string extract
+            ustrings = set()
+            for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
+                if len(s.s) < st_max_length:
+                    ustrings.add(s.s)
+
+            orig_submitted_file.close()
+
+            # Examine ascii
+            if len(astrings) > strs_max_size:
+                jn = True
+            else:
+                jn = False
+
             for s in astrings:
-                if len(astrings) > 6000 and not request.deep_scan:
-                    st_value = patterns.ioc_match(s, bogon_ip=True, just_network=True)
-                else:
-                    st_value = patterns.ioc_match(s, bogon_ip=True)
+                st_value = patterns.ioc_match(s, bogon_ip=True, just_network=jn)
                 if len(st_value) > 0:
                     for ty, val in st_value.iteritems():
                         if val == "":
@@ -538,16 +568,14 @@ class FrankenStrings(ServiceBase):
                             for v in val:
                                 ascii_dict.setdefault(ty, set()).add(v)
 
-            ustrings = set()
-            for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
-                if len(s.s) < st_max_length:
-                    ustrings.add(s.s)
+            # Examine unicode
+            if len(ustrings) > strs_max_size:
+                jn = True
+            else:
+                jn = False
 
             for s in ustrings:
-                if len(ustrings) > 6000 and not request.deep_scan:
-                    st_value = patterns.ioc_match(s, bogon_ip=True, just_network=True)
-                else:
-                    st_value = patterns.ioc_match(s, bogon_ip=True)
+                st_value = patterns.ioc_match(s, bogon_ip=True, just_network=jn)
                 if len(st_value) > 0:
                     for ty, val in st_value.iteritems():
                         if val == "":
@@ -558,19 +586,19 @@ class FrankenStrings(ServiceBase):
                                 unicode_dict.setdefault(ty, set()).add(v)
 
             # Find Base64 ASCII and files of interest
-            for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){3,})', file_data):
+            for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', file_data):
                 b64_string = b64_tuple[0].replace('\n', '').replace('\r', '').replace(' ', '')
                 uniq_char = ''.join(set(b64_string))
-                if len(uniq_char) > 4:
+                if len(uniq_char) > 6:
                     b64result, b64tag = self.b64(request, b64_string)
                     if b64result != 0:
                         b64_al_results.append(b64result)
                     if b64tag != 0:
-                        b64_al_tags.add(self.ascii_dump(b64tag))
+                        b64_al_tags.add(b64tag)
 
-            # Balbuzard's bbcrack XOR'd strings to find embedded patterns/files of interest
+            # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
             xresult = []
-            if (request.task.size or 0) < 2000000:
+            if (request.task.size or 0) < bb_max_size:
                 if request.deep_scan:
                     xresult = bbcrack(file_data, level=2)
                 else:
@@ -594,160 +622,165 @@ class FrankenStrings(ServiceBase):
             # Unicode/Hex Strings -- Non-executable files
             if not request.tag.startswith("executable/"):
                 # base64dump.py unicode extract
-                bu_uni_decoded = self.decode_data_bu(file_data)
-                if bu_uni_decoded != '':
-                    unicode_found = True
-                    unibu_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
-                                                   .format(hashlib.md5(bu_uni_decoded).hexdigest()))
-                    request.add_extracted(unibu_file_path, "Extracted \u_unicode file during FrankenStrings analysis.")
-                    with open(unibu_file_path, 'wb') as unibu_file:
-                        unibu_file.write(bu_uni_decoded)
-                        self.log.debug("Submitted dropped file for analysis: %s" % unibu_file_path)
+                if re.search(r'\\u[A-Fa-f0-9]{2}', file_data) is not None:
+                    bu_uni_decoded = self.decode_data_bu(file_data)
+                    if bu_uni_decoded != '':
+                        unicode_found = True
+                        unibu_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
+                                                       .format(hashlib.md5(bu_uni_decoded).hexdigest()))
+                        request.add_extracted(unibu_file_path,
+                                              "Extracted \u_unicode file during FrankenStrings analysis.")
+                        with open(unibu_file_path, 'wb') as unibu_file:
+                            unibu_file.write(bu_uni_decoded)
+                            self.log.debug("Submitted dropped file for analysis: %s" % unibu_file_path)
 
-                pu_uni_decoded = self.decode_data_pu(file_data)
-                if pu_uni_decoded != '':
-                    unicode_found = True
-                    unipu_file_path = os.path.join(self.working_directory, "{}_unipu_decoded"
-                                                   .format(hashlib.md5(pu_uni_decoded).hexdigest()))
-                    request.add_extracted(unipu_file_path, "Extracted %u_unicode file during FrankenStrings analysis.")
-                    with open(unipu_file_path, 'wb') as unipu_file:
-                        unipu_file.write(pu_uni_decoded)
-                        self.log.debug("Submitted dropped file for analysis: %s" % unipu_file_path)
+                if re.search(r'%u[A-Fa-f0-9]{2}', file_data) is not None:
+                    pu_uni_decoded = self.decode_data_pu(file_data)
+                    if pu_uni_decoded != '':
+                        unicode_found = True
+                        unipu_file_path = os.path.join(self.working_directory, "{}_unipu_decoded"
+                                                       .format(hashlib.md5(pu_uni_decoded).hexdigest()))
+                        request.add_extracted(unipu_file_path,
+                                              "Extracted %u_unicode file during FrankenStrings analysis.")
+                        with open(unipu_file_path, 'wb') as unipu_file:
+                            unipu_file.write(pu_uni_decoded)
+                            self.log.debug("Submitted dropped file for analysis: %s" % unipu_file_path)
 
-                x_uni_decoded = self.decode_data_ox(file_data)
-                if x_uni_decoded != '':
-                    unicode_found = True
-                    unix_file_path = os.path.join(self.working_directory,
-                                                  "{}_uni0x_decoded".format(hashlib.md5(x_uni_decoded).hexdigest()))
-                    request.add_extracted(unix_file_path, "Extracted 0x_unicode file during FrankenStrings analysis.")
-                    with open(unix_file_path, 'wb') as unix_file:
-                        unix_file.write(x_uni_decoded)
-                        self.log.debug("Submitted dropped file for analysis: %s" % unix_file_path)
+                if re.search(r'0x[A-Fa-f0-9]{2}', file_data) is not None:
+                    x_uni_decoded = self.decode_data_ox(file_data)
+                    if x_uni_decoded != '':
+                        unicode_found = True
+                        unix_file_path = os.path.join(self.working_directory,
+                                                      "{}_uni0x_decoded".format(hashlib.md5(x_uni_decoded).hexdigest()))
+                        request.add_extracted(unix_file_path,
+                                              "Extracted 0x_unicode file during FrankenStrings analysis.")
+                        with open(unix_file_path, 'wb') as unix_file:
+                            unix_file.write(x_uni_decoded)
+                            self.log.debug("Submitted dropped file for analysis: %s" % unix_file_path)
 
-                fx_uni_decoded = self.decode_data_2fx(file_data)
-                if fx_uni_decoded != '':
-                    unicode_found = True
-                    unifx_file_path = os.path.join(self.working_directory, "{}_uni2fx_decoded"
-                                                   .format(hashlib.md5(fx_uni_decoded).hexdigest()))
-                    request.add_extracted(unifx_file_path, "Extracted /x_unicode file during FrankenStrings analysis.")
-                    with open(unifx_file_path, 'wb') as unifx_file:
-                        unifx_file.write(fx_uni_decoded)
-                        self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
+                if re.search(r'\\x[A-Fa-f0-9]{2}', file_data) is not None:
+                    fx_uni_decoded = self.decode_data_2fx(file_data)
+                    if fx_uni_decoded != '':
+                        unicode_found = True
+                        unifx_file_path = os.path.join(self.working_directory, "{}_uni2fx_decoded"
+                                                       .format(hashlib.md5(fx_uni_decoded).hexdigest()))
+                        request.add_extracted(unifx_file_path,
+                                              "Extracted /x_unicode file during FrankenStrings analysis.")
+                        with open(unifx_file_path, 'wb') as unifx_file:
+                            unifx_file.write(fx_uni_decoded)
+                            self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
 
                 # Look for hex-string matches from list and run extraction module if any found
-                shstr_match = False
                 for shstr in self.shcode_strings:
-                    if orig_submitted_file.find(shstr) != -1:
-                        shstr_match = True
-                if shstr_match:
-                    self.unhexlify_shellcode(request, file_data)
-
-            orig_submitted_file.close()
+                    if file_data.find(shstr) != -1:
+                        self.unhexlify_shellcode(request, file_data)
+                        break
 
             # Encoded/Stacked strings -- Windows executable file types
-            m = magic.Magic()
-            file_magic = m.from_buffer(file_data)
-            if (request.task.size or 0) < 200000 \
-                    and request.tag.startswith("executable/windows/") \
-                    and not file_magic.endswith("compressed"):
+            if (request.task.size or 0) < ff_max_size:
 
-                try:
-                    vw = viv_utils.getWorkspace(alfile, should_save=False)
-                except Exception, e:
-                    vw = False
-                    self.log.exception('VIV Utils getWorkspace failed: {0}' .format(e.message))
+                m = magic.Magic()
+                file_magic = m.from_buffer(file_data)
 
-                if vw:
-                    selected_functions = set(vw.getFunctions())
-                    selected_plugins = self.get_all_plugins()
-                    ds_min_length = 5
-                    al_min_length = 6
-                    # Encoded strings
-                    decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins,
-                                                                                   selected_functions)
-                    candidates = decoding_functions_candidates.get_top_candidate_functions(10)
-                    function_index = viv_utils.InstructionFunctionIndex(vw)
-                    decoded_strings = self.decode_strings(vw, function_index, candidates)
-                    decoded_strings = self.filter_unique_decoded(decoded_strings)
+                if request.tag.startswith("executable/windows/") and not file_magic.endswith("compressed"):
 
-                    long_strings = filter(lambda l_ds: len(l_ds.s) >= ds_min_length, decoded_strings)
+                    try:
+                        vw = viv_utils.getWorkspace(alfile, should_save=False)
+                    except Exception, e:
+                        vw = False
+                        self.log.exception('VIV Utils getWorkspace failed: {0}' .format(e.message))
 
-                    for ds in long_strings:
-                        s = self.sanitize_string_for_printing(ds.s)
-                        if ds.characteristics["location_type"] == decoding_manager.LocationType.STACK:
-                            offset_string = "[STACK]"
-                        elif ds.characteristics["location_type"] == decoding_manager.LocationType.HEAP:
-                            offset_string = "[HEAP]"
-                        else:
-                            offset_string = hex(ds.va or 0)
-                        encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
-                        encoded_al_tags.add(s)
+                    if vw:
+                        selected_functions = set(vw.getFunctions())
+                        selected_plugins = self.get_all_plugins()
 
-                    # Stacked Strings
-                    # s.s = stacked string
-                    # s.fva = Function
-                    # s.frame_offset = Frame Offset
-                    stack_strings = list(set(stackstrings.extract_stackstrings(vw, selected_functions)))
-                    # Final stacked result list
-                    if len(stack_strings) > 0:
-                        # Filter min string length
-                        extracted_strings = list(filter(lambda l_s: len(l_s.s) >= al_min_length, stack_strings))
+                        # Encoded strings
+                        decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins,
+                                                                                       selected_functions)
+                        candidates = decoding_functions_candidates.get_top_candidate_functions(10)
+                        function_index = viv_utils.InstructionFunctionIndex(vw)
+                        decoded_strings = self.decode_strings(vw, function_index, candidates)
+                        decoded_strings = self.filter_unique_decoded(decoded_strings)
 
-                        # Set up list to ensure stacked strings are not compared twice
-                        picked = set()
-                        # Create namedtuple for groups of like-stacked strings
-                        al_tuples = namedtuple('Group', 'stringl funoffl')
+                        long_strings = filter(lambda l_ds: len(l_ds.s) >= ff_enc_min_length, decoded_strings)
 
-                        # Create set of stacked strings for fuzzywuzzy to compare
-                        choices = set()
-                        for s in extracted_strings:
-                            choices.add(s.s)
-
-                        # Begin Comparison
-                        for s in extracted_strings:
-                            if s.s in picked:
-                                pass
+                        for ds in long_strings:
+                            s = self.sanitize_string_for_printing(ds.s)
+                            if ds.characteristics["location_type"] == decoding_manager.LocationType.STACK:
+                                offset_string = "[STACK]"
+                            elif ds.characteristics["location_type"] == decoding_manager.LocationType.HEAP:
+                                offset_string = "[HEAP]"
                             else:
-                                # Add stacked string to used-value list (picked)
-                                picked.add(s.s)
-                                # Create lists for 'strings' and 'function:frame offset' results
-                                sstrings = []
-                                funoffs = []
-                                # Append initial stacked string tuple values to lists
-                                indexnum = 1
-                                sstrings.append('{0}:::{1}' .format(indexnum, s.s.encode()))
-                                funoffs.append('{0}:::{1}:{2}' .format(indexnum, hex(s.fva), hex(s.frame_offset)))
-                                # Use fuzzywuzzy process module to compare initial stacked string to remaining
-                                # stack string values
-                                like_ss = process.extract(s.s, choices, limit=50)
+                                offset_string = hex(ds.va or 0)
+                            encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
+                            encoded_al_tags.add(s)
 
-                                if len(like_ss) > 0:
-                                    # Filter scores in like_ss with string compare scores less than 75
-                                    filtered_likess = filter(lambda ls: ls[1] > 74, like_ss)
-                                    if len(filtered_likess) > 0:
-                                        for likestring in filtered_likess:
-                                            for subs in extracted_strings:
-                                                if subs == s or subs.s != likestring[0]:
-                                                    pass
-                                                else:
-                                                    indexnum += 1
-                                                    # Add all similar strings to picked list and remove from future
-                                                    # comparison list (choices)
-                                                    picked.add(subs.s)
-                                                    if subs.s in choices:
-                                                        choices.remove(subs.s)
-                                                    # For all similar stacked strings add values to lists
-                                                    sstrings.append('{0}:::{1}' .format(indexnum, subs.s.encode()))
-                                                    funoffs.append('{0}:::{1}:{2}' .format(indexnum, hex(subs.fva),
-                                                                                           hex(subs.frame_offset)))
+                        # Stacked Strings
+                        # s.s = stacked string
+                        # s.fva = Function
+                        # s.frame_offset = Frame Offset
+                        stack_strings = list(set(stackstrings.extract_stackstrings(vw, selected_functions)))
+                        # Final stacked result list
+                        if len(stack_strings) > 0:
+                            # Filter min string length
+                            extracted_strings = \
+                                list(filter(lambda l_s: len(l_s.s) >= ff_stack_min_length, stack_strings))
 
-                                # Remove initial stacked string from comparison list (choices)
-                                if s.s in choices:
-                                    choices.remove(s.s)
-                                # Create namedtuple to add to final results
-                                fuzresults = al_tuples(stringl=sstrings, funoffl=funoffs)
-                                # Add namedtuple to final result list
-                                stacked_al_results.append(fuzresults)
+                            # Set up list to ensure stacked strings are not compared twice
+                            picked = set()
+                            # Create namedtuple for groups of like-stacked strings
+                            al_tuples = namedtuple('Group', 'stringl funoffl')
+
+                            # Create set of stacked strings for fuzzywuzzy to compare
+                            choices = set()
+                            for s in extracted_strings:
+                                choices.add(s.s)
+
+                            # Begin Comparison
+                            for s in extracted_strings:
+                                if s.s in picked:
+                                    pass
+                                else:
+                                    # Add stacked string to used-value list (picked)
+                                    picked.add(s.s)
+                                    # Create lists for 'strings' and 'function:frame offset' results
+                                    sstrings = []
+                                    funoffs = []
+                                    # Append initial stacked string tuple values to lists
+                                    indexnum = 1
+                                    sstrings.append('{0}:::{1}' .format(indexnum, s.s.encode()))
+                                    funoffs.append('{0}:::{1}:{2}' .format(indexnum, hex(s.fva), hex(s.frame_offset)))
+                                    # Use fuzzywuzzy process module to compare initial stacked string to remaining
+                                    # stack string values
+                                    like_ss = process.extract(s.s, choices, limit=50)
+
+                                    if len(like_ss) > 0:
+                                        # Filter scores in like_ss with string compare scores less than 75
+                                        filtered_likess = filter(lambda ls: ls[1] > 74, like_ss)
+                                        if len(filtered_likess) > 0:
+                                            for likestring in filtered_likess:
+                                                for subs in extracted_strings:
+                                                    if subs == s or subs.s != likestring[0]:
+                                                        pass
+                                                    else:
+                                                        indexnum += 1
+                                                        # Add all similar strings to picked list and remove from future
+                                                        # comparison list (choices)
+                                                        picked.add(subs.s)
+                                                        if subs.s in choices:
+                                                            choices.remove(subs.s)
+                                                        # For all similar stacked strings add values to lists
+                                                        sstrings.append('{0}:::{1}' .format(indexnum, subs.s.encode()))
+                                                        funoffs.append('{0}:::{1}:{2}' .format(indexnum, hex(subs.fva),
+                                                                                               hex(subs.frame_offset)))
+
+                                    # Remove initial stacked string from comparison list (choices)
+                                    if s.s in choices:
+                                        choices.remove(s.s)
+                                    # Create namedtuple to add to final results
+                                    fuzresults = al_tuples(stringl=sstrings, funoffl=funoffs)
+                                    # Add namedtuple to final result list
+                                    stacked_al_results.append(fuzresults)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
@@ -785,7 +818,7 @@ class FrankenStrings(ServiceBase):
 
                 # Store B64 Results
                 if len(b64_al_results) > 0:
-                    b64_res = (ResultSection(SCORE.NULL, "ASCII Base64 Strings:",
+                    b64_res = (ResultSection(SCORE.NULL, "Base64 Strings:",
                                              body_format=TEXT_FORMAT.MEMORY_DUMP,
                                              parent=res))
                     # Add b64 table header to results
@@ -846,14 +879,15 @@ class FrankenStrings(ServiceBase):
                     for st in encoded_al_tags:
                         res.add_tag(TAG_TYPE['FILE_DECODED_STRING'], st, TAG_WEIGHT.LOW)
                         # Create tags for strings matching indicators of interest
-                        st_value = patterns.ioc_match(st, bogon_ip=True)
-                        if len(st_value) > 0:
-                            for ty, val in st_value.iteritems():
-                                if val == "":
-                                    res.add_tag(TAG_TYPE[ty], st, TAG_WEIGHT.LOW)
-                                else:
-                                    for v in val:
-                                        res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                        if len(st) > st_min_length:
+                            st_value = patterns.ioc_match(st, bogon_ip=True)
+                            if len(st_value) > 0:
+                                for ty, val in st_value.iteritems():
+                                    if val == "":
+                                        res.add_tag(TAG_TYPE[ty], st, TAG_WEIGHT.LOW)
+                                    else:
+                                        for v in val:
+                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                 # Store Stacked String Results
                 if len(stacked_al_results) > 0:
@@ -870,13 +904,14 @@ class FrankenStrings(ServiceBase):
                         # Create tags for strings matching indicators of interest
                         for st in s.stringl:
                             extract_st = re.sub(r'^[0-9]+:::', '', st)
-                            st_value = patterns.ioc_match(extract_st, bogon_ip=True)
-                            if len(st_value) > 0:
-                                for ty, val in st_value.iteritems():
-                                    if val == "":
-                                        res.add_tag(TAG_TYPE[ty], extract_st, TAG_WEIGHT.LOW)
-                                    else:
-                                        for v in val:
-                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                            if len(extract_st) > st_min_length:
+                                st_value = patterns.ioc_match(extract_st, bogon_ip=True)
+                                if len(st_value) > 0:
+                                    for ty, val in st_value.iteritems():
+                                        if val == "":
+                                            res.add_tag(TAG_TYPE[ty], extract_st, TAG_WEIGHT.LOW)
+                                        else:
+                                            for v in val:
+                                                res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                 result.add_result(res)
