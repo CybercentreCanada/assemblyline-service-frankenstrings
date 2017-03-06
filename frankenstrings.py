@@ -43,7 +43,8 @@ class FrankenStrings(ServiceBase):
                           'image',
                           'text',
                           ]
-        self.shcode_strings = ['9090',  # nop nop
+        self.shcode_strings = ['00000000000000000000000000000000',  # null bytes
+                               '9090',  # nop nop
                                '31c0',  # xor eax eax
                                '31C0',
                                '33c0',
@@ -671,10 +672,13 @@ class FrankenStrings(ServiceBase):
                             self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
 
                 # Look for hex-string matches from list and run extraction module if any found
-                for shstr in self.shcode_strings:
-                    if file_data.find(shstr) != -1:
-                        self.unhexlify_shellcode(request, file_data)
-                        break
+                if (request.task.size or 0) < 25000:
+                    self.unhexlify_shellcode(request, file_data)
+                else:
+                    for shstr in self.shcode_strings:
+                        if file_data.find(shstr) != -1:
+                            self.unhexlify_shellcode(request, file_data)
+                            break
 
             # Encoded/Stacked strings -- Windows executable file types
             if (request.task.size or 0) < ff_max_size:
