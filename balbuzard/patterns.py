@@ -526,15 +526,15 @@ class PatternMatch:
     def domain_filter(self, value, index=0, pattern=None):
         # check length
         # check match again tlds set
-        if len(value) < 13:
+        if len(value) < 10:
             return False
         uniq_char = ''.join(set(value))
         if len(uniq_char) < 6:
             return False
         fld = value.split('.')
         tld = value.rsplit('.', 1)[1].lower()
-        # If only two domain levels and either bottom level <= 2 char or tld <= 2 char, or top-level not in list
-        if (len(fld) <= 2 and len(fld[0]) <= 2) or (len(fld) <= 2 and len(tld) <= 2) or tld not in self.tlds:
+        # If only two domain levels and either second level < 5 char or tld <= 2 char, or top-level not in list
+        if (len(fld) <= 2 and len(fld[0]) < 5) or tld not in self.tlds:
             return False
         return True
 

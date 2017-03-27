@@ -148,135 +148,34 @@ class FrankenStrings(ServiceBase):
             return newstr
 
     @classmethod
-    # '\u'
-    def decode_data_bu(cls, data):
+    def decode_encoded_udata(cls, encoding, data):
         """
         Adjusted code in base64decode.py to take in to account byte, word, dword, qword
         """
         decoded_list = []
         decoded = ''
 
-        qbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{16})+', data)
+        qword = re.compile(r'\(?:' + re.escape(encoding) + r'[A-Fa-f0-9]{16}\)+\)')
+        dword = re.compile(r'\(?:' + re.escape(encoding) + r'[A-Fa-f0-9]{8}\)+\)')
+        word = re.compile(r'\(?:' + re.escape(encoding) + r'[A-Fa-f0-9]{4}\)+\)')
+        by = re.compile(r'\(?:' + re.escape(encoding) + r'[A-Fa-f0-9]{2}\)+\)')
+
+        qbu = re.findall(qword, data)
         if len(qbu) > 0:
             qlstr = cls.unicode_longest_string(qbu)
             if len(qlstr) > 50:
                 decoded_list.append(cls.decode_bu(qlstr, size=16))
-        dbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{8})+', data)
+        dbu = re.findall(dword, data)
         if len(dbu) > 0:
             dlstr = cls.unicode_longest_string(dbu)
             if len(dlstr) > 50:
                 decoded_list.append(cls.decode_bu(dlstr, size=8))
-        wbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{4})+', data)
+        wbu = re.findall(word, data)
         if len(wbu) > 0:
             wlstr = cls.unicode_longest_string(wbu)
             if len(wlstr) > 50:
                 decoded_list.append(cls.decode_bu(wlstr, size=4))
-        bbu = re.findall(r'(?:\\u[ABCDEFabcdef0123456789]{2})+', data)
-        if len(bbu) > 0:
-            blstr = cls.unicode_longest_string(bbu)
-            if len(blstr) > 50:
-                decoded_list.append(cls.decode_bu(blstr, size=2))
-
-        if len(decoded_list) > 0:
-            decoded = max(decoded_list, key=len)
-
-        return decoded
-
-    @classmethod
-    # '%u'
-    def decode_data_pu(cls, data):
-        """
-        Adjusted code in base64decode.py to take in to account byte, word, dword, qword
-        """
-        decoded_list = []
-        decoded = ''
-
-        qbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{16})+', data)
-        if len(qbu) > 0:
-            qlstr = cls.unicode_longest_string(qbu)
-            if len(qlstr) > 50:
-                decoded_list.append(cls.decode_bu(qlstr, size=16))
-        dbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{8})+', data)
-        if len(dbu) > 0:
-            dlstr = cls.unicode_longest_string(dbu)
-            if len(dlstr) > 50:
-                decoded_list.append(cls.decode_bu(dlstr, size=8))
-        wbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{4})+', data)
-        if len(wbu) > 0:
-            wlstr = cls.unicode_longest_string(wbu)
-            if len(wlstr) > 50:
-                decoded_list.append(cls.decode_bu(wlstr, size=4))
-        bbu = re.findall(r'(?:%u[ABCDEFabcdef0123456789]{2})+', data)
-        if len(bbu) > 0:
-            blstr = cls.unicode_longest_string(bbu)
-            if len(blstr) > 50:
-                decoded_list.append(cls.decode_bu(blstr, size=2))
-
-        if len(decoded_list) > 0:
-            decoded = max(decoded_list, key=len)
-
-        return decoded
-
-    @classmethod
-    # '0x'
-    def decode_data_ox(cls, data):
-        """
-        Using some selected code from 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-        """
-        decoded = ''
-        decoded_list = []
-
-        qbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{16})+', data)
-        if len(qbu) > 0:
-            qlstr = cls.unicode_longest_string(qbu)
-            if len(qlstr) > 50:
-                decoded_list.append(cls.decode_bu(qlstr, size=16))
-        dbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{8})+', data)
-        if len(dbu) > 0:
-            dlstr = cls.unicode_longest_string(dbu)
-            if len(dlstr) > 50:
-                decoded_list.append(cls.decode_bu(dlstr, size=8))
-        wbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{4})+', data)
-        if len(wbu) > 0:
-            wlstr = cls.unicode_longest_string(wbu)
-            if len(wlstr) > 50:
-                decoded_list.append(cls.decode_bu(wlstr, size=4))
-        bbu = re.findall(r'(?:0x[ABCDEFabcdef0123456789]{2})+', data)
-        if len(bbu) > 0:
-            blstr = cls.unicode_longest_string(bbu)
-            if len(blstr) > 50:
-                decoded_list.append(cls.decode_bu(blstr, size=2))
-
-        if len(decoded_list) > 0:
-            decoded = max(decoded_list, key=len)
-
-        return decoded
-
-    @classmethod
-    # '\x'
-    def decode_data_2fx(cls, data):
-        """
-        Using some selected code from 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-        """
-        decoded = ''
-        decoded_list = []
-
-        qbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{16})+', data)
-        if len(qbu) > 0:
-            qlstr = cls.unicode_longest_string(qbu)
-            if len(qlstr) > 50:
-                decoded_list.append(cls.decode_bu(qlstr, size=16))
-        dbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{8})+', data)
-        if len(dbu) > 0:
-            dlstr = cls.unicode_longest_string(dbu)
-            if len(dlstr) > 50:
-                decoded_list.append(cls.decode_bu(dlstr, size=8))
-        wbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{4})+', data)
-        if len(wbu) > 0:
-            wlstr = cls.unicode_longest_string(wbu)
-            if len(wlstr) > 50:
-                decoded_list.append(cls.decode_bu(wlstr, size=4))
-        bbu = re.findall(r'(?:\\x[ABCDEFabcdef0123456789]{2})+', data)
+        bbu = re.findall(by, data)
         if len(bbu) > 0:
             blstr = cls.unicode_longest_string(bbu)
             if len(blstr) > 50:
@@ -624,7 +523,7 @@ class FrankenStrings(ServiceBase):
             if not request.tag.startswith("executable/"):
                 # base64dump.py unicode extract
                 if re.search(r'\\u[A-Fa-f0-9]{2}', file_data) is not None:
-                    bu_uni_decoded = self.decode_data_bu(file_data)
+                    bu_uni_decoded = self.decode_encoded_udata(file_data, '\\u')
                     if bu_uni_decoded != '':
                         unicode_found = True
                         unibu_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
@@ -636,7 +535,7 @@ class FrankenStrings(ServiceBase):
                             self.log.debug("Submitted dropped file for analysis: %s" % unibu_file_path)
 
                 if re.search(r'%u[A-Fa-f0-9]{2}', file_data) is not None:
-                    pu_uni_decoded = self.decode_data_pu(file_data)
+                    pu_uni_decoded = self.decode_encoded_udata(file_data, '%u')
                     if pu_uni_decoded != '':
                         unicode_found = True
                         unipu_file_path = os.path.join(self.working_directory, "{}_unipu_decoded"
@@ -648,7 +547,7 @@ class FrankenStrings(ServiceBase):
                             self.log.debug("Submitted dropped file for analysis: %s" % unipu_file_path)
 
                 if re.search(r'0x[A-Fa-f0-9]{2}', file_data) is not None:
-                    x_uni_decoded = self.decode_data_ox(file_data)
+                    x_uni_decoded = self.decode_encoded_udata(file_data, '0x')
                     if x_uni_decoded != '':
                         unicode_found = True
                         unix_file_path = os.path.join(self.working_directory,
@@ -660,7 +559,7 @@ class FrankenStrings(ServiceBase):
                             self.log.debug("Submitted dropped file for analysis: %s" % unix_file_path)
 
                 if re.search(r'\\x[A-Fa-f0-9]{2}', file_data) is not None:
-                    fx_uni_decoded = self.decode_data_2fx(file_data)
+                    fx_uni_decoded = self.decode_encoded_udata(file_data, '\\x')
                     if fx_uni_decoded != '':
                         unicode_found = True
                         unifx_file_path = os.path.join(self.working_directory, "{}_uni2fx_decoded"
@@ -672,7 +571,7 @@ class FrankenStrings(ServiceBase):
                             self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
 
                 # Look for hex-string matches from list and run extraction module if any found
-                if (request.task.size or 0) < 25000:
+                if (request.task.size or 0) < 100000:
                     self.unhexlify_shellcode(request, file_data)
                 else:
                     for shstr in self.shcode_strings:
