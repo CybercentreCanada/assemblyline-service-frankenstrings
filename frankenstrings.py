@@ -66,7 +66,7 @@ class FrankenStrings(ServiceBase):
                                ]
 
     def start(self):
-        self.log.debug("FLOSS service started")
+        self.log.debug("FrankenStrings service started")
 
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
