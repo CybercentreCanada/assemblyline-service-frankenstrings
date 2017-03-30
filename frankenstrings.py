@@ -280,7 +280,7 @@ class FrankenStrings(ServiceBase):
                         data = data[1:]
 
                 # Transform the data to remove any potential obfuscation:
-                # 1. Attempt to find (what appears to be common) OLESAVETOSTREAM serial string and remove all
+                # 1. Attempt to find (what appears to be a common) OLESAVETOSTREAM serial string and remove all
                 # characters up to doc header if found. This section will need to be improved later.
                 olesavetostream = re.compile(r"^[{]\\\*\\objdata.{0,2000}"
                                              r"0[\s]*1[\s]*0[\s]*5[\s]*0[\s]*0[\s]*0[\s]*0[\s]*"
@@ -299,7 +299,7 @@ class FrankenStrings(ServiceBase):
                         d = re.sub(rstr, str(rstr[-int(blen):].encode('hex')), d)
                 # 3. Remove remaining control words
                 d = re.sub(r"\\[A-Za-z0-9][\s]*", "", d)
-                # 4. Remove and other characters that are not ascii hex
+                # 4. Remove any other characters that are not ascii hex
                 d = re.sub("[ -/:-@\[-`{-~g-zG-Z\s\x00]", "", ''.join([x for x in d if ord(x) < 128]))
 
                 # Convert the ascii hex and extract file
