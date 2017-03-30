@@ -224,9 +224,11 @@ class FrankenStrings(ServiceBase):
                 return results, tag
         return results, tag
 
-    # Plain ascii shellcode extract
     # noinspection PyBroadException
     def unhexlify_shellcode(self, request, data):
+        """
+        Plain ascii hex conversion.
+        '"""
         try:
             matchbuf = ""
             for match in re.findall('[0-9a-fA-F]{128,}', data):
@@ -244,60 +246,73 @@ class FrankenStrings(ServiceBase):
             return
         return
 
-    # RTF objdata hexcode extract
     def unhexlify_rtf(self, request, data):
+        """
+        RTF objdata ascii hex extract. Inspired by Talos blog post "How Malformed RTF Defeats Security Engines", and
+        help from information in http://www.decalage.info/rtf_tricks. This is a backup to the oletools service.
+        Will need more work.
+        """
         try:
             # Get objdata
-            d = ""
-            bcount = 0
-            # Walk the objdata item and extract until 'real' closing brace reached.
-            while bcount != -1:
-                if len(data) == 0:
-                    # Did not find 'real' closing brace
-                    return
-                else:
-                    c = data[0]
-                    if c == '{':
-                        bcount += 1
-                    if c == '}':
-                        bcount -= 1
-                    d += c
-                    data = data[1:]
+            while data.find("{\*\objdata") != -1:
 
-            # Transform the data to remove any potential obfuscation:
-            # 1. Attempt to find (what appears to be common) OLESAVETOSTREAM serial string and remove all characters up
-            # to doc header if found. This section will need to be improved later.
-            olesavetostream = re.compile(r"^[{]\\\*\\objdata.{0,2000}"
-                                         r"0[\s]*1[\s]*0[\s]*5[\s]*0[\s]*0[\s]*0[\s]*0[\s]*"
-                                         r"0[\s]*2[\s]*0[\s]*0[\s]*0[\s]*0",
-                                         re.DOTALL)
-            if re.search(olesavetostream, d):
-                docstart = d[:2011].upper().find("D0CF11E0")
-                if docstart != -1:
-                    d = d[docstart:]
-            # 2. Transform any embedded binary data
-            if d.find("\\bin") != -1:
-                binreg = re.compile(r"\\bin[0]{0,250}[1-9]{0,4}")
-                for b in re.findall(binreg, d):
-                    blen = re.sub("[a-z0]{0,4}", "", b[-4:])
-                    rstr = re.escape(b)+"[\s]*"+".{"+blen+"}"
-                    d = re.sub(rstr, str(rstr[-int(blen):].encode('hex')), d)
-            # 3. Remove remaining control words
-            d = re.sub(r"\\[A-Za-z0-9][\s]*", "", d)
-            # 4. Remove and other characters that are not ascii hex
-            d = re.sub("[ -/:-@\[-`{-~g-zG-Z\s\x00]", "", ''.join([x for x in d if ord(x) < 128]))
+                obj = data.find("{\*\objdata")
+                data = data[obj:]
 
-            # Convert the ascii hex and extract file
-            if len(d) > 0:
-                if len(d) % 2 != 0:
-                    d = d[:-1]
-                bstr = binascii.unhexlify(d)
-                ascihex_path = os.path.join(self.working_directory, "{}_rtfobj_hex_decoded"
-                                            .format(hashlib.md5(bstr).hexdigest()))
-                with open(ascihex_path, 'wb') as fh:
-                    fh.write(bstr)
-                request.add_extracted(ascihex_path, "Extracted rtf objdata ascii hex file during "
-                                                    "FrankenStrings analysis.")
+                d = ""
+                bcount = -1
+                # Walk the objdata item and extract until 'real' closing brace reached.
+                while bcount != 0:
+                    if len(data) == 0:
+                        # Did not find 'real' closing brace
+                        return
+                    else:
+                        c = data[0]
+                        if c == '{':
+                            if bcount != -1:
+                                bcount += 1
+                            else:
+                                bcount = 1
+                            bcount += 1
+                        if c == '}':
+                            bcount -= 1
+                        d += c
+                        data = data[1:]
+
+                # Transform the data to remove any potential obfuscation:
+                # 1. Attempt to find (what appears to be common) OLESAVETOSTREAM serial string and remove all
+                # characters up to doc header if found. This section will need to be improved later.
+                olesavetostream = re.compile(r"^[{]\\\*\\objdata.{0,2000}"
+                                             r"0[\s]*1[\s]*0[\s]*5[\s]*0[\s]*0[\s]*0[\s]*0[\s]*"
+                                             r"0[\s]*2[\s]*0[\s]*0[\s]*0[\s]*0",
+                                             re.DOTALL)
+                if re.search(olesavetostream, d):
+                    docstart = d[:2011].upper().find("D0CF11E0")
+                    if docstart != -1:
+                        d = d[docstart:]
+                # 2. Transform any embedded binary data
+                if d.find("\\bin") != -1:
+                    binreg = re.compile(r"\\bin[0]{0,250}[1-9]{0,4}")
+                    for b in re.findall(binreg, d):
+                        blen = re.sub("[a-z0]{0,4}", "", b[-4:])
+                        rstr = re.escape(b)+"[\s]*"+".{"+blen+"}"
+                        d = re.sub(rstr, str(rstr[-int(blen):].encode('hex')), d)
+                # 3. Remove remaining control words
+                d = re.sub(r"\\[A-Za-z0-9][\s]*", "", d)
+                # 4. Remove and other characters that are not ascii hex
+                d = re.sub("[ -/:-@\[-`{-~g-zG-Z\s\x00]", "", ''.join([x for x in d if ord(x) < 128]))
+
+                # Convert the ascii hex and extract file
+                if len(d) > 0:
+                    if len(d) % 2 != 0:
+                        d = d[:-1]
+                    bstr = binascii.unhexlify(d)
+                    ascihex_path = os.path.join(self.working_directory, "{}_rtfobj_hex_decoded"
+                                                .format(hashlib.md5(bstr).hexdigest()))
+                    with open(ascihex_path, 'wb') as fh:
+                        fh.write(bstr)
+                    request.add_extracted(ascihex_path, "Extracted rtf objdata ascii hex file during "
+                                                        "FrankenStrings analysis.")
 
         except:
             pass
@@ -638,19 +653,9 @@ class FrankenStrings(ServiceBase):
                             self.unhexlify_shellcode(request, file_data)
                             break
 
-                # RTF object hex, inspired by Talos blog post "How Malformed RTF Defeats Security Engines, and help from
-                # information in http://www.decalage.info/rtf_tricks. This is a backup to the oletools service.
-                # Will need more work.
-                obj = file_data.find("{\*\objdata")
-                if obj != -1:
-                    objdata = file_data[obj:]
-                    objregex = re.compile(r"[{]\\\*\\objdata.*", re.DOTALL)
-                    while objdata.find("{\*\objdata") != -1:
-                        obj = objdata.find("{\*\objdata")
-                        objdata  = objdata[obj:]
-                        for rtfobj in re.findall(objregex, objdata):
-                            self.unhexlify_rtf(request, rtfobj)
-                        objdata = objdata[11:]
+                # RTF object data hex
+                if file_data.find("{\*\objdata") != -1:
+                    self.unhexlify_rtf(request, file_data)
 
             # Encoded/Stacked strings -- Windows executable file types
             if (request.task.size or 0) < ff_max_size:
