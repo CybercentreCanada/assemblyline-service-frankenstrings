@@ -34,6 +34,7 @@ For more info and updates: http://www.decalage.info/balbuzard
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import re
+from os import path
 from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Pattern, Pattern_re
 from xml.etree import ElementTree
 from fuzzywuzzy import process
@@ -110,7 +111,7 @@ class PatternMatch:
 
 # --- PEStudio Patterns ------------------------------------------------------------------------------------------------
 
-        with open('/opt/al/pkg/al_services/alsvc_frankenstrings/pestudio/xml/strings.xml', 'rt') as f:
+        with open(path.join(path.dirname(__file__), "../pestudio/xml/strings.xml"), 'rt') as f:
             tree = ElementTree.parse(f)
 
         # Adding a min length for less FPs
@@ -163,7 +164,7 @@ class PatternMatch:
                 self.pest_blacklist.setdefault('string', set()).add(st.text)
 
         # Adding Popular API
-        with open('/opt/al/pkg/al_services/alsvc_frankenstrings/pestudio/xml/functions.xml', 'rt') as f:
+        with open(path.join(path.dirname(__file__), '../pestudio/xml/functions.xml'), 'rt') as f:
             tree = ElementTree.parse(f)
 
         for fun in tree.findall(".//fct"):
