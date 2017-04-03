@@ -565,10 +565,11 @@ class PatternMatch:
 
 # --- BBCrack Patterns -------------------------------------------------------------------------------------------------
 
-    def bbcr(self, level):
+    def bbcr(self, level=1):
 
         bbcrack_patterns = [
             Pattern_re("EXE_HEAD", self.pat_exeheader, weight=100),
+            Pattern_re("EXE_DOS", self.pat_exedos, weight=100),
         ]
 
         # Add PEStudio's API String list, weight will default to 1
