@@ -36,7 +36,7 @@ This service does the following:
         - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)       
     * other file types:
         - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)
-        - Unicode, Hex, Ascii-Hex extraction modules (shellcode detect)
+        - Unicode, Hex, Ascii-Hex extraction modules (for possible shellcode and rtf objdata objects)
         - Balbuzard's bbcrack level 1 XOR transform modules. Searches for PE files only
         - [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR modules. Searches for PE files only
 
