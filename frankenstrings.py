@@ -155,10 +155,10 @@ class FrankenStrings(ServiceBase):
         decoded_list = []
         decoded = ''
 
-        qword = re.compile(r'\(?:' + re.escape(encoding) + r'[A-Fa-f0-9]{16}\)+\)')
-        dword = re.compile(r'\(?:' + re.escape(encoding) + r'[A-Fa-f0-9]{8}\)+\)')
-        word = re.compile(r'\(?:' + re.escape(encoding) + r'[A-Fa-f0-9]{4}\)+\)')
-        by = re.compile(r'\(?:' + re.escape(encoding) + r'[A-Fa-f0-9]{2}\)+\)')
+        qword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{16})+')
+        dword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{8})+')
+        word = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{4})+')
+        by = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{2})+')
 
         qbu = re.findall(qword, data)
         if len(qbu) > 0:
