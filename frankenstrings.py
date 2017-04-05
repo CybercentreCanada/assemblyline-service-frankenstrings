@@ -229,6 +229,7 @@ class FrankenStrings(ServiceBase):
         """
         Plain ascii hex conversion.
         '"""
+        result = False
         try:
             matchbuf = ""
             for match in re.findall('[0-9a-fA-F]{128,}', data):
@@ -239,12 +240,13 @@ class FrankenStrings(ServiceBase):
                 binstr = binascii.unhexlify(matchbuf)
                 ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
                                                  .format(hashlib.md5(binstr).hexdigest()))
+                request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
                 with open(ascihex_file_path, 'wb') as fh:
                     fh.write(binstr)
-                request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
+                result = True
         except:
-            return
-        return
+            pass
+        return result
 
     def unhexlify_rtf(self, request, data):
         """
@@ -252,6 +254,7 @@ class FrankenStrings(ServiceBase):
         help from information in http://www.decalage.info/rtf_tricks. This is a backup to the oletools service.
         Will need more work.
         """
+        result = False
         try:
             # Get objdata
             while data.find("{\*\objdata") != -1:
@@ -308,15 +311,14 @@ class FrankenStrings(ServiceBase):
                     bstr = binascii.unhexlify(d)
                     ascihex_path = os.path.join(self.working_directory, "{}_rtfobj_hex_decoded"
                                                 .format(hashlib.md5(bstr).hexdigest()))
-                    with open(ascihex_path, 'wb') as fh:
-                        fh.write(bstr)
                     request.add_extracted(ascihex_path, "Extracted rtf objdata ascii hex file during "
                                                         "FrankenStrings analysis.")
-
+                    with open(ascihex_path, 'wb') as fh:
+                        fh.write(bstr)
+                    result = True
         except:
             pass
-
-        return
+        return result
 
     # Executable extraction
     # noinspection PyBroadException
@@ -500,6 +502,8 @@ class FrankenStrings(ServiceBase):
             xor_al_results = []
 
             unicode_found = False
+            asciihex_found = False
+            rtfobjdata_found = False
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
             patterns = PatternMatch()
@@ -645,16 +649,16 @@ class FrankenStrings(ServiceBase):
 
                 # Look for hex-string matches from list and run extraction module if any found
                 if (request.task.size or 0) < 100000:
-                    self.unhexlify_shellcode(request, file_data)
+                    asciihex_found = self.unhexlify_shellcode(request, file_data)
                 else:
                     for shstr in self.shcode_strings:
                         if file_data.find(shstr) != -1:
-                            self.unhexlify_shellcode(request, file_data)
+                            asciihex_found = self.unhexlify_shellcode(request, file_data)
                             break
 
                 # RTF object data hex
                 if file_data.find("{\*\objdata") != -1:
-                    self.unhexlify_rtf(request, file_data)
+                    rtfobjdata_found = self.unhexlify_rtf(request, file_data)
 
             # Encoded/Stacked strings -- Windows executable file types
             if (request.task.size or 0) < ff_max_size:
@@ -770,7 +774,9 @@ class FrankenStrings(ServiceBase):
                     or len(xor_al_results) > 0 \
                     or len(encoded_al_results) > 0 \
                     or len(stacked_al_results) > 0 \
-                    or unicode_found:
+                    or unicode_found \
+                    or asciihex_found \
+                    or rtfobjdata_found:
 
                 res = (ResultSection(SCORE.LOW, "FrankenStrings Detected Strings of Interest:",
                                      body_format=TEXT_FORMAT.MEMORY_DUMP))
@@ -848,6 +854,19 @@ class FrankenStrings(ServiceBase):
                                                      parent=res))
                     unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode from "
                                              "non-executable file. See extracted files.")
+                # Store Ascii Hex Encoded Data:
+                if asciihex_found:
+                    asciihex_emb_res = (ResultSection(SCORE.NULL, "Found Ascii Hex Strings in Non-Executable:",
+                                                      body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                                      parent=res))
+                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
+
+                # Store RTF Objdata Encoded Data:
+                if rtfobjdata_found:
+                    rtfobjdata_emb_res = (ResultSection(SCORE.NULL, "Found RTF Objdata Strings in Non-Executable:",
+                                                        body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                                        parent=res))
+                    rtfobjdata_emb_res.add_line("Extracted possible RTF objdata objects. See extracted files.")
 
                 # Store Encoded String Results
                 if len(encoded_al_results) > 0:
