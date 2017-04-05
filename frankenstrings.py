@@ -273,7 +273,6 @@ class FrankenStrings(ServiceBase):
                                 bcount += 1
                             else:
                                 bcount = 1
-                            bcount += 1
                         if c == '}':
                             bcount -= 1
                         d += c
