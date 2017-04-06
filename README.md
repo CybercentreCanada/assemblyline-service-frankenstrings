@@ -2,7 +2,7 @@
 
 #### Licences
 
-FIREEYE FLARE-FLOSS: See flarefloss.LICENSE.txt 
+FIREEYE FLARE-FLOSS: See flarefloss/LICENSE.txt 
 
 BALBUZARD: BSD 2-Clause Licence, see top of balbuzard code files
 
