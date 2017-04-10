@@ -190,9 +190,8 @@ class FrankenStrings(ServiceBase):
             decoded = max(decoded_list, key=len)
 
         if len(decoded) > 0:
-            hash = hashlib.md5(decoded).hexdigest()
-            udata_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
-                                           .format(hashlib.md5(decoded).hexdigest()))
+            hash = hashlib.sha256(decoded).hexdigest()
+            udata_file_path = os.path.join(self.working_directory, "{}_unibu_decoded".format(hash[0:10]))
             request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
             with open(udata_file_path, 'wb') as unibu_file:
                 unibu_file.write(decoded)
@@ -216,22 +215,22 @@ class FrankenStrings(ServiceBase):
                     ftype = m.from_buffer(base64data)
                     for ft in self.filetypes:
                         if ft in ftype:
-                            b64_file_path = os.path.join(self.working_directory,
-                                                         "{}_b64_decoded" .format(hashlib.md5(base64data).hexdigest()))
+                            b64_file_path = os.path.join(self.working_directory,"{}_b64_decoded"
+                                                         .format(hashlib.sha256(base64data)[0:10].hexdigest()))
                             request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
                             with open(b64_file_path, 'wb') as b64_file:
                                 b64_file.write(base64data)
                                 self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
-                            results = ('%-7d %-50s %-60s %-32s' % (len(b64_string),
+                            results = ('%-7d %-50s %-60s %-64s' % (len(b64_string),
                                                                    "Omitted",
                                                                    "[Possible {0} file contents, See extracted files.]"
-                                                                   .format(ft),  hashlib.md5(base64data).hexdigest()))
+                                                                   .format(ft), hashlib.sha256(base64data).hexdigest()))
                             return results, tag
                 if all(ord(c) < 128 for c in base64data):
                     asc_b64 = self.ascii_dump(base64data)
-                    results = ('%-7d %-50s %-60s %-32s' % (len(b64_string), b64_string[0:50],
+                    results = ('%-7d %-50s %-60s %-64s' % (len(b64_string), b64_string[0:50],
                                                            asc_b64[0:60],
-                                                           hashlib.md5(base64data).hexdigest()))
+                                                           hashlib.sha256(base64data).hexdigest()))
                     tag = asc_b64
             except:
                 return results, tag
@@ -775,8 +774,8 @@ class FrankenStrings(ServiceBase):
                                              body_format=TEXT_FORMAT.MEMORY_DUMP,
                                              parent=res))
                     # Add b64 table header to results
-                    bformatstring = '%-7s %-50s %-60s %-32s'
-                    bcolumnnames = ('Size', 'BASE64', 'Decoded', 'MD5 of Decoded Data')
+                    bformatstring = '%-7s %-50s %-60s %-64s'
+                    bcolumnnames = ('Size', 'BASE64', 'Decoded', 'SHA256')
                     b64_res.add_line(bformatstring % bcolumnnames)
                     b64_res.add_line(bformatstring % tuple(['-' * len(s) for s in bcolumnnames]))
                     for bst in b64_al_results:
