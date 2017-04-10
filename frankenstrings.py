@@ -29,7 +29,6 @@ class FrankenStrings(ServiceBase):
     SERVICE_CPU_CORES = 1
     SERVICE_RAM_MB = 256
 
-    # noinspection PyUnresolvedReferences
     def import_service_deps(self):
         global pefile, bbcrack, PatternMatch
         import pefile
