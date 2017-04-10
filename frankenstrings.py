@@ -1,4 +1,5 @@
-""" FrankenStrings Service
+"""
+FrankenStrings Service
 See README.md for details about this service.
 """
 from assemblyline.al.service.base import ServiceBase
@@ -17,7 +18,6 @@ bbcrack = None
 PatternMatch = None
 
 
-# noinspection PyCallingNonCallable
 class FrankenStrings(ServiceBase):
     SERVICE_CATEGORY = 'Static Analysis'
     SERVICE_ACCEPTS = '.*'
@@ -202,7 +202,6 @@ class FrankenStrings(ServiceBase):
         return hash
 
     # Base64 Parse
-    # noinspection PyBroadException
     def b64(self, request, b64_string):
         """
         Using some selected code from 'base64dump.py' by Didier Stevens@https://DidierStevens.com
@@ -239,7 +238,6 @@ class FrankenStrings(ServiceBase):
                 return results, tag
         return results, tag
 
-    # noinspection PyBroadException
     def unhexlify_shellcode(self, request, data):
         """
         Plain ascii hex conversion.
@@ -337,7 +335,6 @@ class FrankenStrings(ServiceBase):
         return result
 
     # Executable extraction
-    # noinspection PyBroadException
     def pe_dump(self, request, temp_file, offset):
         """
         Use PEFile application to find the end of the file (biggest section length wins). Else if PEFile fails, extract
