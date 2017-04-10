@@ -456,9 +456,6 @@ class FrankenStrings(ServiceBase):
     def execute(self, request):
         """
         Main Module.
-        Some code below is extracted from main.py from FireEye Labs Flare-FLOSS code found here:
-        http://github.com/fireeye/flare-floss
-        Runs FlOSS modules on file and creates AL result
         """
         result = Result()
         request.result = result
@@ -529,13 +526,13 @@ class FrankenStrings(ServiceBase):
                 orig_submitted_file = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
                 file_data = f.read()
 
-            # FLOSS ascii string extract
+            # Flare-FLOSS ascii string extract
             astrings = set()
             for s in strings.extract_ascii_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
                     astrings.add(s.s)
 
-            # FLOSS unicode string extract
+            # Flare-FLOSS unicode string extract
             ustrings = set()
             for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
                 if len(s.s) < st_max_length:
@@ -543,7 +540,7 @@ class FrankenStrings(ServiceBase):
 
             orig_submitted_file.close()
 
-            # Examine ascii
+            # Look for IOCs in ASCII
             if len(astrings) > strs_max_size:
                 jn = True
             else:
@@ -560,7 +557,7 @@ class FrankenStrings(ServiceBase):
                             for v in val:
                                 ascii_dict.setdefault(ty, set()).add(v)
 
-            # Examine unicode
+            # Look for IOCs in unicode
             if len(ustrings) > strs_max_size:
                 jn = True
             else:
@@ -577,7 +574,7 @@ class FrankenStrings(ServiceBase):
                             for v in val:
                                 unicode_dict.setdefault(ty, set()).add(v)
 
-            # Find Base64 ASCII and files of interest
+            # Find Base64 encoded strings and files of interest
             for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', file_data):
                 b64_string = b64_tuple[0].replace('\n', '').replace('\r', '').replace(' ', '')
                 uniq_char = ''.join(set(b64_string))
@@ -620,10 +617,11 @@ class FrankenStrings(ServiceBase):
                         if uhash:
                             unicode_al_results.append('{0}_{1}' .format(uhash, hes))
 
-                # Look for hex-string matches from list and run extraction module if any found
+                # If file is smaller, run hex-string module
                 if (request.task.size or 0) < 100000:
                     asciihex_found = self.unhexlify_shellcode(request, file_data)
                 else:
+                    # Look for hex-string matches from list and run extraction module if any found
                     for shstr in self.shcode_strings:
                         if file_data.find(shstr) != -1:
                             asciihex_found = self.unhexlify_shellcode(request, file_data)
