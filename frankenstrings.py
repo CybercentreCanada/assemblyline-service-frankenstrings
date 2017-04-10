@@ -43,6 +43,11 @@ class FrankenStrings(ServiceBase):
                           'image',
                           'text',
                           ]
+        self.hexencode_strings = ['\\u',
+                                  '%u',
+                                  '\\x',
+                                  '0x'
+                                  ]
         self.shcode_strings = ['00000000000000000000000000000000',  # null bytes
                                '9090',  # nop nop
                                '31c0',  # xor eax eax
@@ -148,12 +153,13 @@ class FrankenStrings(ServiceBase):
             return newstr
 
     @classmethod
-    def decode_encoded_udata(cls, encoding, data):
+    def decode_encoded_udata(self, request, encoding, data):
         """
-        Adjusted code in base64decode.py to take in to account byte, word, dword, qword
+        Some code taken from bas64dump.py
         """
         decoded_list = []
         decoded = ''
+        hash = None
 
         qword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{16})+')
         dword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{8})+')
@@ -162,29 +168,38 @@ class FrankenStrings(ServiceBase):
 
         qbu = re.findall(qword, data)
         if len(qbu) > 0:
-            qlstr = cls.unicode_longest_string(qbu)
+            qlstr = self.unicode_longest_string(qbu)
             if len(qlstr) > 50:
-                decoded_list.append(cls.decode_bu(qlstr, size=16))
+                decoded_list.append(self.decode_bu(qlstr, size=16))
         dbu = re.findall(dword, data)
         if len(dbu) > 0:
-            dlstr = cls.unicode_longest_string(dbu)
+            dlstr = self.unicode_longest_string(dbu)
             if len(dlstr) > 50:
-                decoded_list.append(cls.decode_bu(dlstr, size=8))
+                decoded_list.append(self.decode_bu(dlstr, size=8))
         wbu = re.findall(word, data)
         if len(wbu) > 0:
-            wlstr = cls.unicode_longest_string(wbu)
+            wlstr = self.unicode_longest_string(wbu)
             if len(wlstr) > 50:
-                decoded_list.append(cls.decode_bu(wlstr, size=4))
+                decoded_list.append(self.decode_bu(wlstr, size=4))
         bbu = re.findall(by, data)
         if len(bbu) > 0:
-            blstr = cls.unicode_longest_string(bbu)
+            blstr = self.unicode_longest_string(bbu)
             if len(blstr) > 50:
-                decoded_list.append(cls.decode_bu(blstr, size=2))
+                decoded_list.append(self.decode_bu(blstr, size=2))
 
         if len(decoded_list) > 0:
             decoded = max(decoded_list, key=len)
 
-        return decoded
+        if len(decoded) > 0:
+            hash = hashlib.md5(decoded).hexdigest()
+            udata_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
+                                           .format(hashlib.md5(decoded).hexdigest()))
+            request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
+            with open(udata_file_path, 'wb') as unibu_file:
+                unibu_file.write(decoded)
+                self.log.debug("Submitted dropped file for analysis: %s" % udata_file_path)
+
+        return hash
 
     # Base64 Parse
     # noinspection PyBroadException
@@ -229,7 +244,7 @@ class FrankenStrings(ServiceBase):
         """
         Plain ascii hex conversion.
         '"""
-        result = False
+        hash = None
         try:
             matchbuf = ""
             for match in re.findall('[0-9a-fA-F]{128,}', data):
@@ -238,15 +253,15 @@ class FrankenStrings(ServiceBase):
                 if len(matchbuf) % 2 != 0:
                     matchbuf = matchbuf[:-1]
                 binstr = binascii.unhexlify(matchbuf)
+                hash = hashlib.sha256(binstr).hexdigest()
                 ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
-                                                 .format(hashlib.md5(binstr).hexdigest()))
+                                                 .format(hash[0:10]))
                 request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
                 with open(ascihex_file_path, 'wb') as fh:
                     fh.write(binstr)
-                result = True
         except:
             pass
-        return result
+        return hash
 
     def unhexlify_rtf(self, request, data):
         """
@@ -254,7 +269,7 @@ class FrankenStrings(ServiceBase):
         help from information in http://www.decalage.info/rtf_tricks. This is a backup to the oletools service.
         Will need more work.
         """
-        result = False
+        result = []
         try:
             # Get objdata
             while data.find("{\*\objdata") != -1:
@@ -309,13 +324,14 @@ class FrankenStrings(ServiceBase):
                     if len(d) % 2 != 0:
                         d = d[:-1]
                     bstr = binascii.unhexlify(d)
+                    hash = hashlib.sha256(bstr).hexdigest()
                     ascihex_path = os.path.join(self.working_directory, "{}_rtfobj_hex_decoded"
-                                                .format(hashlib.md5(bstr).hexdigest()))
+                                                .format(hash[0:10]))
                     request.add_extracted(ascihex_path, "Extracted rtf objdata ascii hex file during "
                                                         "FrankenStrings analysis.")
                     with open(ascihex_path, 'wb') as fh:
                         fh.write(bstr)
-                    result = True
+                    result.append(hash)
         except:
             pass
         return result
@@ -348,7 +364,7 @@ class FrankenStrings(ServiceBase):
             pe_extract = pedata
 
         xpe_file_path = os.path.join(self.working_directory, "{}_xorpe_decoded"
-                                     .format(hashlib.md5(pe_extract).hexdigest()))
+                                     .format(hashlib.sha256(pe_extract).hexdigest()[0:10]))
         request.add_extracted(xpe_file_path, "Extracted xor file during FrakenStrings analysis.")
         with open(xpe_file_path, 'wb') as exe_file:
             exe_file.write(pe_extract)
@@ -500,10 +516,9 @@ class FrankenStrings(ServiceBase):
             stacked_al_results = []
             unicode_dict = {}
             xor_al_results = []
-
-            unicode_found = False
+            unicode_al_results = []
             asciihex_found = False
-            rtfobjdata_found = False
+            rtf_al_results = []
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
             patterns = PatternMatch()
@@ -598,54 +613,12 @@ class FrankenStrings(ServiceBase):
 
             # Unicode/Hex Strings -- Non-executable files
             if not request.tag.startswith("executable/"):
-                # base64dump.py unicode extract
-                if re.search(r'\\u[A-Fa-f0-9]{2}', file_data) is not None:
-                    bu_uni_decoded = self.decode_encoded_udata(file_data, '\\u')
-                    if bu_uni_decoded != '':
-                        unicode_found = True
-                        unibu_file_path = os.path.join(self.working_directory, "{}_unibu_decoded"
-                                                       .format(hashlib.md5(bu_uni_decoded).hexdigest()))
-                        request.add_extracted(unibu_file_path,
-                                              "Extracted \u_unicode file during FrankenStrings analysis.")
-                        with open(unibu_file_path, 'wb') as unibu_file:
-                            unibu_file.write(bu_uni_decoded)
-                            self.log.debug("Submitted dropped file for analysis: %s" % unibu_file_path)
-
-                if re.search(r'%u[A-Fa-f0-9]{2}', file_data) is not None:
-                    pu_uni_decoded = self.decode_encoded_udata(file_data, '%u')
-                    if pu_uni_decoded != '':
-                        unicode_found = True
-                        unipu_file_path = os.path.join(self.working_directory, "{}_unipu_decoded"
-                                                       .format(hashlib.md5(pu_uni_decoded).hexdigest()))
-                        request.add_extracted(unipu_file_path,
-                                              "Extracted %u_unicode file during FrankenStrings analysis.")
-                        with open(unipu_file_path, 'wb') as unipu_file:
-                            unipu_file.write(pu_uni_decoded)
-                            self.log.debug("Submitted dropped file for analysis: %s" % unipu_file_path)
-
-                if re.search(r'0x[A-Fa-f0-9]{2}', file_data) is not None:
-                    x_uni_decoded = self.decode_encoded_udata(file_data, '0x')
-                    if x_uni_decoded != '':
-                        unicode_found = True
-                        unix_file_path = os.path.join(self.working_directory,
-                                                      "{}_uni0x_decoded".format(hashlib.md5(x_uni_decoded).hexdigest()))
-                        request.add_extracted(unix_file_path,
-                                              "Extracted 0x_unicode file during FrankenStrings analysis.")
-                        with open(unix_file_path, 'wb') as unix_file:
-                            unix_file.write(x_uni_decoded)
-                            self.log.debug("Submitted dropped file for analysis: %s" % unix_file_path)
-
-                if re.search(r'\\x[A-Fa-f0-9]{2}', file_data) is not None:
-                    fx_uni_decoded = self.decode_encoded_udata(file_data, '\\x')
-                    if fx_uni_decoded != '':
-                        unicode_found = True
-                        unifx_file_path = os.path.join(self.working_directory, "{}_uni2fx_decoded"
-                                                       .format(hashlib.md5(fx_uni_decoded).hexdigest()))
-                        request.add_extracted(unifx_file_path,
-                                              "Extracted /x_unicode file during FrankenStrings analysis.")
-                        with open(unifx_file_path, 'wb') as unifx_file:
-                            unifx_file.write(fx_uni_decoded)
-                            self.log.debug("Submitted dropped file for analysis: %s" % unifx_file_path)
+                for hes in self.hexencode_strings:
+                    hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
+                    if re.search(hes_regex, file_data) is not None:
+                        uhash = self.decode_encoded_udata(request, file_data, hes)
+                        if uhash:
+                            unicode_al_results.append('{0}_{1}' .format(uhash, hes))
 
                 # Look for hex-string matches from list and run extraction module if any found
                 if (request.task.size or 0) < 100000:
@@ -658,7 +631,7 @@ class FrankenStrings(ServiceBase):
 
                 # RTF object data hex
                 if file_data.find("{\*\objdata") != -1:
-                    rtfobjdata_found = self.unhexlify_rtf(request, file_data)
+                    rtf_al_results = self.unhexlify_rtf(request, file_data)
 
             # Encoded/Stacked strings -- Windows executable file types
             if (request.task.size or 0) < ff_max_size:
@@ -774,9 +747,9 @@ class FrankenStrings(ServiceBase):
                     or len(xor_al_results) > 0 \
                     or len(encoded_al_results) > 0 \
                     or len(stacked_al_results) > 0 \
-                    or unicode_found \
+                    or len(unicode_al_results) > 0 \
                     or asciihex_found \
-                    or rtfobjdata_found:
+                    or len (rtf_al_results) > 0:
 
                 res = (ResultSection(SCORE.LOW, "FrankenStrings Detected Strings of Interest:",
                                      body_format=TEXT_FORMAT.MEMORY_DUMP))
@@ -848,25 +821,31 @@ class FrankenStrings(ServiceBase):
                         res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
 
                 # Store Unicode Encoded Data:
-                if unicode_found:
-                    unicode_emb_res = (ResultSection(SCORE.NULL, "Found Unicode Embedded Strings in Non-Executable:",
+                if len(unicode_al_results) > 0:
+                    unicode_emb_res = (ResultSection(SCORE.NULL, "Found Unicode-Like Strings in Non-Executable:",
                                                      body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                      parent=res))
-                    unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode from "
-                                             "non-executable file. See extracted files.")
+                    for ures in unicode_al_results:
+                        uhas = ures.split('_')[0]
+                        uenc = ures.split('_')[1]
+                        unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode with {0} "
+                                                 "encoding. SHA256: {1} See extracted files." .format(uenc, uhas))
                 # Store Ascii Hex Encoded Data:
                 if asciihex_found:
                     asciihex_emb_res = (ResultSection(SCORE.NULL, "Found Ascii Hex Strings in Non-Executable:",
                                                       body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                       parent=res))
-                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
+                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). SHA256: {} See extracted files."
+                                              .format(asciihex_found))
 
                 # Store RTF Objdata Encoded Data:
-                if rtfobjdata_found:
+                if len(rtf_al_results) > 0:
                     rtfobjdata_emb_res = (ResultSection(SCORE.NULL, "Found RTF Objdata Strings in Non-Executable:",
                                                         body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                         parent=res))
-                    rtfobjdata_emb_res.add_line("Extracted possible RTF objdata objects. See extracted files.")
+                    for rres in rtf_al_results:
+                        rtfobjdata_emb_res.add_line("Extracted possible RTF objdata objects. SHA256: {0} "
+                                                    "See extracted files." .format(rres))
 
                 # Store Encoded String Results
                 if len(encoded_al_results) > 0:
