@@ -293,7 +293,7 @@ class FrankenStrings(ServiceBase):
                         data = data[1:]
 
                 # Transform the data to remove any potential obfuscation:
-                # 1. Attempt to find (what appears to be a common) OLESAVETOSTREAM serial string and remove all
+                # 1. Attempt to find OLESAVETOSTREAM serial string (01050000 02000000 = "OLE 1.0 object")and remove all
                 # characters up to doc header if found. This section will need to be improved later.
                 olesavetostream = re.compile(r"^[{]\\\*\\objdata.{0,2000}"
                                              r"0[\s]*1[\s]*0[\s]*5[\s]*0[\s]*0[\s]*0[\s]*0[\s]*"
