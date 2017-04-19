@@ -826,7 +826,7 @@ class FrankenStrings(ServiceBase):
                         uhas = ures.split('_')[0]
                         uenc = ures.split('_')[1]
                         unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode with {0} "
-                                                 "encoding. SHA256: {1} See extracted files." .format(uenc, uhas))
+                                                 "encoding. SHA256: {1}. See extracted files." .format(uenc, uhas))
                 # Store Ascii Hex Encoded Data:
                 if asciihex_found:
                     asciihex_emb_res = (ResultSection(SCORE.NULL, "Found Ascii Hex Strings in Non-Executable:",
