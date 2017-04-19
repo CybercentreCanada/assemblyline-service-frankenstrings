@@ -42,7 +42,7 @@ class FrankenStrings(ServiceBase):
                           'image',
                           'text',
                           ]
-        self.hexencode_strings = ['\\u',
+        self.hexencode_strings = ['\u',
                                   '%u',
                                   '\\x',
                                   '0x'
@@ -151,14 +151,13 @@ class FrankenStrings(ServiceBase):
         else:
             return newstr
 
-    @classmethod
     def decode_encoded_udata(self, request, encoding, data):
         """
-        Some code taken from bas64dump.py
+        Some code taken from bas64dump.py. Adjusted for different hex lengths.
         """
         decoded_list = []
         decoded = ''
-        hash = None
+        sha256hash = None
 
         qword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{16})+')
         dword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{8})+')
@@ -190,47 +189,47 @@ class FrankenStrings(ServiceBase):
             decoded = max(decoded_list, key=len)
 
         if len(decoded) > 0:
-            hash = hashlib.sha256(decoded).hexdigest()
-            udata_file_path = os.path.join(self.working_directory, "{}_unibu_decoded".format(hash[0:10]))
+            sha256hash = hashlib.sha256(decoded).hexdigest()
+            udata_file_path = os.path.join(self.working_directory, "{}_enchex_decoded" .format(sha256hash[0:10]))
             request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
             with open(udata_file_path, 'wb') as unibu_file:
                 unibu_file.write(decoded)
                 self.log.debug("Submitted dropped file for analysis: %s" % udata_file_path)
 
-        return hash
+        return sha256hash
 
     # Base64 Parse
     def b64(self, request, b64_string):
         """
         Using some selected code from 'base64dump.py' by Didier Stevens@https://DidierStevens.com
         """
-        results = 0
-        tag = 0
+        results = {}
+        tag = ''
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
             try:
                 base64data = binascii.a2b_base64(b64_string)
+                sha256hash = hashlib.sha256(base64data).hexdigest()
                 # Search for embedded files of interest
-                if 1500 < len(base64data) < 8000000:
+                if 1000 < len(base64data) < 8000000:
                     m = magic.Magic(mime=True)
                     ftype = m.from_buffer(base64data)
                     for ft in self.filetypes:
                         if ft in ftype:
-                            b64_file_path = os.path.join(self.working_directory,"{}_b64_decoded"
-                                                         .format(hashlib.sha256(base64data)[0:10].hexdigest()))
+                            b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
+                                                         .format(sha256hash[0:10]))
                             request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
                             with open(b64_file_path, 'wb') as b64_file:
                                 b64_file.write(base64data)
                                 self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
-                            results = ('%-7d %-50s %-60s %-64s' % (len(b64_string),
-                                                                   "Omitted",
-                                                                   "[Possible {0} file contents, See extracted files.]"
-                                                                   .format(ft), hashlib.sha256(base64data).hexdigest()))
+
+                            results[sha256hash] = [len(b64_string), b64_string[0:50],
+                                                   "[Possible file contents. See extracted files.]", ]
+
                             return results, tag
                 if all(ord(c) < 128 for c in base64data):
                     asc_b64 = self.ascii_dump(base64data)
-                    results = ('%-7d %-50s %-60s %-64s' % (len(b64_string), b64_string[0:50],
-                                                           asc_b64[0:60],
-                                                           hashlib.sha256(base64data).hexdigest()))
+                    results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64]
+
                     tag = asc_b64
             except:
                 return results, tag
@@ -240,7 +239,7 @@ class FrankenStrings(ServiceBase):
         """
         Plain ascii hex conversion.
         '"""
-        hash = None
+        sha256hash = None
         try:
             matchbuf = ""
             for match in re.findall('[0-9a-fA-F]{128,}', data):
@@ -249,15 +248,15 @@ class FrankenStrings(ServiceBase):
                 if len(matchbuf) % 2 != 0:
                     matchbuf = matchbuf[:-1]
                 binstr = binascii.unhexlify(matchbuf)
-                hash = hashlib.sha256(binstr).hexdigest()
+                sha256hash = hashlib.sha256(binstr).hexdigest()
                 ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
-                                                 .format(hash[0:10]))
+                                                 .format(sha256hash[0:10]))
                 request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
                 with open(ascihex_file_path, 'wb') as fh:
                     fh.write(binstr)
         except:
             pass
-        return hash
+        return sha256hash
 
     def unhexlify_rtf(self, request, data):
         """
@@ -268,9 +267,9 @@ class FrankenStrings(ServiceBase):
         result = []
         try:
             # Get objdata
-            while data.find("{\*\objdata") != -1:
+            while data.find("\\objdata") != -1:
 
-                obj = data.find("{\*\objdata")
+                obj = data.find("\\objdata")
                 data = data[obj:]
 
                 d = ""
@@ -295,7 +294,7 @@ class FrankenStrings(ServiceBase):
                 # Transform the data to remove any potential obfuscation:
                 # 1. Attempt to find OLESAVETOSTREAM serial string (01050000 02000000 = "OLE 1.0 object")and remove all
                 # characters up to doc header if found. This section will need to be improved later.
-                olesavetostream = re.compile(r"^[{]\\\*\\objdata.{0,2000}"
+                olesavetostream = re.compile(r"^\\objdata.{0,2000}"
                                              r"0[\s]*1[\s]*0[\s]*5[\s]*0[\s]*0[\s]*0[\s]*0[\s]*"
                                              r"0[\s]*2[\s]*0[\s]*0[\s]*0[\s]*0",
                                              re.DOTALL)
@@ -320,14 +319,14 @@ class FrankenStrings(ServiceBase):
                     if len(d) % 2 != 0:
                         d = d[:-1]
                     bstr = binascii.unhexlify(d)
-                    hash = hashlib.sha256(bstr).hexdigest()
+                    sha256hash = hashlib.sha256(bstr).hexdigest()
                     ascihex_path = os.path.join(self.working_directory, "{}_rtfobj_hex_decoded"
-                                                .format(hash[0:10]))
+                                                .format(sha256hash[0:10]))
                     request.add_extracted(ascihex_path, "Extracted rtf objdata ascii hex file during "
                                                         "FrankenStrings analysis.")
                     with open(ascihex_path, 'wb') as fh:
                         fh.write(bstr)
-                    result.append(hash)
+                    result.append(sha256hash)
         except:
             pass
         return result
@@ -575,9 +574,9 @@ class FrankenStrings(ServiceBase):
                 uniq_char = ''.join(set(b64_string))
                 if len(uniq_char) > 6:
                     b64result, b64tag = self.b64(request, b64_string)
-                    if b64result != 0:
+                    if len(b64result) > 0:
                         b64_al_results.append(b64result)
-                    if b64tag != 0:
+                    if b64tag != '':
                         b64_al_tags.add(b64tag)
 
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
@@ -608,7 +607,7 @@ class FrankenStrings(ServiceBase):
                 for hes in self.hexencode_strings:
                     hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
                     if re.search(hes_regex, file_data) is not None:
-                        uhash = self.decode_encoded_udata(request, file_data, hes)
+                        uhash = self.decode_encoded_udata(request, hes, file_data)
                         if uhash:
                             unicode_al_results.append('{0}_{1}' .format(uhash, hes))
 
@@ -623,7 +622,7 @@ class FrankenStrings(ServiceBase):
                             break
 
                 # RTF object data hex
-                if file_data.find("{\*\objdata") != -1:
+                if file_data.find("\\objdata") != -1:
                     rtf_al_results = self.unhexlify_rtf(request, file_data)
 
             # Encoded/Stacked strings -- Windows executable file types
@@ -742,7 +741,7 @@ class FrankenStrings(ServiceBase):
                     or len(stacked_al_results) > 0 \
                     or len(unicode_al_results) > 0 \
                     or asciihex_found \
-                    or len (rtf_al_results) > 0:
+                    or len(rtf_al_results) > 0:
 
                 res = (ResultSection(SCORE.LOW, "FrankenStrings Detected Strings of Interest:",
                                      body_format=TEXT_FORMAT.MEMORY_DUMP))
@@ -770,16 +769,21 @@ class FrankenStrings(ServiceBase):
 
                 # Store B64 Results
                 if len(b64_al_results) > 0:
-                    b64_res = (ResultSection(SCORE.NULL, "Base64 Strings:",
-                                             body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                             parent=res))
-                    # Add b64 table header to results
-                    bformatstring = '%-7s %-50s %-60s %-64s'
-                    bcolumnnames = ('Size', 'BASE64', 'Decoded', 'SHA256')
-                    b64_res.add_line(bformatstring % bcolumnnames)
-                    b64_res.add_line(bformatstring % tuple(['-' * len(s) for s in bcolumnnames]))
-                    for bst in b64_al_results:
-                        b64_res.add_line(bst)
+                    b64_res = (ResultSection(SCORE.NULL, "Base64 Strings:", parent=res))
+                    b64index = 0
+                    for b64dict in b64_al_results:
+                        for b64k, b64l in b64dict.iteritems():
+                            b64index += 1
+                            sub_b64_res = (ResultSection(SCORE.NULL, "Result {}" .format(b64index),
+                                                         body_format=TEXT_FORMAT.MEMORY_DUMP, parent=b64_res))
+                            b64_in_res = (ResultSection(SCORE.NULL, "INFO:",
+                                                        body_format=TEXT_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
+                            b64_in_res.add_line('BASE64 TEXT SIZE: {}' .format(b64l[0]))
+                            b64_in_res.add_line('BASE64 SAMPLE TEXT: {}[........]' .format(b64l[1]))
+                            b64_in_res.add_line('DECODED SHA256: {}'.format(b64k))
+                            b64_da_res = (ResultSection(SCORE.NULL, "DECODED ASCII DUMP:",
+                                                        body_format=TEXT_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
+                            b64_da_res.add_line('{}' .format(b64l[2]))
 
                     for btt in b64_al_tags:
                         st_value = patterns.ioc_match(btt, bogon_ip=True)
@@ -828,7 +832,7 @@ class FrankenStrings(ServiceBase):
                     asciihex_emb_res = (ResultSection(SCORE.NULL, "Found Ascii Hex Strings in Non-Executable:",
                                                       body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                       parent=res))
-                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). SHA256: {} See extracted files."
+                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). SHA256: {}. See extracted files."
                                               .format(asciihex_found))
 
                 # Store RTF Objdata Encoded Data:
@@ -837,7 +841,7 @@ class FrankenStrings(ServiceBase):
                                                         body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                         parent=res))
                     for rres in rtf_al_results:
-                        rtfobjdata_emb_res.add_line("Extracted possible RTF objdata objects. SHA256: {0} "
+                        rtfobjdata_emb_res.add_line("Extracted possible RTF objdata objects. SHA256: {}. "
                                                     "See extracted files." .format(rres))
 
                 # Store Encoded String Results
