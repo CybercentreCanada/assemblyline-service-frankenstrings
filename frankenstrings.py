@@ -10,8 +10,9 @@ import hashlib
 import magic
 import mmap
 import os
-import string
 import re
+import string
+import unicodedata
 
 pefile = None
 bbcrack = None
@@ -47,27 +48,6 @@ class FrankenStrings(ServiceBase):
                                   '\\x',
                                   '0x'
                                   ]
-        self.shcode_strings = ['00000000000000000000000000000000',  # null bytes
-                               '9090',  # nop nop
-                               '31c0',  # xor eax eax
-                               '31C0',
-                               '33c0',
-                               '33C0',
-                               '31db',  # xor ebx ebx
-                               '31DB',
-                               '33db',
-                               '33DB',
-                               '31d2',  # xor edx edx
-                               '31D2',
-                               '33d2',
-                               '33D2',
-                               '31c9',  # xor ecx ecx
-                               '31C9',
-                               '33c9',
-                               '33C9',
-                               '64a130000000',  # mov eax, fs:0x30
-                               '64A130000000',
-                               ]
 
     def start(self):
         self.log.debug("FrankenStrings service started")
@@ -239,24 +219,47 @@ class FrankenStrings(ServiceBase):
         """
         Plain ascii hex conversion.
         '"""
-        sha256hash = None
+        filefound = False
+        tags = {}
+        if len(data) % 2 != 0:
+            data = data[:-1]
         try:
-            matchbuf = ""
-            for match in re.findall('[0-9a-fA-F]{128,}', data):
-                matchbuf += match
-            if len(matchbuf) > 0:
-                if len(matchbuf) % 2 != 0:
-                    matchbuf = matchbuf[:-1]
-                binstr = binascii.unhexlify(matchbuf)
-                sha256hash = hashlib.sha256(binstr).hexdigest()
-                ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
+            binstr = binascii.unhexlify(data)
+        except Exception as e:
+            err = e
+            return filefound, tags
+        # If data is greater than 1000 bytes create extracted file
+        lens = len(binstr)
+        if len(binstr) > 500:
+            filefound = True
+            sha256hash = hashlib.sha256(binstr).hexdigest()
+            ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
                                                  .format(sha256hash[0:10]))
-                request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
-                with open(ascihex_file_path, 'wb') as fh:
+            request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
+            with open(ascihex_file_path, 'wb') as fh:
                     fh.write(binstr)
-        except:
-            pass
-        return sha256hash
+            return filefound, tags
+        patterns = PatternMatch()
+        st_value = patterns.ioc_match(binstr, bogon_ip=True)
+        if len(st_value) > 0:
+            for ty, val in st_value.iteritems():
+                if val == "":
+                    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                    tags.setdefault(ty, set()).add(asc_asc)
+                else:
+                    for v in val:
+                        tags.setdefault(ty, set()).add(v)
+            return filefound, tags
+        else:
+            xresult = bbcrack(binstr, level='small_string')
+            if len(xresult) > 0:
+                for transform, regex, match in xresult:
+                    if regex.startswith('EXE_'):
+                        tags.setdefault('BB_PESTUDIO_BLACKLIST_STRING', set()).add(match)
+                    else:
+                        tags.setdefault('BB_{}'.format(regex), set()).add({binstr: [match, transform]})
+
+        return filefound, tags
 
     def unhexlify_rtf(self, request, data):
         """
@@ -453,6 +456,7 @@ class FrankenStrings(ServiceBase):
         """
         result = Result()
         request.result = result
+        patterns = PatternMatch()
 
         # Filters for submission modes. Change at will! (Listed in order of use)
         if request.deep_scan:
@@ -497,7 +501,6 @@ class FrankenStrings(ServiceBase):
             from fuzzywuzzy import process
             from tabulate import tabulate
             import viv_utils
-            import unicodedata
 
             ascii_dict = {}
             b64_al_results = []
@@ -508,11 +511,12 @@ class FrankenStrings(ServiceBase):
             unicode_dict = {}
             xor_al_results = []
             unicode_al_results = []
-            asciihex_found = False
+            asciihex_file_found = False
+            asciihex_dict = {}
+            asciihex_bb_dict = {}
             rtf_al_results = []
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
-            patterns = PatternMatch()
             # Static strings -- all file types
 
             alfile = request.download()
@@ -612,14 +616,17 @@ class FrankenStrings(ServiceBase):
                             unicode_al_results.append('{0}_{1}' .format(uhash, hes))
 
                 # If file is smaller, run hex-string module
-                if (request.task.size or 0) < 100000:
-                    asciihex_found = self.unhexlify_shellcode(request, file_data)
-                else:
-                    # Look for hex-string matches from list and run extraction module if any found
-                    for shstr in self.shcode_strings:
-                        if file_data.find(shstr) != -1:
-                            asciihex_found = self.unhexlify_shellcode(request, file_data)
-                            break
+                for hex_tuple in re.findall('(([0-9a-fA-F]{2}[ ]?){50,})', file_data):
+                    hex_string = hex_tuple[0].replace(" ", "")
+                    asciihex_file_found, asciihex_results = self.unhexlify_shellcode(request, hex_string)
+                    if asciihex_results != "":
+                        for ask, asi in asciihex_results.iteritems():
+                            if ask.startswith('BB_'):
+                                newask = ask.split('_', 1)[1]
+                                asciihex_bb_dict.setdefault(newask, set()).add(asi)
+                            else:
+                                asciihex_dict.setdefault(ask, set()).add(asi)
+
 
                 # RTF object data hex
                 if file_data.find("\\objdata") != -1:
@@ -740,7 +747,7 @@ class FrankenStrings(ServiceBase):
                     or len(encoded_al_results) > 0 \
                     or len(stacked_al_results) > 0 \
                     or len(unicode_al_results) > 0 \
-                    or asciihex_found \
+                    or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict) \
                     or len(rtf_al_results) > 0:
 
                 res = (ResultSection(SCORE.LOW, "FrankenStrings Detected Strings of Interest:",
@@ -828,12 +835,40 @@ class FrankenStrings(ServiceBase):
                         unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode with {0} "
                                                  "encoding. SHA256: {1}. See extracted files." .format(uenc, uhas))
                 # Store Ascii Hex Encoded Data:
-                if asciihex_found:
-                    asciihex_emb_res = (ResultSection(SCORE.NULL, "Found Ascii Hex Strings in Non-Executable:",
+                if asciihex_file_found:
+
+                    asciihex_emb_res = (ResultSection(SCORE.NULL, "Found Large Ascii Hex Strings in Non-Executable:",
                                                       body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                       parent=res))
-                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). SHA256: {}. See extracted files."
-                                              .format(asciihex_found))
+                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
+
+                if len(asciihex_dict) > 0:
+                    asciihex_res = (ResultSection(SCORE.NULL, "ASCII HEX DECODED IOC Strings:",
+                                                  body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                                  parent=res))
+                    for k, l in sorted(asciihex_dict.iteritems()):
+                        for i in sorted(l):
+                            asciihex_res.add_line("Found %s decoded HEX string: %s" % (k.replace("_", " "), i))
+                            res.add_tag(TAG_TYPE[k], i, TAG_WEIGHT.LOW)
+
+                if len(asciihex_bb_dict) > 0:
+                    asciihex_res = (ResultSection(SCORE.NULL, "ASCII HEX AND XOR DECODED IOC Strings:",
+                                                  body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                                  parent=res))
+                    xindex = 0
+                    for k, l in sorted(asciihex_dict.iteritems()):
+                        for d, i in l.iteritems():
+                            xindex +=1
+                            asx_res = (ResultSection(SCORE.NULL, "Result {}" .format(xindex),
+                                                     body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                                     parent=asciihex_res))
+                            asx_res.add_line("Found %s decoded HEX string, masked with transform %s:"
+                                             % (k.replace("_", " "), i[1]))
+                            asx_res.add_line("Decoded XOR string:")
+                            asx_res.add_line(i[0])
+                            asx_res.add_line("Original ASCII HEX String:")
+                            asx_res.add_line(d)
+                            res.add_tag(TAG_TYPE[k], i[0], TAG_WEIGHT.LOW)
 
                 # Store RTF Objdata Encoded Data:
                 if len(rtf_al_results) > 0:

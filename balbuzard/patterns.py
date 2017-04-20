@@ -39,7 +39,7 @@ from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Pattern, Patter
 from xml.etree import ElementTree
 from fuzzywuzzy import process
 
-class PatternMatch:
+class PatternMatch(object):
 
     def __init__(self):
         # Curated list to avoid false positives.
@@ -569,10 +569,11 @@ class PatternMatch:
         bbcrack_patterns = [
             Pattern_re("EXE_HEAD", self.pat_exeheader, weight=100),
             Pattern_re("EXE_DOS", self.pat_exedos, weight=100),
+            Pattern_re("NET_FULL_URI", self.pat_url, weight=100),
         ]
 
-        # Add PEStudio's API String list, weight will default to 1
-        if level == 2:
+        if level != 1:
+            # Add PEStudio's API String list, weight will default to 1:
             for k, i in self.pest_api.iteritems():
                 if k == "topapi" or k == "lib":
                     for e in i:

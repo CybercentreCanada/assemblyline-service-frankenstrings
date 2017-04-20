@@ -742,7 +742,7 @@ def read_file(filename):
     return raw_data
 
 
-def bbcrack(file_data, level):
+def bbcrack(file_data, level=1):
 
     raw_data = file_data
     if level == 1:
@@ -752,10 +752,27 @@ def bbcrack(file_data, level):
     else:
         transform_classes = transform_classes_all
 
+    results = []
     bbc = PatternMatch()
     bbcrack_patterns = bbc.bbcr(level=level)
 
-    results = []
+    if level == 'small_string':
+
+        bbz = Balbuzard(bbcrack_patterns)
+        for Transform_class in transform_classes:
+            for params in Transform_class.iter_params():
+                transform = Transform_class(params)
+                data = transform.transform_string(raw_data)
+                for pattern, matches in bbz.scan(data):
+                    for index, match in matches:
+                        regex = pattern.name
+                        smatch = match
+                        if transform.shortname == "xor20":
+                            # for basic alpha characters, will essentially convert lower and uppercase.
+                            continue
+                        results.append((transform.shortname, regex, smatch))
+
+        return results
 
     # Run bbcrack patterns against transforms
 
