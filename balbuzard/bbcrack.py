@@ -688,6 +688,25 @@ class Transform_ADD_XOR (Transform_char):
             for xor_key in xrange(1,256):
                 yield (add_key, xor_key)
 
+#--- CUSTOM XOR BRUTE FORCE ---------------------------------------------------
+
+def xor_simple(a, b):
+    out = ""
+    for i, c in enumerate(a):
+        out += chr(ord(c) ^ ord(b[i % len(b)]))
+    return out
+
+def deobfuscate_simple(d, r, m):
+    "Take mask and will create a key to unmask suspected data, then check if the xor'd data matches a regex pattern"
+    import re
+    max_mask = m.lower()
+    for i in xrange(1, len(max_mask)+1):
+        t_mask = max_mask[:i]
+        r_mask = xor_simple(d[:i], t_mask)
+        de_enc = xor_simple(d, r_mask)
+        if re.match(r, de_enc):
+            return de_enc, r_mask
+    return None, None
 
 #--- TRANSFORM GROUPS ---------------------------------------------------------
 
@@ -745,7 +764,7 @@ def read_file(filename):
 def bbcrack(file_data, level=1):
 
     raw_data = file_data
-    if level == 1:
+    if level == 1 or level == 'small_string':
         transform_classes = transform_classes1
     elif level == 2:
         transform_classes = transform_classes1 + transform_classes2
@@ -759,20 +778,27 @@ def bbcrack(file_data, level=1):
     if level == 'small_string':
 
         bbz = Balbuzard(bbcrack_patterns)
+
+        # Round 1
         for Transform_class in transform_classes:
             for params in Transform_class.iter_params():
                 transform = Transform_class(params)
                 data = transform.transform_string(raw_data)
                 for pattern, matches in bbz.scan(data):
                     for index, match in matches:
-                        regex = pattern.name
+                        regex = pattern.name.split("_", 1)[1]
                         smatch = match
                         if transform.shortname == "xor20":
                             # for basic alpha characters, will essentially convert lower and uppercase.
                             continue
                         results.append((transform.shortname, regex, smatch))
+                        return results
 
-        return results
+        for pattern in bbz.list_patterns():
+            pmask = pattern.name.split("_", 1)[0]
+            sxor, smask = deobfuscate_simple(raw_data, pattern.pat, pmask)
+            if sxor:
+                results.append((smask, pattern.name.split("_", 1)[1], sxor))
 
     # Run bbcrack patterns against transforms
 

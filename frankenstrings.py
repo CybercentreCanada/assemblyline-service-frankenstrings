@@ -215,7 +215,7 @@ class FrankenStrings(ServiceBase):
                 return results, tag
         return results, tag
 
-    def unhexlify_shellcode(self, request, data):
+    def unhexlify_ascii(self, request, data):
         """
         Plain ascii hex conversion.
         '"""
@@ -226,10 +226,8 @@ class FrankenStrings(ServiceBase):
         try:
             binstr = binascii.unhexlify(data)
         except Exception as e:
-            err = e
             return filefound, tags
         # If data is greater than 1000 bytes create extracted file
-        lens = len(binstr)
         if len(binstr) > 500:
             filefound = True
             sha256hash = hashlib.sha256(binstr).hexdigest()
@@ -243,22 +241,24 @@ class FrankenStrings(ServiceBase):
         st_value = patterns.ioc_match(binstr, bogon_ip=True)
         if len(st_value) > 0:
             for ty, val in st_value.iteritems():
+                if ty not in tags:
+                    tags[ty] = []
                 if val == "":
                     asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                    tags.setdefault(ty, set()).add(asc_asc)
+                    tags[ty].append(asc_asc)
                 else:
                     for v in val:
-                        tags.setdefault(ty, set()).add(v)
+                        tags[ty].append(v)
             return filefound, tags
-        else:
+        if 20 < len(binstr) <= 128:
             xresult = bbcrack(binstr, level='small_string')
             if len(xresult) > 0:
                 for transform, regex, match in xresult:
                     if regex.startswith('EXE_'):
-                        tags.setdefault('BB_PESTUDIO_BLACKLIST_STRING', set()).add(match)
+                        tags['BB_PESTUDIO_BLACKLIST_STRING'] = {data: [match, transform]}
                     else:
-                        tags.setdefault('BB_{}'.format(regex), set()).add({binstr: [match, transform]})
-
+                        tags["BB_{}" .format(regex)] = {data: [match, transform]}
+                    return filefound, tags
         return filefound, tags
 
     def unhexlify_rtf(self, request, data):
@@ -485,8 +485,7 @@ class FrankenStrings(ServiceBase):
             max_size = 3000000
             st_min_length = 7
             st_max_length = 500
-            # Default 0, meaning by default only network IOC patterns are matched:
-            strs_max_size = 0
+            strs_max_size = 200
             bb_max_size = 500000
             ff_max_size = 200000
             ff_enc_min_length = 6
@@ -616,17 +615,20 @@ class FrankenStrings(ServiceBase):
                             unicode_al_results.append('{0}_{1}' .format(uhash, hes))
 
                 # If file is smaller, run hex-string module
-                for hex_tuple in re.findall('(([0-9a-fA-F]{2}[ ]?){50,})', file_data):
-                    hex_string = hex_tuple[0].replace(" ", "")
-                    asciihex_file_found, asciihex_results = self.unhexlify_shellcode(request, hex_string)
+                for hex_tuple in re.findall('(([0-9a-fA-F]{2}){10,})', file_data):
+                    hex_string = hex_tuple[0]
+                    asciihex_file_found, asciihex_results = self.unhexlify_ascii(request, hex_string)
                     if asciihex_results != "":
                         for ask, asi in asciihex_results.iteritems():
                             if ask.startswith('BB_'):
-                                newask = ask.split('_', 1)[1]
-                                asciihex_bb_dict.setdefault(newask, set()).add(asi)
+                                ask = ask.split('_', 1)[1]
+                                if ask not in asciihex_bb_dict:
+                                    asciihex_bb_dict[ask] = []
+                                asciihex_bb_dict[ask].append(asi)
                             else:
-                                asciihex_dict.setdefault(ask, set()).add(asi)
-
+                                if ask not in asciihex_dict:
+                                    asciihex_dict[ask] = []
+                                asciihex_dict[ask].append(asi)
 
                 # RTF object data hex
                 if file_data.find("\\objdata") != -1:
@@ -781,16 +783,13 @@ class FrankenStrings(ServiceBase):
                     for b64dict in b64_al_results:
                         for b64k, b64l in b64dict.iteritems():
                             b64index += 1
-                            sub_b64_res = (ResultSection(SCORE.NULL, "Result {}" .format(b64index),
-                                                         body_format=TEXT_FORMAT.MEMORY_DUMP, parent=b64_res))
-                            b64_in_res = (ResultSection(SCORE.NULL, "INFO:",
-                                                        body_format=TEXT_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
-                            b64_in_res.add_line('BASE64 TEXT SIZE: {}' .format(b64l[0]))
-                            b64_in_res.add_line('BASE64 SAMPLE TEXT: {}[........]' .format(b64l[1]))
-                            b64_in_res.add_line('DECODED SHA256: {}'.format(b64k))
-                            b64_da_res = (ResultSection(SCORE.NULL, "DECODED ASCII DUMP:",
-                                                        body_format=TEXT_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
-                            b64_da_res.add_line('{}' .format(b64l[2]))
+                            sub_b64_res = (ResultSection(SCORE.NULL, "Result {}" .format(b64index), parent=b64_res))
+                            sub_b64_res.add_line('BASE64 TEXT SIZE: {}' .format(b64l[0]))
+                            sub_b64_res.add_line('BASE64 SAMPLE TEXT: {}[........]' .format(b64l[1]))
+                            sub_b64_res.add_line('DECODED SHA256: {}'.format(b64k))
+                            subb_b64_res = (ResultSection(SCORE.NULL, "DECODED ASCII DUMP:",
+                                                          body_format=TEXT_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
+                            subb_b64_res.add_line('{}' .format(b64l[2]))
 
                     for btt in b64_al_tags:
                         st_value = patterns.ioc_match(btt, bogon_ip=True)
@@ -847,28 +846,27 @@ class FrankenStrings(ServiceBase):
                                                   body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                   parent=res))
                     for k, l in sorted(asciihex_dict.iteritems()):
-                        for i in sorted(l):
-                            asciihex_res.add_line("Found %s decoded HEX string: %s" % (k.replace("_", " "), i))
-                            res.add_tag(TAG_TYPE[k], i, TAG_WEIGHT.LOW)
+                        for i in l:
+                            for ii in i:
+                                asciihex_res.add_line("Found %s decoded HEX string: %s" % (k.replace("_", " "), ii))
+                                res.add_tag(TAG_TYPE[k], ii, TAG_WEIGHT.LOW)
 
                 if len(asciihex_bb_dict) > 0:
-                    asciihex_res = (ResultSection(SCORE.NULL, "ASCII HEX AND XOR DECODED IOC Strings:",
-                                                  body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                  parent=res))
+                    asciihex_res = (ResultSection(SCORE.NULL, "ASCII HEX AND XOR DECODED IOC Strings:", parent=res))
                     xindex = 0
-                    for k, l in sorted(asciihex_dict.iteritems()):
-                        for d, i in l.iteritems():
-                            xindex +=1
-                            asx_res = (ResultSection(SCORE.NULL, "Result {}" .format(xindex),
-                                                     body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                     parent=asciihex_res))
-                            asx_res.add_line("Found %s decoded HEX string, masked with transform %s:"
-                                             % (k.replace("_", " "), i[1]))
-                            asx_res.add_line("Decoded XOR string:")
-                            asx_res.add_line(i[0])
-                            asx_res.add_line("Original ASCII HEX String:")
-                            asx_res.add_line(d)
-                            res.add_tag(TAG_TYPE[k], i[0], TAG_WEIGHT.LOW)
+                    for k, l in sorted(asciihex_bb_dict.iteritems()):
+                        for i in l:
+                            for kk, ii in i.iteritems():
+                                xindex += 1
+                                asx_res = (ResultSection(SCORE.NULL, "Result {}" .format(xindex),
+                                                         parent=asciihex_res))
+                                asx_res.add_line("Found %s decoded HEX string, masked with transform %s:"
+                                                 % (k.replace("_", " "), ii[1]))
+                                asx_res.add_line("Decoded XOR string:")
+                                asx_res.add_line(ii[0])
+                                asx_res.add_line("Original ASCII HEX String:")
+                                asx_res.add_line(kk)
+                                res.add_tag(TAG_TYPE[k], ii[0], TAG_WEIGHT.LOW)
 
                 # Store RTF Objdata Encoded Data:
                 if len(rtf_al_results) > 0:
