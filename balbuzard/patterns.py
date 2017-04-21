@@ -39,7 +39,7 @@ from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Pattern, Patter
 from xml.etree import ElementTree
 from fuzzywuzzy import process
 
-class PatternMatch:
+class PatternMatch(object):
 
     def __init__(self):
         # Curated list to avoid false positives.
@@ -198,7 +198,10 @@ class PatternMatch:
                          r'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
                          r'\\userinit)' \
                          r'\\[-_A-Z0-9.\\ ]{1,200}\b'
-        self.pat_url = r'(?i)(?:http|https|ftp)://[A-Z0-9/\-\.&%\$#=~\?]{3,200}'
+        self.pat_url = r'(?i)(?:ftp|http|https)://[A-Z0-9/\-\.&%\$#=~\?]{3,200}'
+        self.pat_anyhttp = r'(?i)http://[A-Z0-9.]{5}[A-Z0-9/\-\.&%\$#=~\?]*'
+        self.pat_anyhttps = r'(?i)https://[A-Z0-9.]{5}[A-Z0-9/\-\.&%\$#=~\?]*'
+        self.pat_anyftp = r'(?i)ftp://[A-Z0-9.]{5}[A-Z0-9/\-\.&%\$#=~\?]*'
         self.pat_exedos = r'This program cannot be run in DOS mode'
         self.pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
 
@@ -566,13 +569,22 @@ class PatternMatch:
 
     def bbcr(self, level=1):
 
+        if level == 'small_string':
+            bbcrack_patterns = [
+                Pattern_re("FTP://_NET_FULL_URI", self.pat_anyftp, weight=100),
+                Pattern_re("HTTP://_NET_FULL_URI", self.pat_anyhttp, weight=100),
+                Pattern_re("HTTPS://_NET_FULL_URI", self.pat_anyhttps, weight=100),
+            ]
+            return bbcrack_patterns
+
         bbcrack_patterns = [
             Pattern_re("EXE_HEAD", self.pat_exeheader, weight=100),
             Pattern_re("EXE_DOS", self.pat_exedos, weight=100),
+            Pattern_re("NET_FULL_URI", self.pat_url, weight=100),
         ]
 
-        # Add PEStudio's API String list, weight will default to 1
         if level == 2:
+            # Add PEStudio's API String list, weight will default to 1:
             for k, i in self.pest_api.iteritems():
                 if k == "topapi" or k == "lib":
                     for e in i:

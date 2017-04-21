@@ -43,15 +43,19 @@ This service does the following:
 #### Result Output
 1. Static Strings (ASCII, UNICODE, BASE64):
     * Strings matching IOC patterns of interest [Result Text and Tag]
-    * Decoded BASE64 Files [Extracted File]
-2. Hex Strings:
-    * Raw dumps of suspected shellcode data [Extracted File]
-3. Decoded Strings:
+    * Decoded BASE64. Extract content over 1000 bytes.  [Extracted File OR Result Text and Tag]
+2. ASCII Hex Strings:
+    * Content extraction of ascii hex data successfully decoded (any RTF objdata or data over 500 bytes) 
+    [Extracted File]
+    * IOC pattern matching for any successfully decoded data [Result Text and Tag]
+    * URI pattern matching after custom brute force xor module (see bbcrack.py for added module)
+    [Result Text and Tag]
+3. FF Decoded Strings:
     * All strings [Result Text and Tag]
     * Strings matching IOC patterns of interest [Tag]
-4. Stacked Strings:
-    * All strings, group by likeness [Result Text]
+4. FF Stacked Strings:
+    * All strings, group by likeness (determined by fuzzywuzzy library) [Result Text]
     * Strings matching IOC patterns of interest [Tag]
-5. XOR Strings:
+5. BBCrack XOR Strings:
     * All strings matching IOC patterns of interest [Result Text and Tag]
     * Decoded XOR'd PE File [Extracted File]

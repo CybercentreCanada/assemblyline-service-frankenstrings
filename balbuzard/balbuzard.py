@@ -314,6 +314,12 @@ class Balbuzard (object):
 ##    def add_pattern(self, name, regex=None, string=None, weight=1):
 ##        self.patterns.append(Pattern(name, regex, string, weight))
 
+    def list_patterns(self):
+        """
+        Adding function for FrankenStrings to get regex patterns when needed
+        """
+        return self.patterns
+
     def scan (self, data):
         """
         Scans data for all patterns. This is an iterator: for each pattern
