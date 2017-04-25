@@ -199,9 +199,10 @@ class PatternMatch(object):
                          r'\\userinit)' \
                          r'\\[-_A-Z0-9.\\ ]{1,200}\b'
         self.pat_url = r'(?i)(?:ftp|http|https)://[A-Z0-9/\-\.&%\$#=~\?]{3,200}'
-        self.pat_anyhttp = r'(?i)http://[A-Z0-9.]{5}[A-Z0-9/\-\.&%\$#=~\?]*'
-        self.pat_anyhttps = r'(?i)https://[A-Z0-9.]{5}[A-Z0-9/\-\.&%\$#=~\?]*'
-        self.pat_anyftp = r'(?i)ftp://[A-Z0-9.]{5}[A-Z0-9/\-\.&%\$#=~\?]*'
+        self.pat_anyhttp = r'(?i)http://[A-Z0-9.-]{6,}\.[A-Z0-9]{2,9}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
+        self.pat_anyhttps = r'(?i)https://[A-Z0-9.-]{6,}\.[A-Z0-9]{2,9}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
+        self.pat_anyftp = r'(?i)ftp://[A-Z0-9.-]{6,}\.[A-Z0-9]{2,9}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
+
         self.pat_exedos = r'This program cannot be run in DOS mode'
         self.pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
 
