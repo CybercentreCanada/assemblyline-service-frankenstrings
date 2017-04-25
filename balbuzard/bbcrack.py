@@ -705,7 +705,7 @@ def deobfuscate_simple(d, r, m):
         r_mask = xor_simple(d[:i], t_mask)
         de_enc = xor_simple(d, r_mask)
         if re.match(r, de_enc):
-            return de_enc, r_mask
+            return de_enc.strip(), r_mask
     return None, None
 
 #--- TRANSFORM GROUPS ---------------------------------------------------------
