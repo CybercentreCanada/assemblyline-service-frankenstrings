@@ -339,7 +339,7 @@ class FrankenStrings(ServiceBase):
                         fh.write(bstr)
                     result.append(sha256hash)
         except:
-            pass
+            result = []
         return result
 
     # Executable extraction
