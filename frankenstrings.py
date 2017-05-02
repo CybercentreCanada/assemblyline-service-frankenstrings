@@ -215,7 +215,7 @@ class FrankenStrings(ServiceBase):
                 return results, tag
         return results, tag
 
-    def unhexlify_ascii(self, request, data):
+    def unhexlify_ascii(self, request, data, tag):
         """
         Plain ascii hex conversion.
         '"""
@@ -257,8 +257,8 @@ class FrankenStrings(ServiceBase):
                     for v in val:
                         tags[ty].append(v)
             return filefound, tags
-        # Else look for small XOR encoded strings
-        if 20 < len(binstr) <= 128:
+        # Else look for small XOR encoded strings in code files
+        if 20 < len(binstr) <= 128 and tag.startswith('code/'):
             xresult = bbcrack(binstr, level='small_string')
             if len(xresult) > 0:
                 for transform, regex, match in xresult:
@@ -632,7 +632,7 @@ class FrankenStrings(ServiceBase):
                 # If file is smaller, run hex-string module
                 for hex_tuple in re.findall('(([0-9a-fA-F]{2}){10,})', file_data):
                     hex_string = hex_tuple[0]
-                    asciihex_file_found, asciihex_results = self.unhexlify_ascii(request, hex_string)
+                    asciihex_file_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag)
                     if asciihex_results != "":
                         for ask, asi in asciihex_results.iteritems():
                             if ask.startswith('BB_'):
