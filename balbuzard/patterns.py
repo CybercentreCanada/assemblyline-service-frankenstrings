@@ -45,7 +45,7 @@ class PatternMatch(object):
         # Curated list to avoid false positives.
         self.tlds = {'ac', 'aco', 'ad', 'adac', 'ads','ae', 'aeg', 'aero', 'af', 'afl', 'ag', 'agakhan','ai', 'aig',
                          'akdn', 'al', 'am', 'amica', 'anz', 'ao','app', 'apple', 'aq', 'ar', 'army', 'arpa',
-                         'as', 'at', 'au', 'aw', 'aws', 'ax', 'axa', 'az', 'ba', 'baidu', 'bbc', 'bbva', 'bcg', 'bcn',
+                         'at', 'au', 'aw', 'aws', 'ax', 'axa', 'az', 'ba', 'baidu', 'bbc', 'bbva', 'bcg', 'bcn',
                          'bd', 'be', 'bf', 'bg', 'bh', 'bharti', 'bi', 'bing', 'biz', 'bj', 'blog', 'bm', 'bms', 'bn',
                          'bnl', 'bo', 'bom', 'bot', 'br', 'bs', 'bt', 'bv', 'bw', 'by', 'bz', 'bzh', 'ca', 'cba', 'cbn',
                          'cbre', 'ceb', 'cf', 'cfa', 'cfd', 'cg', 'ch', 'ci', 'ck', 'cl', 'cm', 'cn', 'co', 'com', 'cr',
@@ -531,13 +531,16 @@ class PatternMatch(object):
         # check match again tlds set
         if len(value) < 10:
             return False
+        # No more than 3 domain names
+        if value.count('.') > 3:
+            return False
         uniq_char = ''.join(set(value))
         if len(uniq_char) < 6:
             return False
         fld = value.split('.')
         tld = value.rsplit('.', 1)[1].lower()
-        # If only two domain levels and either second level < 5 char or tld <= 2 char, or top-level not in list
-        if (len(fld) <= 2 and len(fld[0]) < 5) or tld not in self.tlds:
+        # If only two domain levels and either second level < 6 char or tld <= 2 char, or top-level not in list
+        if (len(fld) <= 2 and len(fld[0]) < 6) or tld not in self.tlds:
             return False
         return True
 
