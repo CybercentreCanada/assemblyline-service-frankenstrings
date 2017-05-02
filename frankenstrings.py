@@ -495,12 +495,12 @@ class FrankenStrings(ServiceBase):
         else:
             max_size = 3000000
             st_min_length = 7
-            st_max_length = 500
+            st_max_length = 300
             strs_max_size = 200
-            bb_max_size = 500000
+            bb_max_size = 200000
             ff_max_size = 200000
-            ff_enc_min_length = 6
-            ff_stack_min_length = 6
+            ff_enc_min_length = 7
+            ff_stack_min_length = 7
 
         # Begin analysis
 
