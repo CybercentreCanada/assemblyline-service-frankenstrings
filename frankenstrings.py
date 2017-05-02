@@ -659,9 +659,8 @@ class FrankenStrings(ServiceBase):
 
                     try:
                         vw = viv_utils.getWorkspace(alfile, should_save=False)
-                    except Exception, e:
+                    except:
                         vw = False
-                        self.log.exception('VIV Utils getWorkspace failed: {0}' .format(e.message))
 
                     if vw:
                         selected_functions = set(vw.getFunctions())
