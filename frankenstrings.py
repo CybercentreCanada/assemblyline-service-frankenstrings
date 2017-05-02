@@ -340,35 +340,38 @@ class FrankenStrings(ServiceBase):
         Use PEFile application to find the end of the file (biggest section length wins). Else if PEFile fails, extract
         from offset all the way to the end of the initial file (granted, this is uglier).
         """
-        with open(temp_file, "rb") as f:
-            mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-
-        pedata = mm[offset:]
-
         try:
-            peinfo = pefile.PE(data=pedata)
-            lsize = 0
-            pefile.PE()
-            for section in peinfo.sections:
-                size = section.PointerToRawData + section.SizeOfRawData
-                if size > lsize:
-                    lsize = size
-            if lsize > 0:
-                pe_extract = pedata[0:lsize]
-            else:
+            with open(temp_file, "rb") as f:
+                mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+
+            pedata = mm[offset:]
+
+            try:
+                peinfo = pefile.PE(data=pedata)
+                lsize = 0
+                pefile.PE()
+                for section in peinfo.sections:
+                    size = section.PointerToRawData + section.SizeOfRawData
+                    if size > lsize:
+                        lsize = size
+                if lsize > 0:
+                    pe_extract = pedata[0:lsize]
+                else:
+                    pe_extract = pedata
+            except:
                 pe_extract = pedata
-        except:
-            pe_extract = pedata
 
-        xpe_file_path = os.path.join(self.working_directory, "{}_xorpe_decoded"
+            xpe_file_path = os.path.join(self.working_directory, "{}_xorpe_decoded"
                                      .format(hashlib.sha256(pe_extract).hexdigest()[0:10]))
-        request.add_extracted(xpe_file_path, "Extracted xor file during FrakenStrings analysis.")
-        with open(xpe_file_path, 'wb') as exe_file:
-            exe_file.write(pe_extract)
-            self.log.debug("Submitted dropped file for analysis: %s" % xpe_file_path)
-
-        mm.close()
-        return
+            request.add_extracted(xpe_file_path, "Extracted xor file during FrakenStrings analysis.")
+            with open(xpe_file_path, 'wb') as exe_file:
+                exe_file.write(pe_extract)
+                self.log.debug("Submitted dropped file for analysis: %s" % xpe_file_path)
+        finally:
+            try:
+                mm.close()
+            except:
+                return
 
     # Flare Floss Methods:
     @staticmethod
@@ -519,23 +522,28 @@ class FrankenStrings(ServiceBase):
             # Static strings -- all file types
 
             alfile = request.download()
-            with open(alfile, "rb") as f:
-                orig_submitted_file = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-                file_data = f.read()
+            
+            try:
+                astrings = set()
+                ustrings = set()
+                with open(alfile, "rb") as f:
+                    orig_submitted_file = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+                    file_data = f.read()
+                
+                # Flare-FLOSS ascii string extract
+                for s in strings.extract_ascii_strings(orig_submitted_file, n=st_min_length):
+                    if len(s.s) < st_max_length:
+                        astrings.add(s.s)
 
-            # Flare-FLOSS ascii string extract
-            astrings = set()
-            for s in strings.extract_ascii_strings(orig_submitted_file, n=st_min_length):
-                if len(s.s) < st_max_length:
-                    astrings.add(s.s)
-
-            # Flare-FLOSS unicode string extract
-            ustrings = set()
-            for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
-                if len(s.s) < st_max_length:
-                    ustrings.add(s.s)
-
-            orig_submitted_file.close()
+                # Flare-FLOSS unicode string extract
+                for s in strings.extract_unicode_strings(orig_submitted_file, n=st_min_length):
+                    if len(s.s) < st_max_length:
+                        ustrings.add(s.s)
+            finally:
+                try:
+                    orig_submitted_file.close()
+                except:
+                    pass
 
             # Look for IOCs in ASCII
             if len(astrings) > strs_max_size:
@@ -596,9 +604,8 @@ class FrankenStrings(ServiceBase):
                         xindex += 1
                         xtemp_file = os.path.join(self.working_directory, "EXE_HEAD_{0}_{1}_{2}.unXORD"
                                                   .format(xindex, offset, score))
-                        xdata = open(xtemp_file, 'wb')
-                        xdata.write(smatch)
-                        xdata.close()
+                        with open(xtemp_file, 'wb') as xdata:
+                            xdata.write(smatch)
                         self.pe_dump(request, xtemp_file, offset)
                         xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
                                                                          "[PE Header Detected. See Extracted files]"))
