@@ -227,8 +227,14 @@ class FrankenStrings(ServiceBase):
             binstr = binascii.unhexlify(data)
         except Exception as e:
             return filefound, tags
-        # If data is greater than 1000 bytes create extracted file
+        # If data has less than 7 uniq chars return
+        uniq_char = ''.join(set(binstr))
+        if len(uniq_char) < 7:
+            return filefound, tags
+        # If data is greater than 500 bytes create extracted file
         if len(binstr) > 500:
+            if len(uniq_char) < 20:
+                return filefound, tags
             filefound = True
             sha256hash = hashlib.sha256(binstr).hexdigest()
             ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
@@ -237,6 +243,7 @@ class FrankenStrings(ServiceBase):
             with open(ascihex_file_path, 'wb') as fh:
                     fh.write(binstr)
             return filefound, tags
+        # Else look for patterns
         patterns = PatternMatch()
         st_value = patterns.ioc_match(binstr, bogon_ip=True)
         if len(st_value) > 0:
@@ -250,6 +257,7 @@ class FrankenStrings(ServiceBase):
                     for v in val:
                         tags[ty].append(v)
             return filefound, tags
+        # Else look for small XOR encoded strings
         if 20 < len(binstr) <= 128:
             xresult = bbcrack(binstr, level='small_string')
             if len(xresult) > 0:
