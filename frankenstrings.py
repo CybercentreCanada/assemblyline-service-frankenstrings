@@ -632,7 +632,9 @@ class FrankenStrings(ServiceBase):
                 # If file is smaller, run hex-string module
                 for hex_tuple in re.findall('(([0-9a-fA-F]{2}){10,})', file_data):
                     hex_string = hex_tuple[0]
-                    asciihex_file_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag)
+                    afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag)
+                    if afile_found:
+                        asciihex_file_found = True
                     if asciihex_results != "":
                         for ask, asi in asciihex_results.iteritems():
                             if ask.startswith('BB_'):
