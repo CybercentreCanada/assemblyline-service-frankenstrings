@@ -193,23 +193,23 @@ class FrankenStrings(ServiceBase):
                 if 1000 < len(base64data) < 8000000:
                     m = magic.Magic(mime=True)
                     ftype = m.from_buffer(base64data)
-                    for ft in self.filetypes:
-                        if ft in ftype:
-                            b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
+                    if 'octet-stream' not in ftype:
+                        for ft in self.filetypes:
+                            if ft in ftype:
+                                b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
                                                          .format(sha256hash[0:10]))
-                            request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
-                            with open(b64_file_path, 'wb') as b64_file:
-                                b64_file.write(base64data)
-                                self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
+                                request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
+                                with open(b64_file_path, 'wb') as b64_file:
+                                    b64_file.write(base64data)
+                                    self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
 
-                            results[sha256hash] = [len(b64_string), b64_string[0:50],
+                                results[sha256hash] = [len(b64_string), b64_string[0:50],
                                                    "[Possible file contents. See extracted files.]", ]
 
-                            return results, tag
+                                return results, tag
                 if all(ord(c) < 128 for c in base64data):
                     asc_b64 = self.ascii_dump(base64data)
                     results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64]
-
                     tag = asc_b64
             except:
                 return results, tag
