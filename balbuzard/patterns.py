@@ -58,7 +58,7 @@ class PatternMatch(object):
                          'hk', 'hkt', 'hm', 'hn', 'host', 'hosting', 'hotmail', 'hr', 'ht', 'htc', 'hu', 'icu', 'ie',
                          'ifm', 'iinet', 'ikano', 'il', 'im', 'imamat', 'imdb', 'immo', 'immobilien', 'in','info',
                          'ing', 'ink', 'int', 'io', 'ipiranga', 'iq', 'ir', 'is', 'ist', 'istanbul', 'it', 'itau',
-                         'itv', 'iwc', 'jaguar', 'java', 'jcb','jcp', 'je', 'jlc', 'jll', 'jm', 'jmp', 'jnj', 'jo',
+                         'itv', 'iwc', 'jaguar', 'jcb','jcp', 'je', 'jlc', 'jll', 'jm', 'jmp', 'jnj', 'jo',
                          'jot', 'jp', 'ke', 'kfh', 'kg', 'kh', 'ki', 'kia', 'kindle', 'km', 'kn', 'kp', 'kpmg', 'kpn',
                          'kr', 'krd', 'kw', 'ky', 'kyoto', 'kz', 'la', 'lat', 'lb', 'lc', 'lds', 'li', 'link', 'lk',
                          'lol', 'lr', 'ls', 'lt', 'ltd', 'ltda', 'lu', 'lv', 'ly', 'ma', 'madrid', 'mba', 'mc', 'md',
