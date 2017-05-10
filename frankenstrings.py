@@ -629,7 +629,6 @@ class FrankenStrings(ServiceBase):
                         if uhash:
                             unicode_al_results.append('{0}_{1}' .format(uhash, hes))
 
-                # If file is smaller, run hex-string module
                 for hex_tuple in re.findall('(([0-9a-fA-F]{2}){30,})', file_data):
                     hex_string = hex_tuple[0]
                     afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag)
