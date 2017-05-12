@@ -392,10 +392,13 @@ class FrankenStrings(ServiceBase):
         :param s: input string
         :return: sanitized string
         """
-        sanitized_string = s.encode('unicode_escape')
-        sanitized_string = sanitized_string.replace('\\\\', '\\')  # print single backslashes
-        sanitized_string = "".join(c for c in sanitized_string if c in string.printable)
-        return sanitized_string
+        try:
+            sanitized_string = s.encode('unicode_escape')
+            sanitized_string = sanitized_string.replace('\\\\', '\\')  # print single backslashes
+            sanitized_string = "".join(c for c in sanitized_string if c in string.printable)
+            return sanitized_string
+        except:
+            return
 
     @staticmethod
     def filter_unique_decoded(decoded_strings):
@@ -404,15 +407,18 @@ class FrankenStrings(ServiceBase):
         Extracted code from FireEye Flare-Floss source code found here:
         http://github.com/fireeye/flare-floss
         """
-        unique_values = set()
-        originals = []
-        for decoded in decoded_strings:
-            hashable = (decoded.va, decoded.s, decoded.decoded_at_va, decoded.fva)
-            if hashable not in unique_values:
-                unique_values.add(hashable)
-                originals.append(decoded)
-        return originals
-
+        try:
+            unique_values = set()
+            originals = []
+            for decoded in decoded_strings:
+                hashable = (decoded.va, decoded.s, decoded.decoded_at_va, decoded.fva)
+                if hashable not in unique_values:
+                    unique_values.add(hashable)
+                    originals.append(decoded)
+            return originals
+        except:
+            return
+        
     @staticmethod
     def decode_strings(vw, function_index, decoding_functions_candidates):
         """
@@ -425,15 +431,18 @@ class FrankenStrings(ServiceBase):
         :param decoding_functions_candidates: identification manager
         :return: list of decoded strings ([DecodedString])
         """
-        from floss import string_decoder
-        decoded_strings = []
-        for fva, _ in decoding_functions_candidates:
-            for ctx in string_decoder.extract_decoding_contexts(vw, fva):
-                for delta in string_decoder.emulate_decoding_routine(vw, function_index, fva, ctx):
-                    for delta_bytes in string_decoder.extract_delta_bytes(delta, ctx.decoded_at_va, fva):
-                        for decoded_string in string_decoder.extract_strings(delta_bytes):
-                            decoded_strings.append(decoded_string)
-        return decoded_strings
+        try:
+            from floss import string_decoder
+            decoded_strings = []
+            for fva, _ in decoding_functions_candidates:
+                for ctx in string_decoder.extract_decoding_contexts(vw, fva):
+                    for delta in string_decoder.emulate_decoding_routine(vw, function_index, fva, ctx):
+                        for delta_bytes in string_decoder.extract_delta_bytes(delta, ctx.decoded_at_va, fva):
+                            for decoded_string in string_decoder.extract_strings(delta_bytes):
+                                decoded_strings.append(decoded_string)
+            return decoded_strings
+        except:
+            return
 
     @staticmethod
     def get_all_plugins():
@@ -443,21 +452,24 @@ class FrankenStrings(ServiceBase):
         http://github.com/fireeye/flare-floss
         Return all plugins to be run.
         """
-        from floss.interfaces import DecodingRoutineIdentifier
-        from floss.plugins import arithmetic_plugin, function_meta_data_plugin, library_function_plugin
-        ps = DecodingRoutineIdentifier.implementors()
-        if len(ps) == 0:
-            ps.append(function_meta_data_plugin.FunctionCrossReferencesToPlugin())
-            ps.append(function_meta_data_plugin.FunctionArgumentCountPlugin())
-            ps.append(function_meta_data_plugin.FunctionIsThunkPlugin())
-            ps.append(function_meta_data_plugin.FunctionBlockCountPlugin())
-            ps.append(function_meta_data_plugin.FunctionInstructionCountPlugin())
-            ps.append(function_meta_data_plugin.FunctionSizePlugin())
-            ps.append(function_meta_data_plugin.FunctionRecursivePlugin())
-            ps.append(library_function_plugin.FunctionIsLibraryPlugin())
-            ps.append(arithmetic_plugin.XORPlugin())
-            ps.append(arithmetic_plugin.ShiftPlugin())
-        return ps
+        try:
+            from floss.interfaces import DecodingRoutineIdentifier
+            from floss.plugins import arithmetic_plugin, function_meta_data_plugin, library_function_plugin
+            ps = DecodingRoutineIdentifier.implementors()
+            if len(ps) == 0:
+                ps.append(function_meta_data_plugin.FunctionCrossReferencesToPlugin())
+                ps.append(function_meta_data_plugin.FunctionArgumentCountPlugin())
+                ps.append(function_meta_data_plugin.FunctionIsThunkPlugin())
+                ps.append(function_meta_data_plugin.FunctionBlockCountPlugin())
+                ps.append(function_meta_data_plugin.FunctionInstructionCountPlugin())
+                ps.append(function_meta_data_plugin.FunctionSizePlugin())
+                ps.append(function_meta_data_plugin.FunctionRecursivePlugin())
+                ps.append(library_function_plugin.FunctionIsLibraryPlugin())
+                ps.append(arithmetic_plugin.XORPlugin())
+                ps.append(arithmetic_plugin.ShiftPlugin())
+            return ps
+        except:
+            return
 
 # --- Execute ----------------------------------------------------------------------------------------------------------
 
