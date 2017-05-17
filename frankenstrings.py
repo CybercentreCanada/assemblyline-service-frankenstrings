@@ -169,17 +169,20 @@ class FrankenStrings(ServiceBase):
         filtered_list = filter(lambda x: len(x[0]) > 30, decoded_list)
 
         for decoded in filtered_list:
+            uniq_char = ''.join(set(decoded[0]))
             if len(decoded[0]) >= 500:
-                sha256hash = hashlib.sha256(decoded).hexdigest()
-                shalist.append(sha256hash)
-                udata_file_path = os.path.join(self.working_directory, "{0}_enchex_{1}_decoded"
+                if len(uniq_char) > 20:
+                    sha256hash = hashlib.sha256(decoded[0]).hexdigest()
+                    shalist.append(sha256hash)
+                    udata_file_path = os.path.join(self.working_directory, "{0}_enchex_{1}_decoded"
                                                .format(sha256hash[0:10], encoding))
-                request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
-                with open(udata_file_path, 'wb') as unibu_file:
-                    unibu_file.write(decoded)
-                    self.log.debug("Submitted dropped file for analysis: %s" % udata_file_path)
+                    request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
+                    with open(udata_file_path, 'wb') as unibu_file:
+                        unibu_file.write(decoded)
+                        self.log.debug("Submitted dropped file for analysis: %s" % udata_file_path)
             else:
-                decoded_res.append((hashlib.sha256(decoded[0]).hexdigest(), len(decoded), decoded[1], decoded[0]))
+                if len(uniq_char) > 6:
+                    decoded_res.append((hashlib.sha256(decoded[0]).hexdigest(), len(decoded), decoded[1], decoded[0]))
 
         return shalist, decoded_res
 
