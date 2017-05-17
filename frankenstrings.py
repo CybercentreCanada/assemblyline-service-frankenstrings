@@ -214,8 +214,11 @@ class FrankenStrings(ServiceBase):
                                 return results, tag
                 if all(ord(c) < 128 for c in base64data):
                     asc_b64 = self.ascii_dump(base64data)
-                    results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64]
-                    tag = asc_b64
+                    # If data has less then 7 uniq chars then ignore
+                    uniq_char = ''.join(set(asc_b64))
+                    if len(uniq_char) > 6:
+                        results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64]
+                        tag = asc_b64
             except:
                 return results, tag
         return results, tag
