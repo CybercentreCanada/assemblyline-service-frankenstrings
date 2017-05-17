@@ -137,7 +137,8 @@ class FrankenStrings(ServiceBase):
         """
         decoded_list = []
         decoded = ''
-        sha256hash = None
+        shalist = []
+        decoded_res = []
 
         qword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{16})+')
         dword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{8})+')
@@ -148,35 +149,39 @@ class FrankenStrings(ServiceBase):
         if len(qbu) > 0:
             qlstr = self.unicode_longest_string(qbu)
             if len(qlstr) > 50:
-                decoded_list.append(self.decode_bu(qlstr, size=16))
+                decoded_list.append((self.decode_bu(qlstr, size=16), qlstr[:200]))
         dbu = re.findall(dword, data)
         if len(dbu) > 0:
             dlstr = self.unicode_longest_string(dbu)
             if len(dlstr) > 50:
-                decoded_list.append(self.decode_bu(dlstr, size=8))
+                decoded_list.append((self.decode_bu(dlstr, size=8), dlstr[:200]))
         wbu = re.findall(word, data)
         if len(wbu) > 0:
             wlstr = self.unicode_longest_string(wbu)
             if len(wlstr) > 50:
-                decoded_list.append(self.decode_bu(wlstr, size=4))
+                decoded_list.append((self.decode_bu(wlstr, size=4), wlstr[:200]))
         bbu = re.findall(by, data)
         if len(bbu) > 0:
             blstr = self.unicode_longest_string(bbu)
             if len(blstr) > 50:
-                decoded_list.append(self.decode_bu(blstr, size=2))
+                decoded_list.append((self.decode_bu(blstr, size=2), blstr[:200]))
 
-        if len(decoded_list) > 0:
-            decoded = max(decoded_list, key=len)
+        filtered_list = filter(lambda x: len(x[0]) > 30, decoded_list)
 
-        if len(decoded) > 0:
-            sha256hash = hashlib.sha256(decoded).hexdigest()
-            udata_file_path = os.path.join(self.working_directory, "{}_enchex_decoded" .format(sha256hash[0:10]))
-            request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
-            with open(udata_file_path, 'wb') as unibu_file:
-                unibu_file.write(decoded)
-                self.log.debug("Submitted dropped file for analysis: %s" % udata_file_path)
+        for decoded in filtered_list:
+            if len(decoded[0]) >= 500:
+                sha256hash = hashlib.sha256(decoded).hexdigest()
+                shalist.append(sha256hash)
+                udata_file_path = os.path.join(self.working_directory, "{0}_enchex_{1}_decoded"
+                                               .format(sha256hash[0:10], encoding))
+                request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
+                with open(udata_file_path, 'wb') as unibu_file:
+                    unibu_file.write(decoded)
+                    self.log.debug("Submitted dropped file for analysis: %s" % udata_file_path)
+            else:
+                decoded_res.append((hashlib.sha256(decoded[0]).hexdigest(), len(decoded), decoded[1], decoded[0]))
 
-        return sha256hash
+        return shalist, decoded_res
 
     # Base64 Parse
     def b64(self, request, b64_string):
@@ -532,7 +537,8 @@ class FrankenStrings(ServiceBase):
             stacked_al_results = []
             unicode_dict = {}
             xor_al_results = []
-            unicode_al_results = []
+            unicode_al_results = {}
+            unicode_al_dropped_results = []
             asciihex_file_found = False
             asciihex_dict = {}
             asciihex_bb_dict = {}
@@ -637,9 +643,14 @@ class FrankenStrings(ServiceBase):
                 for hes in self.hexencode_strings:
                     hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
                     if re.search(hes_regex, file_data) is not None:
-                        uhash = self.decode_encoded_udata(request, hes, file_data)
-                        if uhash:
-                            unicode_al_results.append('{0}_{1}' .format(uhash, hes))
+                        uhash, unires = self.decode_encoded_udata(request, hes, file_data)
+                        if len(uhash) > 0:
+                            for usha in uhash:
+                                unicode_al_dropped_results.append('{0}_{1}' .format(usha, hes))
+                        if len(unires) > 0:
+                            for i in unires:
+                                unicode_al_results[i[0]] = [i[1], i[2], i[3]]
+
 
                 for hex_tuple in re.findall('(([0-9a-fA-F]{2}){30,})', file_data):
                     hex_string = hex_tuple[0]
@@ -777,7 +788,7 @@ class FrankenStrings(ServiceBase):
                     or len(xor_al_results) > 0 \
                     or len(encoded_al_results) > 0 \
                     or len(stacked_al_results) > 0 \
-                    or len(unicode_al_results) > 0 \
+                    or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0\
                     or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict) \
                     or len(rtf_al_results) > 0:
 
@@ -827,11 +838,9 @@ class FrankenStrings(ServiceBase):
                                 if val == "":
                                     asc_asc = unicodedata.normalize('NFKC', val).encode('ascii',
                                                                                         'ignore')
-                                    ascii_dict.setdefault(ty, set()).add(asc_asc)
                                     res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
                                 else:
                                     for v in val:
-                                        ascii_dict.setdefault(ty, set()).add(v)
                                         res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                 # Store XOR embedded results
@@ -853,15 +862,42 @@ class FrankenStrings(ServiceBase):
                         res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
 
                 # Store Unicode Encoded Data:
-                if len(unicode_al_results) > 0:
+                if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
                     unicode_emb_res = (ResultSection(SCORE.NULL, "Found Unicode-Like Strings in Non-Executable:",
                                                      body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                      parent=res))
-                    for ures in unicode_al_results:
-                        uhas = ures.split('_')[0]
-                        uenc = ures.split('_')[1]
-                        unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode with {0} "
-                                                 "encoding. SHA256: {1}. See extracted files." .format(uenc, uhas))
+
+                    if len(unicode_al_results) > 0:
+                        unires_index = 0
+                        for uk, ui in unicode_al_results.iteritems():
+                            unires_index += 1
+                            sub_uni_res = ( ResultSection(SCORE.NULL, "Result {}".format(unires_index),
+                                                          parent=unicode_emb_res))
+                            sub_uni_res.add_line('ENCODED TEXT SIZE: {}'.format(ui[0]))
+                            sub_uni_res.add_line('ENCODED SAMPLE TEXT: {}[........]'.format(ui[1]))
+                            sub_uni_res.add_line('DECODED SHA256: {}'.format(uk))
+                            subb_uni_res = (ResultSection(SCORE.NULL, "DECODED ASCII DUMP:",
+                                                          body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                                          parent=sub_uni_res))
+                            subb_uni_res.add_line('{}'.format(ui[2]))
+                            # Look for IOCs of interest
+                            st_value = patterns.ioc_match(ui[2], bogon_ip=True)
+                            if len(st_value) > 0:
+                                for ty, val in st_value.iteritems():
+                                    if val == "":
+                                        asc_asc = unicodedata.normalize('NFKC', val).encode('ascii',
+                                                                                            'ignore')
+                                        res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                                    else:
+                                        for v in val:
+                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+
+                    if len(unicode_al_dropped_results) > 0:
+                        for ures in unicode_al_dropped_results:
+                            uhas = ures.split('_')[0]
+                            uenc = ures.split('_')[1]
+                            unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode with {0} "
+                                                     "encoding. SHA256: {1}. See extracted files." .format(uenc, uhas))
                 # Store Ascii Hex Encoded Data:
                 if asciihex_file_found:
 
