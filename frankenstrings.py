@@ -178,7 +178,7 @@ class FrankenStrings(ServiceBase):
                                                .format(sha256hash[0:10], encoding))
                     request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
                     with open(udata_file_path, 'wb') as unibu_file:
-                        unibu_file.write(decoded)
+                        unibu_file.write(decoded[0])
                         self.log.debug("Submitted dropped file for analysis: %s" % udata_file_path)
             else:
                 if len(uniq_char) > 6:
