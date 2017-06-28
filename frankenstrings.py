@@ -300,7 +300,7 @@ class FrankenStrings(ServiceBase):
                 while bcount != 0:
                     if len(data) == 0:
                         # Did not find 'real' closing brace
-                        return
+                        return results
                     else:
                         c = data[0]
                         if c == '{':
