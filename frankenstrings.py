@@ -300,16 +300,13 @@ class FrankenStrings(ServiceBase):
                 while bcount != 0:
                     if len(data) == 0:
                         # Did not find 'real' closing brace
-                        return
+                        return results
                     else:
                         c = data[0]
                         if c == '{':
-                            if bcount != -1:
-                                bcount += 1
-                            else:
-                                bcount = 1
-                        if c == '}':
                             bcount -= 1
+                        if c == '}':
+                            bcount += 1
                         d += c
                         data = data[1:]
 
@@ -332,7 +329,7 @@ class FrankenStrings(ServiceBase):
                         rstr = re.escape(b)+"[\s]*"+".{"+blen+"}"
                         d = re.sub(rstr, str(rstr[-int(blen):].encode('hex')), d)
                 # 3. Remove remaining control words
-                d = re.sub(r"\\[A-Za-z0-9][\s]*", "", d)
+                d = re.sub(r"\\[A-Za-z0-9]+[\s]*", "", d)
                 # 4. Remove any other characters that are not ascii hex
                 d = re.sub("[ -/:-@\[-`{-~g-zG-Z\s\x00]", "", ''.join([x for x in d if ord(x) < 128]))
 
