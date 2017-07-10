@@ -953,7 +953,7 @@ class FrankenStrings(ServiceBase):
                     encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
                     # Create AL tag for each unique decoded string
                     for st in encoded_al_tags:
-                        res.add_tag(TAG_TYPE['FILE_DECODED_STRING'], st, TAG_WEIGHT.LOW)
+                        res.add_tag(TAG_TYPE['FILE_DECODED_STRING'], st[0:75], TAG_WEIGHT.LOW)
                         # Create tags for strings matching indicators of interest
                         if len(st) > st_min_length:
                             st_value = patterns.ioc_match(st, bogon_ip=True)
