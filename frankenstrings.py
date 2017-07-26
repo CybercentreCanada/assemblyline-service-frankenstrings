@@ -144,7 +144,6 @@ class FrankenStrings(ServiceBase):
         Some code taken from bas64dump.py. Adjusted for different hex lengths.
         """
         decoded_list = []
-        decoded = ''
         shalist = []
         decoded_res = []
 
