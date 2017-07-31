@@ -85,10 +85,10 @@ class FrankenStrings(ServiceBase):
                 jn = True
 
         if len(strs) > 0:
-            self.results_found = True
             for s in strs:
                 st_value = patterns.ioc_match(s, bogon_ip=True, just_network=jn)
                 if len(st_value) > 0:
+                    self.results_found = True
                     for ty, val in st_value.iteritems():
                         if taglist and ty not in tags:
                             tags[ty] = []
@@ -107,7 +107,6 @@ class FrankenStrings(ServiceBase):
             return tags
         else:
             return
-
 
     # CIC: Call If Callable
     @staticmethod
