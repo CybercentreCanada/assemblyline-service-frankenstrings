@@ -39,9 +39,6 @@ class FrankenStrings(ServiceBase):
 
     def __init__(self, cfg=None):
         super(FrankenStrings, self).__init__(cfg)
-        self.res = (ResultSection(SCORE.LOW, "FrankenStrings Detected Strings of Interest:",
-                             body_format=TEXT_FORMAT.MEMORY_DUMP))
-        self.results_found = False
         self.filetypes = ['application',
                           'exec',
                           'image',
@@ -62,7 +59,7 @@ class FrankenStrings(ServiceBase):
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
     # Will search for ALL IOC patterns.
-    def ioc_to_tag(self, data, patterns, taglist=False, check_length=False, strs_max_size=0,
+    def ioc_to_tag(self, data, patterns, res, taglist=False, check_length=False, strs_max_size=0,
                    st_max_length=300):
 
         if taglist:
@@ -88,18 +85,17 @@ class FrankenStrings(ServiceBase):
             for s in strs:
                 st_value = patterns.ioc_match(s, bogon_ip=True, just_network=jn)
                 if len(st_value) > 0:
-                    self.results_found = True
                     for ty, val in st_value.iteritems():
                         if taglist and ty not in tags:
                             tags[ty] = []
                         if val == "":
                             asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                            self.res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                            res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
                             if taglist:
                                 tags[ty].append(asc_asc)
                         else:
                             for v in val:
-                                self.res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
                                 if taglist:
                                     tags[ty].append(v)
 
@@ -277,7 +273,7 @@ class FrankenStrings(ServiceBase):
                 return results
         return results
 
-    def unhexlify_ascii(self, request, data, tag, patterns):
+    def unhexlify_ascii(self, request, data, tag, patterns, res):
         """
         Plain ascii hex conversion.
         '"""
@@ -306,7 +302,7 @@ class FrankenStrings(ServiceBase):
                     fh.write(binstr)
             return filefound, tags
         # Else look for patterns
-        tags = self.ioc_to_tag(binstr, patterns, taglist=True, st_max_length=1000)
+        tags = self.ioc_to_tag(binstr, patterns, res, taglist=True, st_max_length=1000)
         if len(tags) > 0:
             return filefound, tags
         # Else look for small XOR encoded strings in code files
@@ -539,11 +535,11 @@ class FrankenStrings(ServiceBase):
             # to patterns.py
             # String length maximum
             # Used in basic ASCII and UNICODE modules:
-            st_max_length = 1000000
+            max_length = 1000000
             # String list maximum size
             # List produced by basic ASCII and UNICODE module results and will determine
             # if patterns.py will only evaluate network IOC patterns:
-            strs_max_size = 1000000
+            st_max_size = 1000000
             # BBcrack maximum size of submitted file to run module:
             bb_max_size = 3000000
             # Flare Floss  maximum size of submitted file to run encoded/stacked string modules:
@@ -553,8 +549,8 @@ class FrankenStrings(ServiceBase):
             ff_stack_min_length = 6
         else:
             max_size = 3000000
-            st_max_length = 300
-            strs_max_size = 0
+            max_length = 300
+            st_max_size = 0
             bb_max_size = 200000
             ff_max_size = 200000
             ff_enc_min_length = 7
@@ -586,13 +582,15 @@ class FrankenStrings(ServiceBase):
             # Static strings -- all file types
 
             alfile = request.download()
+            res = (ResultSection(SCORE.LOW, "FrankenStrings Detected Strings of Interest:",
+                                 body_format=TEXT_FORMAT.MEMORY_DUMP))
 
             with open(alfile, "rb") as f:
                 file_data = f.read()
 
             # Find ASCII & Unicode IOC Strings
-            file_plainstr_iocs = self.ioc_to_tag(file_data, patterns, check_length=True, strs_max_size=strs_max_size,
-                                                 st_max_length=st_max_length)
+            file_plainstr_iocs = self.ioc_to_tag(file_data, patterns, res, taglist=True, check_length=True,
+                                                 strs_max_size=st_max_size, st_max_length=max_length)
 
             # Find Base64 encoded strings and files of interest
             for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', file_data):
@@ -640,7 +638,8 @@ class FrankenStrings(ServiceBase):
 
                 for hex_tuple in re.findall('(([0-9a-fA-F]{2}){30,})', file_data):
                     hex_string = hex_tuple[0]
-                    afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag, patterns)
+                    afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag, patterns,
+                                                                         res)
                     if afile_found:
                         asciihex_file_found = True
                     if asciihex_results != "":
@@ -780,20 +779,18 @@ class FrankenStrings(ServiceBase):
                     or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict) \
                     or len(rtf_al_results) > 0:
 
-                self.results_found = True
-
                 # Store ASCII String Results
                 if len(file_plainstr_iocs) > 0:
                     ascii_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Plain IOC Strings:",
                                                body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                               parent=self.res))
+                                               parent=res))
                     for k, l in sorted(file_plainstr_iocs.iteritems()):
                         for i in sorted(l):
                             ascii_res.add_line("Found %s string: %s" % (k.replace("_", " "), i))
 
                 # Store B64 Results
                 if len(b64_al_results) > 0:
-                    b64_res = (ResultSection(SCORE.NULL, "Base64 Strings:", parent=self.res))
+                    b64_res = (ResultSection(SCORE.NULL, "Base64 Strings:", parent=res))
                     b64index = 0
                     for b64dict in b64_al_results:
                         for b64k, b64l in b64dict.iteritems():
@@ -805,14 +802,14 @@ class FrankenStrings(ServiceBase):
                             subb_b64_res = (ResultSection(SCORE.NULL, "DECODED ASCII DUMP:",
                                                           body_format=TEXT_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
                             subb_b64_res.add_line('{}' .format(b64l[2]))
-                            self.ioc_to_tag(b64l[3], patterns, st_max_length=1000)
+                            self.ioc_to_tag(b64l[3], patterns, res, st_max_length=1000)
 
 
                 # Store XOR embedded results
                 # Result Graph:
                 if len(xor_al_results) > 0:
                     x_res = (ResultSection(SCORE.NULL, "BBCrack XOR'd Strings:", body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                           parent=self.res))
+                                           parent=res))
                     xformat_string = '%-20s %-7s %-7s %-50s'
                     xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
                     x_res.add_line(xformat_string % xcolumn_names)
@@ -822,20 +819,20 @@ class FrankenStrings(ServiceBase):
                 # Result Tags:
                 for transform, regex, offset, score, smatch in xresult:
                     if not regex.startswith("EXE_"):
-                        self.res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
-                        self.res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
+                        res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
+                        res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
 
                 # Store Unicode Encoded Data:
                 if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
                     unicode_emb_res = (ResultSection(SCORE.NULL, "Found Unicode-Like Strings in Non-Executable:",
                                                      body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                     parent=self.res))
+                                                     parent=res))
 
                     if len(unicode_al_results) > 0:
                         unires_index = 0
                         for uk, ui in unicode_al_results.iteritems():
                             unires_index += 1
-                            sub_uni_res = ( ResultSection(SCORE.NULL, "Result {}".format(unires_index),
+                            sub_uni_res = (ResultSection(SCORE.NULL, "Result {}".format(unires_index),
                                                           parent=unicode_emb_res))
                             sub_uni_res.add_line('ENCODED TEXT SIZE: {}'.format(ui[0]))
                             sub_uni_res.add_line('ENCODED SAMPLE TEXT: {}[........]'.format(ui[1]))
@@ -845,7 +842,7 @@ class FrankenStrings(ServiceBase):
                                                           parent=sub_uni_res))
                             subb_uni_res.add_line('{}'.format(ui[2]))
                             # Look for IOCs of interest
-                            self.ioc_to_tag(ui[2], patterns, st_max_length=1000)
+                            self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000)
 
                     if len(unicode_al_dropped_results) > 0:
                         for ures in unicode_al_dropped_results:
@@ -858,13 +855,13 @@ class FrankenStrings(ServiceBase):
 
                     asciihex_emb_res = (ResultSection(SCORE.NULL, "Found Large Ascii Hex Strings in Non-Executable:",
                                                       body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                      parent=self.res))
+                                                      parent=res))
                     asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
                 if len(asciihex_dict) > 0:
                     asciihex_res = (ResultSection(SCORE.NULL, "ASCII HEX DECODED IOC Strings:",
                                                   body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                  parent=self.res))
+                                                  parent=res))
                     for k, l in sorted(asciihex_dict.iteritems()):
                         for i in l:
                             for ii in i:
@@ -872,7 +869,7 @@ class FrankenStrings(ServiceBase):
 
                 if len(asciihex_bb_dict) > 0:
                     asciihex_res = (ResultSection(SCORE.NULL, "ASCII HEX AND XOR DECODED IOC Strings:",
-                                                  parent=self.res))
+                                                  parent=res))
                     xindex = 0
                     for k, l in sorted(asciihex_bb_dict.iteritems()):
                         for i in l:
@@ -886,13 +883,13 @@ class FrankenStrings(ServiceBase):
                                 asx_res.add_line(ii[0])
                                 asx_res.add_line("Original ASCII HEX String:")
                                 asx_res.add_line(kk)
-                                self.res.add_tag(TAG_TYPE[k], ii[0], TAG_WEIGHT.LOW)
+                                res.add_tag(TAG_TYPE[k], ii[0], TAG_WEIGHT.LOW)
 
                 # Store RTF Objdata Encoded Data:
                 if len(rtf_al_results) > 0:
                     rtfobjdata_emb_res = (ResultSection(SCORE.NULL, "Found RTF Objdata Strings in Non-Executable:",
                                                         body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                        parent=self.res))
+                                                        parent=res))
                     for rres in rtf_al_results:
                         rtfobjdata_emb_res.add_line("Extracted possible RTF objdata objects. SHA256: {}. "
                                                     "See extracted files." .format(rres))
@@ -901,19 +898,19 @@ class FrankenStrings(ServiceBase):
                 if len(encoded_al_results) > 0:
                     encoded_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Decoded Strings:",
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                 parent=self.res))
+                                                 parent=res))
                     encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
                     # Create AL tag for each unique decoded string
                     for st in encoded_al_tags:
-                        self.res.add_tag(TAG_TYPE['FILE_DECODED_STRING'], st[0:75], TAG_WEIGHT.LOW)
+                        res.add_tag(TAG_TYPE['FILE_DECODED_STRING'], st[0:75], TAG_WEIGHT.LOW)
                         # Create tags for strings matching indicators of interest
                         if len(st) >= self.st_min_length:
-                            self.ioc_to_tag(st, patterns, st_max_length=1000)
+                            self.ioc_to_tag(st, patterns, res, st_max_length=1000)
 
                 # Store Stacked String Results
                 if len(stacked_al_results) > 0:
                     stacked_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Stacked Strings:",
-                                                 body_format=TEXT_FORMAT.MEMORY_DUMP, parent=self.res))
+                                                 body_format=TEXT_FORMAT.MEMORY_DUMP, parent=res))
                     for s in sorted(stacked_al_results):
                         groupname = re.sub(r'^[0-9]+:::', '', min(s.stringl, key=len))
                         group_res = (ResultSection(SCORE.NULL, "Group:'{0}' Strings:{1}" .format(groupname,
@@ -926,7 +923,6 @@ class FrankenStrings(ServiceBase):
                         for st in s.stringl:
                             extract_st = re.sub(r'^[0-9]+:::', '', st)
                             if len(extract_st) >= self.st_min_length:
-                                self.ioc_to_tag(extract_st, patterns, st_max_length=1000)
+                                self.ioc_to_tag(extract_st, patterns, res, st_max_length=1000)
 
-        if self.results_found:
-            result.add_result(self.res)
+                result.add_result(res)
