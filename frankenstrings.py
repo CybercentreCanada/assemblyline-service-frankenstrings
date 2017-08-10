@@ -261,7 +261,7 @@ class FrankenStrings(ServiceBase):
                                     self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
 
                                 results[sha256hash] = [len(b64_string), b64_string[0:50],
-                                                   "[Possible file contents. See extracted files.]", ]
+                                                       "[Possible file contents. See extracted files.]", ""]
 
                                 return results
                 if all(ord(c) < 128 for c in base64data):
@@ -803,7 +803,8 @@ class FrankenStrings(ServiceBase):
                             subb_b64_res = (ResultSection(SCORE.NULL, "DECODED ASCII DUMP:",
                                                           body_format=TEXT_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
                             subb_b64_res.add_line('{}' .format(b64l[2]))
-                            self.ioc_to_tag(b64l[3], patterns, res, st_max_length=1000)
+                            if b64l[3] != "":
+                                self.ioc_to_tag(b64l[3], patterns, res, st_max_length=1000)
 
 
                 # Store XOR embedded results
