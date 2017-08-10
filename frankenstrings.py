@@ -4,16 +4,6 @@ See README.md for details about this service.
 """
 from assemblyline.al.service.base import ServiceBase
 from assemblyline.al.common.result import Result, ResultSection, SCORE, TAG_TYPE, TAG_WEIGHT, TEXT_FORMAT
-from collections import namedtuple
-from floss import strings
-import binascii
-import hashlib
-import magic
-import mmap
-import os
-import re
-import string
-import unicodedata
 
 pefile = None
 bbcrack = None
@@ -32,7 +22,18 @@ class FrankenStrings(ServiceBase):
     SERVICE_RAM_MB = 256
 
     def import_service_deps(self):
-        global pefile, bbcrack, PatternMatch
+        global namedtuple, strings, binascii, hashlib, magic, mmap, os, re, string, unicodedata, \
+            pefile, bbcrack, PatternMatch
+        from collections import namedtuple
+        from floss import strings
+        import binascii
+        import hashlib
+        import magic
+        import mmap
+        import os
+        import re
+        import string
+        import unicodedata
         import pefile
         from al_services.alsvc_frankenstrings.balbuzard.bbcrack import bbcrack
         from al_services.alsvc_frankenstrings.balbuzard.patterns import PatternMatch
