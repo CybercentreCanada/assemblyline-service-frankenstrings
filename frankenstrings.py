@@ -87,18 +87,19 @@ class FrankenStrings(ServiceBase):
                 st_value = patterns.ioc_match(s, bogon_ip=True, just_network=jn)
                 if len(st_value) > 0:
                     for ty, val in st_value.iteritems():
-                        if taglist and ty not in tags:
-                            tags[ty] = set()
-                        if val == "":
-                            asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                            res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
-                            if taglist:
-                                tags[ty].add(asc_asc)
-                        else:
-                            for v in val:
-                                res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                        if len(val) < 1001:
+                            if taglist and ty not in tags:
+                                tags[ty] = set()
+                            if val == "":
+                                asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                                res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
                                 if taglist:
-                                    tags[ty].add(v)
+                                    tags[ty].add(asc_asc)
+                            else:
+                                for v in val:
+                                    res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                    if taglist:
+                                        tags[ty].add(v)
 
         if taglist:
             return tags
