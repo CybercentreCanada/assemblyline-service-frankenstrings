@@ -542,12 +542,12 @@ class FrankenStrings(ServiceBase):
             # if patterns.py will only evaluate network IOC patterns:
             st_max_size = 1000000
             # BBcrack maximum size of submitted file to run module:
-            bb_max_size = 3000000
+            bb_max_size = 200000
             # Flare Floss  maximum size of submitted file to run encoded/stacked string modules:
-            ff_max_size = 3000000
+            ff_max_size = 200000
             # Flare Floss minimum string size for encoded/stacked string modules:
-            ff_enc_min_length = 6
-            ff_stack_min_length = 6
+            ff_enc_min_length = 7
+            ff_stack_min_length = 7
         else:
             max_size = 3000000
             max_length = 300
