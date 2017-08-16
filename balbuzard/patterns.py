@@ -44,7 +44,7 @@ class PatternMatch(object):
     def __init__(self):
         # Curated list to avoid false positives.
         self.tlds = {'ac', 'aco', 'ad', 'adac', 'ads','ae', 'aeg', 'aero', 'af', 'afl', 'ag', 'agakhan','ai', 'aig',
-                         'akdn', 'al', 'am', 'amica', 'anz', 'ao','app', 'apple', 'aq', 'ar', 'army', 'arpa',
+                         'akdn', 'al', 'am', 'amica', 'anz', 'ao', 'apple', 'aq', 'ar', 'army', 'arpa',
                          'at', 'au', 'aw', 'aws', 'ax', 'axa', 'az', 'ba', 'baidu', 'bbc', 'bbva', 'bcg', 'bcn',
                          'bd', 'be', 'bf', 'bg', 'bh', 'bharti', 'bi', 'bing', 'biz', 'bj', 'blog', 'bm', 'bms', 'bn',
                          'bnl', 'bo', 'bom', 'bot', 'br', 'bs', 'bt', 'bv', 'bw', 'by', 'bz', 'bzh', 'ca', 'cba', 'cbn',
@@ -55,7 +55,7 @@ class PatternMatch(object):
                          'fj', 'fk', 'flickr', 'flir', 'flsmidth', 'fly', 'fm', 'fo', 'foo', 'fr', 'frl','ftr', 'ga',
                          'gb','gbiz', 'gd', 'gdn', 'ge', 'gea', 'gl', 'gle', 'gm', 'gmail', 'gmbh', 'gmo', 'gmx', 'gn',
                          'goog', 'google', 'gop','got', 'gov', 'gp', 'gq', 'gr', 'gs', 'gt', 'gu', 'guru', 'gw', 'gy',
-                         'hk', 'hkt', 'hm', 'hn', 'host', 'hosting', 'hotmail', 'hr', 'ht', 'htc', 'hu', 'icu', 'ie',
+                         'hk', 'hkt', 'hm', 'hn', 'host', 'hotmail', 'hr', 'ht', 'htc', 'hu', 'icu', 'ie',
                          'ifm', 'iinet', 'ikano', 'il', 'im', 'imamat', 'imdb', 'immo', 'immobilien', 'in','info',
                          'ing', 'ink', 'int', 'io', 'ipiranga', 'iq', 'ir', 'is', 'ist', 'istanbul', 'it', 'itau',
                          'itv', 'iwc', 'jaguar', 'jcb','jcp', 'je', 'jlc', 'jll', 'jm', 'jmp', 'jnj', 'jo',
