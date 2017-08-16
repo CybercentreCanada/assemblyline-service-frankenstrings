@@ -88,17 +88,19 @@ class FrankenStrings(ServiceBase):
                 if len(st_value) > 0:
                     for ty, val in st_value.iteritems():
                         if taglist and ty not in tags:
-                            tags[ty] = []
+                            tags[ty] = set()
                         if val == "":
                             asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                            res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
-                            if taglist:
-                                tags[ty].append(asc_asc)
+                            if len(asc_asc) < 1001:
+                                res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                                if taglist:
+                                    tags[ty].add(asc_asc)
                         else:
                             for v in val:
-                                res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
-                                if taglist:
-                                    tags[ty].append(v)
+                                if len(v) < 1001:
+                                    res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                    if taglist:
+                                        tags[ty].add(v)
 
         if taglist:
             return tags
@@ -542,12 +544,12 @@ class FrankenStrings(ServiceBase):
             # if patterns.py will only evaluate network IOC patterns:
             st_max_size = 1000000
             # BBcrack maximum size of submitted file to run module:
-            bb_max_size = 3000000
+            bb_max_size = 200000
             # Flare Floss  maximum size of submitted file to run encoded/stacked string modules:
-            ff_max_size = 3000000
+            ff_max_size = 200000
             # Flare Floss minimum string size for encoded/stacked string modules:
-            ff_enc_min_length = 6
-            ff_stack_min_length = 6
+            ff_enc_min_length = 7
+            ff_stack_min_length = 7
         else:
             max_size = 3000000
             max_length = 300
