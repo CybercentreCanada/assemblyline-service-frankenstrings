@@ -41,8 +41,10 @@ class FrankenStrings(ServiceBase):
     def __init__(self, cfg=None):
         super(FrankenStrings, self).__init__(cfg)
         self.filetypes = ['application',
+                          'document',
                           'exec',
                           'image',
+                          'Microsoft',
                           'text',
                           ]
         self.hexencode_strings = ['\u',
@@ -249,23 +251,24 @@ class FrankenStrings(ServiceBase):
                 base64data = binascii.a2b_base64(b64_string)
                 sha256hash = hashlib.sha256(base64data).hexdigest()
                 # Search for embedded files of interest
-                if 1000 < len(base64data) < 8000000:
+                if 800 < len(base64data) < 8000000:
                     m = magic.Magic(mime=True)
+                    mag = magic.Magic()
                     ftype = m.from_buffer(base64data)
-                    if 'octet-stream' not in ftype:
-                        for ft in self.filetypes:
-                            if ft in ftype:
-                                b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
-                                                         .format(sha256hash[0:10]))
-                                request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
-                                with open(b64_file_path, 'wb') as b64_file:
-                                    b64_file.write(base64data)
-                                    self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
+                    mag_ftype = mag.from_buffer(base64data)
+                    for ft in self.filetypes:
+                        if (ft in ftype and not 'octet-stream' in ftype) or ft in mag_ftype:
+                            b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
+                                                     .format(sha256hash[0:10]))
+                            request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
+                            with open(b64_file_path, 'wb') as b64_file:
+                                b64_file.write(base64data)
+                                self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
 
-                                results[sha256hash] = [len(b64_string), b64_string[0:50],
-                                                       "[Possible file contents. See extracted files.]", ""]
+                            results[sha256hash] = [len(b64_string), b64_string[0:50],
+                                                   "[Possible file contents. See extracted files.]", ""]
+                            return results
 
-                                return results
                 if all(ord(c) < 128 for c in base64data):
                     asc_b64 = self.ascii_dump(base64data)
                     # If data has less then 7 uniq chars then ignore
