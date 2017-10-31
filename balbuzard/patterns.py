@@ -181,11 +181,11 @@ class PatternMatch(object):
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
         self.pat_domain = r'(?i)\b(?:[A-Z0-9-]+\.)+(?:[A-Z]{2,12}|XN--[A-Z0-9]{4,18})\b'
-        self.pat_filecom = r'(?i)\b[- _A-Z0-9.\\]{0,75}[%]?[/]?' \
+        self.pat_filecom = r'(?i)\b[- _A-Z0-9.\\]{0,75}[%]?' \
                            r'(?:ALLUSERPROFILE|APPDATA|commonappdata|CommonProgramFiles|HOMEPATH|LOCALAPPDATA|' \
                            r'ProgramData|ProgramFiles|PUBLIC|SystemDrive|SystemRoot|\\TEMP|USERPROFILE|' \
                            r'windir|system32|syswow64|\\user|/home|/usr/local|/usr/bin||/var/log)' \
-                           r'/etc/(?:shadow|group|passwd)|[%]?\\[-_A-Z0-9\.\\/]{1,200}\b'
+                           r'/etc/(?:shadow|group|passwd)|[%]?\\[-_A-Z0-9\.\\]{1,200}\b'
         self.pat_fileext = r'(?i)\b[a-z]?[:]?[-_A-Z0-9.\\]{0,200}\w\.' \
                            r'(?:7Z|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPG|JS|JSE|LOG|MSI|PDF|PNG|PPT|PPTX' \
                            r'|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|XLS|XLSX|ZIP)\b'
