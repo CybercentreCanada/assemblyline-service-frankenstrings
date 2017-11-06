@@ -248,19 +248,27 @@ class PatternMatch(object):
         final_values = ""
         find_url = re.findall(self.pat_url, value)
         if len(find_url) > 0:
+            ret = False
             longeststring = max(find_url, key=len)
             if len(longeststring) == len(value):
-                value_extract.setdefault('NET_FULL_URI', set()).add(value)
-                return value_extract
-            if len(find_url) == 1:
-                for val in find_url:
-                    value_extract.setdefault('NET_FULL_URI', set()).add(val)
+                ret = True
+                final_values = [(value, 100)]
+            elif len(find_url) == 1:
+                final_values = [(find_url[0], 100)]
             else:
                 like_ls = process.extract(longeststring, find_url, limit=50)
                 final_values = filter(lambda ls: ls[1] < 95, like_ls)
                 final_values.append((longeststring, 100))
-                for val in final_values:
-                    value_extract.setdefault('NET_FULL_URI', set()).add(val[0])
+
+            for val in final_values:
+                value_extract.setdefault('NET_FULL_URI', set()).add(val[0])
+
+                # Extract domain from URL
+                find_domain = re.findall(self.pat_domain, val[0])
+                if len(find_domain) != 0:
+                    value_extract.setdefault('NET_DOMAIN_NAME', set()).add(find_domain[0])
+            if ret:
+                return value_extract
         # ------------------------------------------------------------------------------
         # E-MAIL ADDRESSES
         # r'(?i)\b[A-Z0-9._%+-]+@(?:[A-Z0-9-]+\.)+(?:[A-Z]{2}|com|org|net|edu|gov|mil|int|biz|info|mobi|name|aero|asia|jobs|museum)\b',
