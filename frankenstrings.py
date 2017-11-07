@@ -2,9 +2,9 @@
 FrankenStrings Service
 See README.md for details about this service.
 """
-import signal
 from assemblyline.al.service.base import ServiceBase
 from assemblyline.al.common.result import Result, ResultSection, SCORE, TAG_TYPE, TAG_WEIGHT, TEXT_FORMAT
+from assemblyline.common.timeout import alarm_clock
 
 pefile = None
 bbcrack = None
@@ -484,26 +484,19 @@ class FrankenStrings(ServiceBase):
         :return: list of decoded strings ([DecodedString])
         """
          decoded_strings = []
-         alarm_default = signal.getsignal(signal.SIGALRM)
+
          try:
-             def handler(signum, frame):
-                 raise Exception("Timeout")
-             signal.signal(signal.SIGALRM, handler)
-             signal.alarm(30)
-         
-             from floss import string_decoder
-             for fva, _ in decoding_functions_candidates:
-                 for ctx in string_decoder.extract_decoding_contexts(vw, fva):
-                     for delta in string_decoder.emulate_decoding_routine(vw, function_index, fva, ctx):
-                         for delta_bytes in string_decoder.extract_delta_bytes(delta, ctx.decoded_at_va, fva):
-                             for decoded_string in string_decoder.extract_strings(delta_bytes):
-                                 decoded_strings.append(decoded_string)
-             signal.alarm(0)
-         except: 
+             with alarm_clock(60):
+                 from floss import string_decoder
+                 for fva, _ in decoding_functions_candidates:
+                     for ctx in string_decoder.extract_decoding_contexts(vw, fva):
+                         for delta in string_decoder.emulate_decoding_routine(vw, function_index, fva, ctx):
+                             for delta_bytes in string_decoder.extract_delta_bytes(delta, ctx.decoded_at_va, fva):
+                                 for decoded_string in string_decoder.extract_strings(delta_bytes):
+                                     decoded_strings.append(decoded_string)
+         except:
              pass
-         finally:    
-             signal.alarm(0) 
-             signal.signal(signal.SIGALRM, alarm_default)
+         finally:
              return decoded_strings or None
 
     @staticmethod
