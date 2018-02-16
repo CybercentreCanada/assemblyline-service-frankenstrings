@@ -70,7 +70,7 @@ class PatternMatch(object):
                          'ott', 'ovh', 'pa', 'pccw', 'pe', 'pet', 'pf', 'pg', 'ph', 'pid', 'pin', 'ping', 'pk', 'pl',
                          'pm', 'pn', 'pnc', 'pohl', 'porn', 'post', 'pr', 'pro', 'prod', 'ps', 'pt', 'pub', 'pw', 'pwc',
                          'py', 'qa', 'qpon', 'quebec', 're', 'ren', 'rio', 'ro', 'rocher', 'rs', 'rsvp', 'ru', 'ruhr',
-                         'rw', 'rwe', 'ryukyu', 'sa', 'sap', 'sapo', 'sarl', 'sas', 'save', 'saxo', 'sb', 'sbi', 'sbs',
+                         'rw', 'rwe', 'ryukyu', 'sa', 'sap', 'sapo', 'sarl', 'sas', 'saxo', 'sb', 'sbi', 'sbs',
                          'sc', 'sca', 'scb', 'sd', 'se', 'sew', 'sex', 'sfr', 'sg', 'sh', 'si', 'sina', 'site',
                          'sj', 'sk', 'skype', 'sl', 'sm', 'sn', 'sncf', 'so', 'sr', 'srl', 'st', 'stc', 'stcgroup',
                          'su', 'sv', 'sx', 'sy', 'sydney', 'symantec', 'systems', 'sz', 'tab',
@@ -180,7 +180,7 @@ class PatternMatch(object):
 
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
-        self.pat_domain = r'(?i)\b(?:[A-Z0-9-]+\.)+(?:[A-Z]{2,12}|XN--[A-Z0-9]{4,18})\b'
+        self.pat_domain = r'(?i)\b(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
         self.pat_filecom = r'(?i)(?:\b[- _A-Z0-9.\\]{0,75}[%]?' \
                            r'(?:ALLUSERPROFILE|APPDATA|commonappdata|CommonProgramFiles|HOMEPATH|LOCALAPPDATA|' \
                            r'ProgramData|ProgramFiles|PUBLIC|SystemDrive|SystemRoot|\\TEMP|USERPROFILE|' \
@@ -191,7 +191,7 @@ class PatternMatch(object):
                            r'(?:7Z|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPG|JS|JSE|LOG|MSI|PDF|PNG|PPT|PPTX' \
                            r'|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|XLS|XLSX|ZIP)\b'
         self.pat_filepdb = r'(?i)\b[-_A-Z0-9.\\]{0,200}\w\.PDB\b'
-        self.pat_email = r'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:[A-Z]{2,12}|XN--[A-Z0-9]{4,18})\b'
+        self.pat_email = r'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
         self.pat_ip = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
         self.pat_regis = r'(?i)\b[- _A-Z0-9.\\]{0,25}' \
                          r'(?:controlset001|controlset002|currentcontrolset|currentversion|HKCC|HKCR|HKCU|HKDD|' \
@@ -199,11 +199,25 @@ class PatternMatch(object):
                          r'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
                          r'\\userinit)' \
                          r'\\[-_A-Z0-9.\\ ]{1,200}\b'
-        self.pat_url = r'(?i)(?:ftp|http|https)://[A-Z0-9.-]{1,}\.[A-Z]{2,9}(?::[0-9]{1,5})?' \
-                       r'(?:[A-Z0-9/\-\.&%\$#=~\?]{3,200}){0,1}'
-        self.pat_anyhttp = r'(?i)http://[A-Z0-9.-]{6,}\.[A-Z]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
-        self.pat_anyhttps = r'(?i)https://[A-Z0-9.-]{6,}\.[A-Z]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
-        self.pat_anyftp = r'(?i)ftp://[A-Z0-9.-]{6,}\.[A-Z]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
+        self.pat_url = '(?i)(?:ftp|http|https)://' \
+                       '[A-Z0-9.-]{1,}\.(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12})' \
+                       '(?::[0-9]{1,5})?' \
+                       '(?:/[A-Z0-9/\-\.&%\$#=~\?_]{3,200}){0,1}'
+        self.pat_anyhttp = r'(?i)http://' \
+                           r'[A-Z0-9.-]{6,}\.' \
+                           r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12})' \
+                           r'(?::[0-9]{1,5})?' \
+                           r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
+        self.pat_anyhttps = r'(?i)https://' \
+                            r'[A-Z0-9.-]{6,}\.' \
+                            r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12})' \
+                            r'(?::[0-9]{1,5})?' \
+                            r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
+        self.pat_anyftp = r'(?i)ftp://' \
+                          r'[A-Z0-9.-]{6,}\.' \
+                          r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12})' \
+                          r'(?::[0-9]{1,5})?' \
+                          r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
 
         self.pat_exedos = r'This program cannot be run in DOS mode'
         self.pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
