@@ -70,7 +70,7 @@ class PatternMatch(object):
                          'ott', 'ovh', 'pa', 'pccw', 'pe', 'pet', 'pf', 'pg', 'ph', 'pid', 'pin', 'ping', 'pk', 'pl',
                          'pm', 'pn', 'pnc', 'pohl', 'porn', 'post', 'pr', 'pro', 'prod', 'ps', 'pt', 'pub', 'pw', 'pwc',
                          'py', 'qa', 'qpon', 'quebec', 're', 'ren', 'rio', 'ro', 'rocher', 'rs', 'rsvp', 'ru', 'ruhr',
-                         'rw', 'rwe', 'ryukyu', 'sa', 'sap', 'sapo', 'sarl', 'sas', 'save', 'saxo', 'sb', 'sbi', 'sbs',
+                         'rw', 'rwe', 'ryukyu', 'sa', 'sap', 'sapo', 'sarl', 'sas', 'saxo', 'sb', 'sbi', 'sbs',
                          'sc', 'sca', 'scb', 'sd', 'se', 'sew', 'sex', 'sfr', 'sg', 'sh', 'si', 'sina', 'site',
                          'sj', 'sk', 'skype', 'sl', 'sm', 'sn', 'sncf', 'so', 'sr', 'srl', 'st', 'stc', 'stcgroup',
                          'su', 'sv', 'sx', 'sy', 'sydney', 'symantec', 'systems', 'sz', 'tab',
