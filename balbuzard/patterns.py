@@ -199,10 +199,11 @@ class PatternMatch(object):
                          r'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
                          r'\\userinit)' \
                          r'\\[-_A-Z0-9.\\ ]{1,200}\b'
-        self.pat_url = r'(?i)(?:ftp|http|https)://[A-Z0-9.-]{0,}[:]?[0-9]{0,5}[A-Z0-9/\-\.&%\$#=~\?]{3,200}'
-        self.pat_anyhttp = r'(?i)http://[A-Z0-9.-]{6,}\.[A-Z0-9]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
-        self.pat_anyhttps = r'(?i)https://[A-Z0-9.-]{6,}\.[A-Z0-9]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
-        self.pat_anyftp = r'(?i)ftp://[A-Z0-9.-]{6,}\.[A-Z0-9]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
+        self.pat_url = r'(?i)(?:ftp|http|https)://[A-Z0-9.-]{1,}\.[A-Z]{2,9}(?::[0-9]{1,5})?' \
+                       r'(?:[A-Z0-9/\-\.&%\$#=~\?]{3,200}){0,1}'
+        self.pat_anyhttp = r'(?i)http://[A-Z0-9.-]{6,}\.[A-Z]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
+        self.pat_anyhttps = r'(?i)https://[A-Z0-9.-]{6,}\.[A-Z]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
+        self.pat_anyftp = r'(?i)ftp://[A-Z0-9.-]{6,}\.[A-Z]{2,9}[:]?[0-9]{0,5}/[A-Z0-9/\-\.&%\$#=~\?]{5,}[\r\n]*'
 
         self.pat_exedos = r'This program cannot be run in DOS mode'
         self.pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
@@ -267,7 +268,8 @@ class PatternMatch(object):
                 # Extract domain from URL
                 find_domain = re.findall(self.pat_domain, val[0])
                 if len(find_domain) != 0:
-                    value_extract.setdefault('NET_DOMAIN_NAME', set()).add(find_domain[0])
+                    longeststring = max(find_domain, key=len)
+                    value_extract.setdefault('NET_DOMAIN_NAME', set()).add(longeststring)
             if ret:
                 return value_extract
         # ------------------------------------------------------------------------------
@@ -471,7 +473,7 @@ class PatternMatch(object):
         if int(ip.split(".", 1)[0]) > 255: return False
 
         # also reject IPs ending with .0 or .255
-        if ip.endswith('.0') or ip.endswith('.255'): return False
+        if ip.endswith('0') or ip.endswith('.255'): return False
 
         # BOGON IP ADDRESS RANGES:
         # source: http://www.team-cymru.org/Services/Bogons/bogon-dd.html
