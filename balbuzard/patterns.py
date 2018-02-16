@@ -269,7 +269,9 @@ class PatternMatch(object):
                 find_domain = re.findall(self.pat_domain, val[0])
                 if len(find_domain) != 0:
                     longeststring = max(find_domain, key=len)
-                    value_extract.setdefault('NET_DOMAIN_NAME', set()).add(longeststring)
+                    not_filtered = self.domain_filter(longeststring)
+                    if not_filtered:
+                        value_extract.setdefault('NET_DOMAIN_NAME', set()).add(longeststring)
             if ret:
                 return value_extract
         # ------------------------------------------------------------------------------
