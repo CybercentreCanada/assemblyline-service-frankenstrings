@@ -5,6 +5,7 @@ import os
 
 def install(alsi):
 
+    alsi.pip_install('ipython<6.0.0')
     alsi.sudo_apt_install('libyaml-dev')
     alsi.sudo_apt_install('python-Levenshtein')  # For fuzzywuzzy
 
