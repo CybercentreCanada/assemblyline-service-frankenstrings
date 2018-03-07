@@ -148,15 +148,14 @@ class PatternMatch(object):
         for pro in tree.findall('.//product'):
             if len(pro.text) > pest_minlen:
                 self.pest_blacklist.setdefault('product', set()).add(pro.text)
+        for proto in tree.findall('.//protocol'):
+            self.pest_blacklist.setdefault('protocol', set()).add(proto)
         for reg in tree.findall('.//reg'):
             if len(reg.text) > pest_minlen:
                 self.pest_blacklist.setdefault('reg', set()).add(reg.text)
         for si in tree.findall('.//sid'):
             if len(si.text) > pest_minlen:
                 self.pest_blacklist.setdefault('sid', set()).add(si.text)
-        for ssd in tree.findall('.//ssdl'):
-            if len(ssd.text) > pest_minlen:
-                self.pest_blacklist.setdefault('ssdl', set()).add(ssd.text)
         for st in tree.findall('.//string'):
             if len(st.text) > pest_minlen:
                 self.pest_blacklist.setdefault('string', set()).add(st.text)

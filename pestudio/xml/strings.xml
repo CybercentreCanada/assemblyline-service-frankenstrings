@@ -44,7 +44,6 @@ It contains the strings that will be detected as blackListed by pestudio.
   <avs>
     <av>threatexpert</av>
     <av>emsisoft</av>
-    <av>rising</av>
     <av>pctools</av>
     <av>norman</av>
     <av>k7computing</av>
@@ -1209,7 +1208,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <os>Home_Premium_Edition</os>
     <os>Ultimate_Edition</os>
     <os>Server2008R2</os>
-    <os>Seven</os>
     <os>Server2008</os>
     <os>Win8</os>
     <os>WinServer2012</os>
@@ -1267,7 +1265,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <os>Compute Cluster Edition</os>
     <os>Web Edition</os>
     <os>Home Edition</os>
-    <os>Professional</os>
     <os>Windows 2000</os>
     <os>Datacenter Server</os>
     <os>Advanced Server</os>
@@ -1284,7 +1281,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <os>Server 2003 R2</os>
     <os>Server 2003</os>
     <os>Server 2008</os>
-    <os>Business</os>
     <os>Business N</os>
     <os>Datacenter Edition(Core)</os>
     <os>Enterprise N</os>
@@ -1293,13 +1289,11 @@ It contains the strings that will be detected as blackListed by pestudio.
     <os>Home Basic N</os>
     <os>Home Premium</os>
     <os>Home Premium N</os>
-    <os>Ultimate</os>
     <os>Ultimate N</os>
     <os>Standard Edition(Core)</os>
     <os>NT3.1</os>
     <os>NT3.5</os>
     <os>NT3.51</os>
-    <os>2000</os>
     <os>2003 Server</os>
     <os>2008 Server</os>
     <os>Win Vista</os>
@@ -1317,8 +1311,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <os>32-bit Edition</os>
     <os>64-bit Edition</os>
     <os>Windows Server 2000</os>
-    <os>2003</os>
-    <os>2008</os>
     <os>Windows Server 2000</os>
     <os>Windows+8</os>
     <os>Windows+7</os>
@@ -1436,7 +1428,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <protocol enable="1" risk="1">nntp</protocol>
     <protocol enable="1" risk="1">imap</protocol>
     <protocol enable="1" risk="1">pop3</protocol>
-    <protocol enable="1" risk="1">file</protocol>
+    <protocol enable="1" risk="1">smb</protocol>
     <protocol enable="1" risk="1">smtp</protocol>
     <protocol enable="1" risk="1">ftp</protocol>
     <protocol enable="1" risk="1">icmp</protocol>
@@ -1626,14 +1618,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">MSXML2.DOMDocument.3.0</string>
     <string score="0">Word.Document.8</string>
     <string score="0">PROJECT.THISDOCUMENT.AUTOOPEN</string>
-    <string score="0">1Table</string>
-    <string score="0">Macros</string>
-    <string score="0">__SRP_2</string>
-    <string score="0">__SRP_3</string>
-    <string score="0">Module1</string>
-    <string score="0">_VBA_PROJECT</string>
-    <string score="0">__SRP_0</string>
-    <string score="0">__SRP_1</string>
     <string score="0">PROJECTwm</string>
 
     <string score="1">webcam</string>
@@ -2456,7 +2440,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">MachineInfo</string>
     <string score="0">MachineRestriction</string>
     <string score="0">RegSAM</string>
-    <string score="0">Security</string>
     <string score="0">MemoryManagement</string>
     <string score="0">Trackingurls</string>
     <string score="0">TypeChekDomain</string>
