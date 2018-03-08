@@ -3049,7 +3049,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">AntivirusProduct</string>
     <string score="0">DefaultBrowser</string>
     <string score="0">MemoryProtection</string>
-    <string score="0">Manager</string>
     <string score="0">BaseScript</string>
     <string score="0">Updater</string>
     <string score="0">SafeStarter</string>
