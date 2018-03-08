@@ -603,7 +603,7 @@ class FrankenStrings(ServiceBase):
                                                  strs_max_size=st_max_size, st_max_length=max_length)
 
             # Find Base64 encoded strings and files of interest
-            for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', file_data):
+            for b64_tuple in re.findall('([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', file_data):
                 b64_string = b64_tuple[0].replace('\n', '').replace('\r', '').replace(' ', '')
                 uniq_char = ''.join(set(b64_string))
                 if len(uniq_char) > 6:
@@ -613,7 +613,7 @@ class FrankenStrings(ServiceBase):
 
             # UTF-16 strings
             for ust in strings.extract_unicode_strings(file_data, n=self.st_min_length):
-                for b64_tuple in re.findall('(([\x20]{0,2}[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
+                for b64_tuple in re.findall('([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
                     b64_string = b64_tuple[0].decode('utf-8').replace('\n', '').replace('\r', '').replace(' ', '')
                     uniq_char = ''.join(set(b64_string))
                     if len(uniq_char) > 6:
