@@ -1422,8 +1422,6 @@ It contains the strings that will be detected as blackListed by pestudio.
   </sids>
 
   <protocols>
-    <protocol enable="1" risk="1">http</protocol>
-    <protocol enable="1" risk="1">https</protocol>
     <protocol enable="1" risk="1">httpmail</protocol>
     <protocol enable="1" risk="1">nntp</protocol>
     <protocol enable="1" risk="1">imap</protocol>
