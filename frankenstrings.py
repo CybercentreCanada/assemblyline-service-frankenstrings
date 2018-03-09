@@ -536,8 +536,6 @@ class FrankenStrings(ServiceBase):
         request.result = result
         patterns = PatternMatch()
 
-        blah = request.path
-
         # Filters for submission modes. Change at will! (Listed in order of use)
         if request.deep_scan:
             # Maximum size of submitted file to run this service:
