@@ -149,7 +149,7 @@ class PatternMatch(object):
             if len(pro.text) > pest_minlen:
                 self.pest_blacklist.setdefault('product', set()).add(pro.text)
         for proto in tree.findall('.//protocol'):
-            self.pest_blacklist.setdefault('protocol', set()).add(proto)
+            self.pest_blacklist.setdefault('protocol', set()).add(proto.text)
         for reg in tree.findall('.//reg'):
             if len(reg.text) > pest_minlen:
                 self.pest_blacklist.setdefault('reg', set()).add(reg.text)
