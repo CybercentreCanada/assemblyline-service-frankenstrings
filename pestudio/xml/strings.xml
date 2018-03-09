@@ -2004,8 +2004,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Registry optimiser</string>
     <string score="0">Optimizing the registry...</string>
     <string score="0">Virtual HD</string>
-    <string score="0">News Letter</string>
-    <string score="0">Subject:</string>
     <string score="0">db2admin</string>
     <string score="0">nopassword</string>
     <string score="0">password12</string>
