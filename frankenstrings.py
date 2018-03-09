@@ -834,9 +834,7 @@ class FrankenStrings(ServiceBase):
                         b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
                         try:
                             with open(b64_file_path, 'wb') as fh:
-                                for asc_str in b64_ascii_content:
-                                    fh.write(asc_str)
-
+                                fh.write(all_b64)
                             request.add_extracted(b64_file_path, "all misc decoded b64 from sample", "all_b64_{}.txt"
                                                   .format(b64_all_sha256[:7]))
                         except Exception as e:
