@@ -810,6 +810,7 @@ class FrankenStrings(ServiceBase):
 
                 # Store B64 Results
                 if len(b64_al_results) > 0:
+                    b64_ascii_content = []
                     b64_res = (ResultSection(SCORE.NULL, "Base64 Strings:", parent=res))
                     b64index = 0
                     for b64dict in b64_al_results:
@@ -824,7 +825,23 @@ class FrankenStrings(ServiceBase):
                             subb_b64_res.add_line('{}' .format(b64l[2]))
                             if b64l[3] != "":
                                 self.ioc_to_tag(b64l[3], patterns, res, st_max_length=1000)
+                            if b64l[2] != "[Possible file contents. See extracted files.]":
+                                b64_ascii_content.append(b64l[2])
+                    # Write all non-extracted decoded b64 content to file
+                    if len(b64_ascii_content) > 0:
+                        all_b64 = "\n".join(b64_ascii_content)
+                        b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
+                        b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
+                        try:
+                            with open(b64_file_path, 'wb') as fh:
+                                for asc_str in b64_ascii_content:
+                                    fh.write(asc_str)
 
+                            request.add_extracted(b64_file_path, "all misc decoded b64 from sample", "all_b64_{}.txt"
+                                                  .format(b64_all_sha256[:7]))
+                        except Exception as e:
+                            self.log.error("Error while adding extracted"
+                                           " b64 content: {}: {}".format(b64_file_path, str(e)))
 
                 # Store XOR embedded results
                 # Result Graph:
