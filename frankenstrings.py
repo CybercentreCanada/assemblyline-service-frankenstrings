@@ -656,8 +656,9 @@ class FrankenStrings(ServiceBase):
                             for i in unires:
                                 unicode_al_results[i[0]] = [i[1], i[2], i[3]]
 
-                for hex_tuple in re.findall('(([0-9a-fA-F]{2}){30,})', file_data):
-                    hex_string = hex_tuple[0]
+                hex_pat = re.compile('((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
+                for hex_match in re.findall(hex_pat, file_data):
+                    hex_string = hex_match.replace('\r', '').replace('\n', '')
                     afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag, patterns,
                                                                          res)
                     if afile_found:
