@@ -148,15 +148,14 @@ class PatternMatch(object):
         for pro in tree.findall('.//product'):
             if len(pro.text) > pest_minlen:
                 self.pest_blacklist.setdefault('product', set()).add(pro.text)
+        for proto in tree.findall('.//protocol'):
+            self.pest_blacklist.setdefault('protocol', set()).add(proto.text)
         for reg in tree.findall('.//reg'):
             if len(reg.text) > pest_minlen:
                 self.pest_blacklist.setdefault('reg', set()).add(reg.text)
         for si in tree.findall('.//sid'):
             if len(si.text) > pest_minlen:
                 self.pest_blacklist.setdefault('sid', set()).add(si.text)
-        for ssd in tree.findall('.//ssdl'):
-            if len(ssd.text) > pest_minlen:
-                self.pest_blacklist.setdefault('ssdl', set()).add(ssd.text)
         for st in tree.findall('.//string'):
             if len(st.text) > pest_minlen:
                 self.pest_blacklist.setdefault('string', set()).add(st.text)
@@ -188,8 +187,9 @@ class PatternMatch(object):
                            r'/home/[-_A-Z0-9\./]{0,50}|/usr/local[-_A-Z0-9\./]{0,50}|/usr/bin[-_A-Z0-9\./]{0,50}|' \
                            r'/var/log[-_A-Z0-9\./]{0,50}|/etc/(?:shadow|group|passwd))'
         self.pat_fileext = r'(?i)\b[a-z]?[:]?[-_A-Z0-9.\\]{0,200}\w\.' \
-                           r'(?:7Z|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPG|JS|JSE|LOG|MSI|PDF|PNG|PPT|PPTX' \
-                           r'|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|XLS|XLSX|ZIP)\b'
+                           r'(?:7Z|APK|APP|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPEG|JPG|JS|JSE|LNK|LOG|MSI|' \
+                           r'OSX|PAF|PDF|PNG|PPT|PPTX|PS1|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|WSF|WSH|XLS' \
+                           r'|XLSX|ZIP)\b'
         self.pat_filepdb = r'(?i)\b[-_A-Z0-9.\\]{0,200}\w\.PDB\b'
         self.pat_email = r'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
         self.pat_ip = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'

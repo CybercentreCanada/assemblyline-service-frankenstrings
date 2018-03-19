@@ -43,7 +43,7 @@ This service does the following:
 #### Result Output
 1. Static Strings (ASCII, UNICODE, BASE64):
     * Strings matching IOC patterns of interest [Result Text and Tag]
-    * Decoded BASE64. Extract content over 1000 bytes.  [Extracted File OR Result Text and Tag]
+    * Decoded BASE64. Extract content over 800 bytes, otherwise combine all decoded content and extract in single text file.  [Extracted File OR Result Text and Tag]
 2. ASCII Hex Strings:
     * Content extraction of ascii hex data successfully decoded (any RTF objdata or data over 500 bytes) 
     [Extracted File]
