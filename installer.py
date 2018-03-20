@@ -7,7 +7,7 @@ def install(alsi):
 
     alsi.pip_install('ipython<6.0.0')
     alsi.sudo_apt_install('libyaml-dev')
-    alsi.sudo_apt_install('python-Levenshtein')  # For fuzzywuzzy
+    alsi.sudo_apt_install('python-levenshtein')  # For fuzzywuzzy
 
     local_fuzzy = os.path.join(alsi.alroot, 'support/flarefloss/fuzzywuzzy-master.zip')
     local_vivisect = os.path.join(alsi.alroot, 'support/flarefloss/vivisect-master.zip')
