@@ -564,7 +564,7 @@ class FrankenStrings(ServiceBase):
             ff_stack_min_length = 7
         else:
             max_size = 3000000
-            max_length = 300
+            max_length = 5000
             st_max_size = 0
             bb_max_size = 200000
             ff_max_size = 200000
