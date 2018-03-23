@@ -427,7 +427,7 @@ class FrankenStrings(ServiceBase):
             if pe_extract:
 
                 pe_file_path = os.path.join(self.working_directory, "{0}_{1}"
-                                            .format(hashlib.sha256(pe_extract).hexdigest()[0:10]), fn)
+                                            .format(hashlib.sha256(pe_extract).hexdigest()[0:10], fn))
                 request.add_extracted(pe_file_path, "{}" .format(msg))
                 with open(pe_file_path, 'wb') as exe_file:
                     exe_file.write(pe_extract)
