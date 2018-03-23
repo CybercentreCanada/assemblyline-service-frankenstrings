@@ -653,7 +653,7 @@ class FrankenStrings(ServiceBase):
             if not request.tag.startswith("executable/"):
                 # PE Strings
                 pat_exedos = r'(?s)This program cannot be run in DOS mode'
-                pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
+                pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000.+'
 
                 if re.search(pat_exedos, file_data):
                     for pos_exe in re.findall(pat_exeheader, file_data[1:]):
