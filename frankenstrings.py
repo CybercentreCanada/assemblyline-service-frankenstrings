@@ -395,16 +395,17 @@ class FrankenStrings(ServiceBase):
         return result
 
     # Executable extraction
-    def pe_dump(self, request, temp_file, offset):
+    def pe_dump(self, request, temp_file, offset, fn, msg, fail_on_except=False):
         """
-        Use PEFile application to find the end of the file (biggest section length wins). Else if PEFile fails, extract
-        from offset all the way to the end of the initial file (granted, this is uglier).
+        Use PEFile application to find the end of the file (biggest section length wins). Option if PEFile fails,
+        extract from offset all the way to the end of the initial file (granted, this is uglier).
         """
         try:
             with open(temp_file, "rb") as f:
                 mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
             pedata = mm[offset:]
+            pe_extract = None
 
             try:
                 peinfo = pefile.PE(data=pedata)
@@ -417,16 +418,20 @@ class FrankenStrings(ServiceBase):
                 if lsize > 0:
                     pe_extract = pedata[0:lsize]
                 else:
-                    pe_extract = pedata
+                    if not fail_on_except:
+                        pe_extract = pedata
             except:
-                pe_extract = pedata
+                if not fail_on_except:
+                    pe_extract = pedata
 
-            xpe_file_path = os.path.join(self.working_directory, "{}_xorpe_decoded"
-                                     .format(hashlib.sha256(pe_extract).hexdigest()[0:10]))
-            request.add_extracted(xpe_file_path, "Extracted xor file during FrakenStrings analysis.")
-            with open(xpe_file_path, 'wb') as exe_file:
-                exe_file.write(pe_extract)
-                self.log.debug("Submitted dropped file for analysis: %s" % xpe_file_path)
+            if pe_extract:
+
+                pe_file_path = os.path.join(self.working_directory, "{0}_{1}"
+                                            .format(hashlib.sha256(pe_extract).hexdigest()[0:10]), fn)
+                request.add_extracted(pe_file_path, "{}" .format(msg))
+                with open(pe_file_path, 'wb') as exe_file:
+                    exe_file.write(pe_extract)
+                    self.log.debug("Submitted dropped file for analysis: %s" % pe_file_path)
         finally:
             try:
                 mm.close()
@@ -637,14 +642,31 @@ class FrankenStrings(ServiceBase):
                                                   .format(xindex, offset, score))
                         with open(xtemp_file, 'wb') as xdata:
                             xdata.write(smatch)
-                        self.pe_dump(request, xtemp_file, offset)
+                        self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
+                                     msg="Extracted xor file during FrakenStrings analysis.")
                         xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
                                                                          "[PE Header Detected. See Extracted files]"))
                     else:
                         xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
 
-            # Unicode/Hex Strings -- Non-executable files
+            # Suspicious strings in non-executable files
             if not request.tag.startswith("executable/"):
+                # PE Strings
+                pat_exedos = r'(?s)This program cannot be run in DOS mode'
+                pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
+
+                if re.search(pat_exedos, file_data):
+                    for pos_exe in re.findall(pat_exeheader, file_data[1:]):
+                        pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
+                        temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}" .format(pe_sha256))
+
+                        with open(temp_file, 'wb') as pedata:
+                            pedata.write(pos_exe)
+
+                        self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
+                                     msg="PE strings discovered in non-executable file", fail_on_except=True)
+
+                # Unicode/Hex Strings
                 for hes in self.hexencode_strings:
                     hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
                     if re.search(hes_regex, file_data) is not None:
