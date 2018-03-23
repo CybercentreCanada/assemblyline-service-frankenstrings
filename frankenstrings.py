@@ -664,7 +664,7 @@ class FrankenStrings(ServiceBase):
                             pedata.write(pos_exe)
 
                         self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
-                                     msg="PE strings discovered in non-executable file", fail_on_except=True)
+                                     msg="PE strings discovered in non-executable file")
 
                 # Unicode/Hex Strings
                 for hes in self.hexencode_strings:
