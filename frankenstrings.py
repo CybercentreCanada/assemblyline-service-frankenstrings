@@ -51,7 +51,8 @@ class FrankenStrings(ServiceBase):
         self.hexencode_strings = ['\u',
                                   '%u',
                                   '\\x',
-                                  '0x'
+                                  '0x',
+                                  '&H',  # hex notation in VBA
                                   ]
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
