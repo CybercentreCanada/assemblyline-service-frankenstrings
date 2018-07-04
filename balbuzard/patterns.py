@@ -489,7 +489,7 @@ class PatternMatch(object):
         if int(ip.split(".", 1)[0]) > 255: return False
 
         # also reject IPs ending with .0 or .255
-        if ip.endswith('0') or ip.endswith('.255'): return False
+        if ip.endswith('.0') or ip.endswith('.255'): return False
 
         # BOGON IP ADDRESS RANGES:
         # source: http://www.team-cymru.org/Services/Bogons/bogon-dd.html
