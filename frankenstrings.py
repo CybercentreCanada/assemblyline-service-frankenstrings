@@ -672,7 +672,6 @@ class FrankenStrings(ServiceBase):
                 # Unicode/Hex Strings
                 for hes in self.hexencode_strings:
                     hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
-                    # Separate by Win newline break
                     if re.search(hes_regex, file_data) is not None:
                         uhash, unires = self.decode_encoded_udata(request, hes, file_data)
                         if len(uhash) > 0:
