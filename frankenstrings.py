@@ -192,6 +192,7 @@ class FrankenStrings(ServiceBase):
         """
         Some code taken from bas64dump.py. Adjusted for different hex lengths.
         """
+
         decoded_list = []
         shalist = []
         decoded_res = []
@@ -411,7 +412,7 @@ class FrankenStrings(ServiceBase):
             try:
                 peinfo = pefile.PE(data=pedata)
                 lsize = 0
-                pefile.PE()
+                #pefile.PE()
                 for section in peinfo.sections:
                     size = section.PointerToRawData + section.SizeOfRawData
                     if size > lsize:
@@ -421,7 +422,7 @@ class FrankenStrings(ServiceBase):
                 else:
                     if not fail_on_except:
                         pe_extract = pedata
-            except:
+            except Exception:
                 if not fail_on_except:
                     pe_extract = pedata
 
@@ -650,26 +651,28 @@ class FrankenStrings(ServiceBase):
                     else:
                         xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
 
+            # Embedded executable
+            # PE Strings
+            pat_exedos = r'(?s)This program cannot be run in DOS mode'
+            pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000.+'
+
+            for pos_exe in re.findall(pat_exeheader, file_data[1:]):
+                if re.search(pat_exedos, pos_exe):
+                    pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
+                    temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}" .format(pe_sha256))
+
+                    with open(temp_file, 'wb') as pedata:
+                        pedata.write(pos_exe)
+
+                    self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
+                                 msg="PE strings discovered in non-executable file")
+
             # Suspicious strings in non-executable files
             if not request.tag.startswith("executable/"):
-                # PE Strings
-                pat_exedos = r'(?s)This program cannot be run in DOS mode'
-                pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000.+'
-
-                if re.search(pat_exedos, file_data):
-                    for pos_exe in re.findall(pat_exeheader, file_data[1:]):
-                        pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
-                        temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}" .format(pe_sha256))
-
-                        with open(temp_file, 'wb') as pedata:
-                            pedata.write(pos_exe)
-
-                        self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
-                                     msg="PE strings discovered in non-executable file")
-
                 # Unicode/Hex Strings
                 for hes in self.hexencode_strings:
                     hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
+                    # Separate by Win newline break
                     if re.search(hes_regex, file_data) is not None:
                         uhash, unires = self.decode_encoded_udata(request, hes, file_data)
                         if len(uhash) > 0:
@@ -679,6 +682,7 @@ class FrankenStrings(ServiceBase):
                             for i in unires:
                                 unicode_al_results[i[0]] = [i[1], i[2], i[3]]
 
+                # Go over again, looking for long ASCII-HEX character strings
                 hex_pat = re.compile('((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
                 for hex_match in re.findall(hex_pat, file_data):
                     hex_string = hex_match.replace('\r', '').replace('\n', '')
