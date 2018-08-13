@@ -11,9 +11,18 @@ BALBUZARD: BSD 2-Clause Licence, see top of balbuzard code files
 NOTE: This service does not require you to buy any licence and is preinstalled and working after a default installation.
 
 **When not in deep scan mode, this AL service will skip detection modules based on a submitted file's size 
-(to prevent service backlog and service timeouts). The defaults are 
-intentionally set at low sizes. Filters can be easily changed in the source code, in the 'execute' module, 
+(to prevent service backlog and timeouts). The defaults are
+intentionally set at low sizes. Filters can be easily changed in the service configuration,
 based on the amount of traffic/hardware your AL instance is running.**
+
+- MAX_SIZE: Maximum size of submitted file for this service.
+- MAX_LENGTH: String length maximum. Used in basic ASCII and UNICODE modules.
+- ST_MAX_SIZE: String list maximum size. List produced by basic ASCII and
+UNICODE module results, and will determine if patterns.py will only evaluate network IOC patterns.
+- BB_MAX_SIZE: BBcrack maximum size of submitted file to run module.
+- FF_MAX_SIZE: Flare Floss  maximum size of submitted file to run encoded/stacked string modules.
+- FF_ENC_MIN_LENGTH/FF_STACK_MIN_LENGTH: Flare Floss minimum string size for encoded/stacked
+string modules to show in results.
 
 This service does the following:
 
