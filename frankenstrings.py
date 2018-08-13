@@ -354,12 +354,12 @@ class FrankenStrings(ServiceBase):
         Use PEFile application to find the end of the file (biggest section length wins). Option if PEFile fails,
         extract from offset all the way to the end of the initial file (granted, this is uglier).
         """
+        pe_extract = None
         try:
             with open(temp_file, "rb") as f:
                 mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
             pedata = mm[offset:]
-            pe_extract = None
 
             try:
                 peinfo = pefile.PE(data=pedata)
@@ -390,7 +390,10 @@ class FrankenStrings(ServiceBase):
             try:
                 mm.close()
             except:
-                return
+                if pe_extract:
+                    return True
+                else:
+                    return False
 
     # Flare Floss Methods:
     @staticmethod
@@ -543,6 +546,7 @@ class FrankenStrings(ServiceBase):
             asciihex_file_found = False
             asciihex_dict = {}
             asciihex_bb_dict = {}
+            embedded_pe = False
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
             # Static strings -- all file types
@@ -593,10 +597,12 @@ class FrankenStrings(ServiceBase):
                                                   .format(xindex, offset, score))
                         with open(xtemp_file, 'wb') as xdata:
                             xdata.write(smatch)
-                        self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
+                        pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
                                      msg="Extracted xor file during FrakenStrings analysis.")
-                        xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
-                                                                         "[PE Header Detected. See Extracted files]"))
+                        if pe_extracted:
+                            xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
+                                                                             "[PE Header Detected. "
+                                                                             "See Extracted files]"))
                     else:
                         xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
 
@@ -613,8 +619,8 @@ class FrankenStrings(ServiceBase):
                     with open(temp_file, 'wb') as pedata:
                         pedata.write(pos_exe)
 
-                    self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
-                                 msg="PE strings discovered in non-executable file")
+                    embedded_pe = self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
+                                                msg="PE header strings discovered in sample")
 
             # Suspicious strings in non-executable files
             if not request.tag.startswith("executable/"):
@@ -770,7 +776,7 @@ class FrankenStrings(ServiceBase):
                     or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0\
                     or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict):
 
-                # Store ASCII String Results
+                # Report ASCII String Results
                 if len(file_plainstr_iocs) > 0:
                     ascii_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Plain IOC Strings:",
                                                body_format=TEXT_FORMAT.MEMORY_DUMP,
@@ -779,7 +785,7 @@ class FrankenStrings(ServiceBase):
                         for i in sorted(l):
                             ascii_res.add_line("Found %s string: %s" % (k.replace("_", " "), i))
 
-                # Store B64 Results
+                # Report B64 Results
                 if len(b64_al_results) > 0:
                     b64_ascii_content = []
                     b64_res = (ResultSection(SCORE.LOW, "Base64 Strings:", parent=res))
@@ -815,7 +821,7 @@ class FrankenStrings(ServiceBase):
                             self.log.error("Error while adding extracted"
                                            " b64 content: {}: {}".format(b64_file_path, str(e)))
 
-                # Store XOR embedded results
+                # Report XOR embedded results
                 # Result Graph:
                 if len(xor_al_results) > 0:
                     x_res = (ResultSection(SCORE.VHIGH, "BBCrack XOR'd Strings:", body_format=TEXT_FORMAT.MEMORY_DUMP,
@@ -832,7 +838,12 @@ class FrankenStrings(ServiceBase):
                         res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
                         res.add_tag(TAG_TYPE[regex], smatch, TAG_WEIGHT.LOW)
 
-                # Store Unicode Encoded Data:
+                # Report Embedded PE
+                if embedded_pe:
+                    res.add_section(ResultSection(SCORE.VHIGH, "Embedded PE header discovered in sample. "
+                                                               "See extracted files."))
+
+                # Report Unicode Encoded Data:
                 if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
                     unicode_emb_res = (ResultSection(SCORE.NULL, "Found Unicode-Like Strings in Non-Executable:",
                                                      body_format=TEXT_FORMAT.MEMORY_DUMP,
@@ -861,7 +872,7 @@ class FrankenStrings(ServiceBase):
                             unicode_emb_res.score += 100
                             unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode with {0} "
                                                      "encoding. SHA256: {1}. See extracted files." .format(uenc, uhas))
-                # Store Ascii Hex Encoded Data:
+                # Report Ascii Hex Encoded Data:
                 if asciihex_file_found:
 
                     asciihex_emb_res = (ResultSection(SCORE.HIGH, "Found Large Ascii Hex Strings in Non-Executable:",
@@ -909,7 +920,7 @@ class FrankenStrings(ServiceBase):
                         if len(st) >= self.st_min_length:
                             self.ioc_to_tag(st, patterns, res, st_max_length=1000)
 
-                # Store Stacked String Results
+                # Report Stacked String Results
                 if len(stacked_al_results) > 0:
                     # No score on these as there are many FPs
                     stacked_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Stacked Strings:",
