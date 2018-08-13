@@ -3,6 +3,7 @@ FrankenStrings Service
 See README.md for details about this service.
 """
 from assemblyline.al.service.base import ServiceBase
+from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.al.common.result import Result, ResultSection, SCORE, TAG_TYPE, TAG_WEIGHT, TEXT_FORMAT
 from assemblyline.common.timeout import alarm_clock
 
@@ -104,17 +105,29 @@ class FrankenStrings(ServiceBase):
                             tags[ty] = set()
                         if val == "":
                             asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                            # Ensure AL will accept domain tags:
+                            if ty == 'NET_DOMAIN_NAME':
+                                if not is_valid_domain(asc_asc):
+                                    continue
+                            if ty == 'NET_EMAIL':
+                                if not is_valid_email(asc_asc):
+                                    continue
                             if len(asc_asc) < 1001:
                                 res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
                                 if taglist:
                                     tags[ty].add(asc_asc)
                         else:
                             for v in val:
+                                if ty == 'NET_DOMAIN_NAME':
+                                    if not is_valid_domain(v):
+                                        continue
+                                if ty == 'NET_EMAIL':
+                                    if not is_valid_email(v):
+                                        continue
                                 if len(v) < 1001:
                                     res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
                                     if taglist:
                                         tags[ty].add(v)
-
         if taglist:
             return tags
         else:
