@@ -21,6 +21,15 @@ class FrankenStrings(ServiceBase):
     SERVICE_ENABLED = True
     SERVICE_CPU_CORES = 1
     SERVICE_RAM_MB = 256
+    SERVICE_DEFAULT_CONFIG = {
+        'MAX_SIZE': 3000000,
+        'MAX_LENGTH': 5000,
+        'ST_MAX_SIZE': 0,
+        'BB_MAX_SIZE': 200000,
+        'FF_MAX_SIZE': 200000,
+        'FF_ENC_MIN_LENGTH': 7,
+        'FF_STACK_MIN_LENGTH': 7
+    }
 
     def import_service_deps(self):
         global namedtuple, strings, binascii, hashlib, magic, mmap, os, re, string, unicodedata, \
@@ -542,13 +551,10 @@ class FrankenStrings(ServiceBase):
         request.result = result
         patterns = PatternMatch()
 
-        # Filters for submission modes. Change at will! (Listed in order of use)
+        # Filters for submission modes. Listed in order of use.
         if request.deep_scan:
             # Maximum size of submitted file to run this service:
             max_size = 8000000
-            # String length minimum
-            # Used in basic ASCII and UNICODE modules. Also the filter size for any code that sends strings
-            # to patterns.py
             # String length maximum
             # Used in basic ASCII and UNICODE modules:
             max_length = 1000000
@@ -564,13 +570,14 @@ class FrankenStrings(ServiceBase):
             ff_enc_min_length = 7
             ff_stack_min_length = 7
         else:
-            max_size = 3000000
-            max_length = 5000
-            st_max_size = 0
-            bb_max_size = 200000
-            ff_max_size = 200000
-            ff_enc_min_length = 7
-            ff_stack_min_length = 7
+            max_size = self.cfg.get('MAX_SIZE', self.SERVICE_DEFAULT_CONFIG['MAX_SIZE'])
+            max_length = self.cfg.get('MAX_LENGTH', self.SERVICE_DEFAULT_CONFIG['MAX_LENGTH'])
+            st_max_size = self.cfg.get('ST_MAX_SIZE', self.SERVICE_DEFAULT_CONFIG['ST_MAX_SIZE'])
+            bb_max_size = self.cfg.get('BB_MAX_SIZE', self.SERVICE_DEFAULT_CONFIG['BB_MAX_SIZE'])
+            ff_max_size = self.cfg.get('FF_MAX_SIZE', self.SERVICE_DEFAULT_CONFIG['FF_MAX_SIZE'])
+            ff_enc_min_length = self.cfg.get('FF_ENC_MIN_LENGTH', self.SERVICE_DEFAULT_CONFIG['FF_ENC_MIN_LENGTH'])
+            ff_stack_min_length = self.cfg.get('FF_STACK_MIN_LENGTH',
+                                               self.SERVICE_DEFAULT_CONFIG['FF_STACK_MIN_LENGTH'])
 
         # Begin analysis
 
