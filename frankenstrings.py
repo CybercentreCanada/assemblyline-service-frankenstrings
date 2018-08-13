@@ -335,76 +335,6 @@ class FrankenStrings(ServiceBase):
                     return filefound, tags
         return filefound, tags
 
-    def unhexlify_rtf(self, request, data):
-        """
-        RTF objdata ascii hex extract. Inspired by Talos blog post "How Malformed RTF Defeats Security Engines", and
-        help from information in http://www.decalage.info/rtf_tricks. This is a backup to the oletools service.
-        Will need more work.
-        """
-        result = []
-        try:
-            # Get objdata
-            while data.find("\\objdata") != -1:
-
-                obj = data.find("\\objdata")
-                data = data[obj:]
-
-                d = ""
-                bcount = -1
-                # Walk the objdata item and extract until 'real' closing brace reached.
-                while bcount != 0:
-                    if len(data) == 0:
-                        # Did not find 'real' closing brace
-                        return result
-                    else:
-                        c = data[0]
-                        if c == '{':
-                            bcount -= 1
-                        if c == '}':
-                            bcount += 1
-                        d += c
-                        data = data[1:]
-
-                # Transform the data to remove any potential obfuscation:
-                # 1. Attempt to find OLESAVETOSTREAM serial string (01050000 02000000 = "OLE 1.0 object")and remove all
-                # characters up to doc header if found. This section will need to be improved later.
-                olesavetostream = re.compile(r"^\\objdata.{0,2000}"
-                                             r"0[\s]*1[\s]*0[\s]*5[\s]*0[\s]*0[\s]*0[\s]*0[\s]*"
-                                             r"0[\s]*2[\s]*0[\s]*0[\s]*0[\s]*0",
-                                             re.DOTALL)
-                if re.search(olesavetostream, d):
-                    docstart = d[:2011].upper().find("D0CF11E0")
-                    if docstart != -1:
-                        d = d[docstart:]
-                # 2. Transform any embedded binary data
-                if d.find("\\bin") != -1:
-                    binreg = re.compile(r"\\bin[0]{0,250}[1-9]{0,4}")
-                    for b in re.findall(binreg, d):
-                        blen = re.sub("[a-z0]{0,4}", "", b[-4:])
-                        rstr = re.escape(b)+"[\s]*"+".{"+blen+"}"
-                        d = re.sub(rstr, str(rstr[-int(blen):].encode('hex')), d)
-                # 3. Remove remaining control words
-                d = re.sub(r"\\[A-Za-z0-9]+[\s]*", "", d)
-                # 4. Remove any other characters that are not ascii hex
-                d = re.sub("[ -/:-@\[-`{-~g-zG-Z\s\x00]", "", ''.join([x for x in d if ord(x) < 128]))
-
-                # Convert the ascii hex and extract file
-                if len(d) > 0:
-                    if len(d) % 2 != 0:
-                        d = d[:-1]
-                    bstr = binascii.unhexlify(d)
-                    sha256hash = hashlib.sha256(bstr).hexdigest()
-                    ascihex_path = os.path.join(self.working_directory, "{}_rtfobj_hex_decoded"
-                                                .format(sha256hash[0:10]))
-                    request.add_extracted(ascihex_path, "Extracted rtf objdata ascii hex file during "
-                                                        "FrankenStrings analysis.")
-                    with open(ascihex_path, 'wb') as fh:
-                        fh.write(bstr)
-                    result.append(sha256hash)
-        except:
-            result = []
-        return result
-
     # Executable extraction
     def pe_dump(self, request, temp_file, offset, fn, msg, fail_on_except=False):
         """
@@ -600,7 +530,6 @@ class FrankenStrings(ServiceBase):
             asciihex_file_found = False
             asciihex_dict = {}
             asciihex_bb_dict = {}
-            rtf_al_results = []
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
             # Static strings -- all file types
@@ -707,10 +636,6 @@ class FrankenStrings(ServiceBase):
                                 if ask not in asciihex_dict:
                                     asciihex_dict[ask] = []
                                 asciihex_dict[ask].append(asi)
-
-                # RTF object data hex
-                if file_data.find("\\objdata") != -1:
-                    rtf_al_results = self.unhexlify_rtf(request, file_data)
 
             # Encoded/Stacked strings -- Windows executable file types
             if (request.task.size or 0) < ff_max_size:
@@ -830,8 +755,7 @@ class FrankenStrings(ServiceBase):
                     or len(encoded_al_results) > 0 \
                     or len(stacked_al_results) > 0 \
                     or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0\
-                    or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict) \
-                    or len(rtf_al_results) > 0:
+                    or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict):
 
                 # Store ASCII String Results
                 if len(file_plainstr_iocs) > 0:
@@ -954,15 +878,6 @@ class FrankenStrings(ServiceBase):
                                 asx_res.add_line("Original ASCII HEX String:")
                                 asx_res.add_line(kk)
                                 res.add_tag(TAG_TYPE[k], ii[0], TAG_WEIGHT.LOW)
-
-                # Store RTF Objdata Encoded Data:
-                if len(rtf_al_results) > 0:
-                    rtfobjdata_emb_res = (ResultSection(SCORE.NULL, "Found RTF Objdata Strings in Non-Executable:",
-                                                        body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                                        parent=res))
-                    for rres in rtf_al_results:
-                        rtfobjdata_emb_res.add_line("Extracted possible RTF objdata objects. SHA256: {}. "
-                                                    "See extracted files." .format(rres))
 
                 # Store Encoded String Results
                 if len(encoded_al_results) > 0:
