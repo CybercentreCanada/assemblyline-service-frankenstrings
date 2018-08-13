@@ -535,7 +535,7 @@ class FrankenStrings(ServiceBase):
             # Static strings -- all file types
 
             alfile = request.download()
-            res = (ResultSection(SCORE.LOW, "FrankenStrings Detected Strings of Interest:",
+            res = (ResultSection(SCORE.NULL, "FrankenStrings Detected Strings of Interest:",
                                  body_format=TEXT_FORMAT.MEMORY_DUMP))
 
             with open(alfile, "rb") as f:
@@ -769,7 +769,7 @@ class FrankenStrings(ServiceBase):
                 # Store B64 Results
                 if len(b64_al_results) > 0:
                     b64_ascii_content = []
-                    b64_res = (ResultSection(SCORE.NULL, "Base64 Strings:", parent=res))
+                    b64_res = (ResultSection(SCORE.LOW, "Base64 Strings:", parent=res))
                     b64index = 0
                     for b64dict in b64_al_results:
                         for b64k, b64l in b64dict.iteritems():
@@ -785,6 +785,9 @@ class FrankenStrings(ServiceBase):
                                 self.ioc_to_tag(b64l[3], patterns, res, st_max_length=1000)
                             if b64l[2] != "[Possible file contents. See extracted files.]":
                                 b64_ascii_content.append(b64l[2])
+                            # If there were possible file contents, raise score
+                            else:
+                                b64_res.score += 100
                     # Write all non-extracted decoded b64 content to file
                     if len(b64_ascii_content) > 0:
                         all_b64 = "\n".join(b64_ascii_content)
@@ -802,7 +805,7 @@ class FrankenStrings(ServiceBase):
                 # Store XOR embedded results
                 # Result Graph:
                 if len(xor_al_results) > 0:
-                    x_res = (ResultSection(SCORE.NULL, "BBCrack XOR'd Strings:", body_format=TEXT_FORMAT.MEMORY_DUMP,
+                    x_res = (ResultSection(SCORE.VHIGH, "BBCrack XOR'd Strings:", body_format=TEXT_FORMAT.MEMORY_DUMP,
                                            parent=res))
                     xformat_string = '%-20s %-7s %-7s %-50s'
                     xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
@@ -826,7 +829,7 @@ class FrankenStrings(ServiceBase):
                         unires_index = 0
                         for uk, ui in unicode_al_results.iteritems():
                             unires_index += 1
-                            sub_uni_res = (ResultSection(SCORE.NULL, "Result {}".format(unires_index),
+                            sub_uni_res = (ResultSection(SCORE.MED, "Result {}".format(unires_index),
                                                           parent=unicode_emb_res))
                             sub_uni_res.add_line('ENCODED TEXT SIZE: {}'.format(ui[0]))
                             sub_uni_res.add_line('ENCODED SAMPLE TEXT: {}[........]'.format(ui[1]))
@@ -842,18 +845,19 @@ class FrankenStrings(ServiceBase):
                         for ures in unicode_al_dropped_results:
                             uhas = ures.split('_')[0]
                             uenc = ures.split('_')[1]
+                            unicode_emb_res.score += 100
                             unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode with {0} "
                                                      "encoding. SHA256: {1}. See extracted files." .format(uenc, uhas))
                 # Store Ascii Hex Encoded Data:
                 if asciihex_file_found:
 
-                    asciihex_emb_res = (ResultSection(SCORE.NULL, "Found Large Ascii Hex Strings in Non-Executable:",
+                    asciihex_emb_res = (ResultSection(SCORE.HIGH, "Found Large Ascii Hex Strings in Non-Executable:",
                                                       body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                       parent=res))
                     asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
                 if len(asciihex_dict) > 0:
-                    asciihex_res = (ResultSection(SCORE.NULL, "ASCII HEX DECODED IOC Strings:",
+                    asciihex_res = (ResultSection(SCORE.MED, "ASCII HEX DECODED IOC Strings:",
                                                   body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                   parent=res))
                     for k, l in sorted(asciihex_dict.iteritems()):
@@ -862,7 +866,7 @@ class FrankenStrings(ServiceBase):
                                 asciihex_res.add_line("Found %s decoded HEX string: %s" % (k.replace("_", " "), ii))
 
                 if len(asciihex_bb_dict) > 0:
-                    asciihex_res = (ResultSection(SCORE.NULL, "ASCII HEX AND XOR DECODED IOC Strings:",
+                    asciihex_res = (ResultSection(SCORE.VHIGH, "ASCII HEX AND XOR DECODED IOC Strings:",
                                                   parent=res))
                     xindex = 0
                     for k, l in sorted(asciihex_bb_dict.iteritems()):
@@ -881,7 +885,7 @@ class FrankenStrings(ServiceBase):
 
                 # Store Encoded String Results
                 if len(encoded_al_results) > 0:
-                    encoded_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Decoded Strings:",
+                    encoded_res = (ResultSection(SCORE.HIGH, "FLARE FLOSS Decoded Strings:",
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                  parent=res))
                     encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
@@ -894,6 +898,7 @@ class FrankenStrings(ServiceBase):
 
                 # Store Stacked String Results
                 if len(stacked_al_results) > 0:
+                    # No score on these as there are many FPs
                     stacked_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Stacked Strings:",
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP, parent=res))
                     for s in sorted(stacked_al_results):
