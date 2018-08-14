@@ -804,9 +804,6 @@ class FrankenStrings(ServiceBase):
                                 self.ioc_to_tag(b64l[3], patterns, res, st_max_length=1000)
                             if b64l[2] != "[Possible file contents. See extracted files.]":
                                 b64_ascii_content.append(b64l[2])
-                            # If there were possible file contents, raise score
-                            else:
-                                b64_res.score += 100
                     # Write all non-extracted decoded b64 content to file
                     if len(b64_ascii_content) > 0:
                         all_b64 = "\n".join(b64_ascii_content)
@@ -875,7 +872,7 @@ class FrankenStrings(ServiceBase):
                 # Report Ascii Hex Encoded Data:
                 if asciihex_file_found:
 
-                    asciihex_emb_res = (ResultSection(SCORE.HIGH, "Found Large Ascii Hex Strings in Non-Executable:",
+                    asciihex_emb_res = (ResultSection(SCORE.MED, "Found Large Ascii Hex Strings in Non-Executable:",
                                                       body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                       parent=res))
                     asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
