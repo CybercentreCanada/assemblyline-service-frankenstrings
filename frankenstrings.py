@@ -850,7 +850,7 @@ class FrankenStrings(ServiceBase):
                         unires_index = 0
                         for uk, ui in unicode_al_results.iteritems():
                             unires_index += 1
-                            sub_uni_res = (ResultSection(SCORE.MED, "Result {}".format(unires_index),
+                            sub_uni_res = (ResultSection(SCORE.LOW, "Result {}".format(unires_index),
                                                           parent=unicode_emb_res))
                             sub_uni_res.add_line('ENCODED TEXT SIZE: {}'.format(ui[0]))
                             sub_uni_res.add_line('ENCODED SAMPLE TEXT: {}[........]'.format(ui[1]))
@@ -860,13 +860,16 @@ class FrankenStrings(ServiceBase):
                                                           parent=sub_uni_res))
                             subb_uni_res.add_line('{}'.format(ui[2]))
                             # Look for IOCs of interest
-                            self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000)
+                            hits = self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000, taglist=True)
+                            if len(hits) > 0:
+                                sub_uni_res.score += 490
+                                subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
 
                     if len(unicode_al_dropped_results) > 0:
                         for ures in unicode_al_dropped_results:
                             uhas = ures.split('_')[0]
                             uenc = ures.split('_')[1]
-                            unicode_emb_res.score += 100
+                            unicode_emb_res.score += 50
                             unicode_emb_res.add_line("Extracted over 50 bytes of possible embedded unicode with {0} "
                                                      "encoding. SHA256: {1}. See extracted files." .format(uenc, uhas))
                 # Report Ascii Hex Encoded Data:
@@ -878,7 +881,7 @@ class FrankenStrings(ServiceBase):
                     asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
                 if len(asciihex_dict) > 0:
-                    asciihex_res = (ResultSection(SCORE.MED, "ASCII HEX DECODED IOC Strings:",
+                    asciihex_res = (ResultSection(SCORE.VHIGH, "ASCII HEX DECODED IOC Strings:",
                                                   body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                   parent=res))
                     for k, l in sorted(asciihex_dict.iteritems()):
@@ -906,7 +909,7 @@ class FrankenStrings(ServiceBase):
 
                 # Store Encoded String Results
                 if len(encoded_al_results) > 0:
-                    encoded_res = (ResultSection(SCORE.HIGH, "FLARE FLOSS Decoded Strings:",
+                    encoded_res = (ResultSection(SCORE.LOW, "FLARE FLOSS Decoded Strings:",
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                  parent=res))
                     encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
@@ -915,7 +918,10 @@ class FrankenStrings(ServiceBase):
                         res.add_tag(TAG_TYPE['FILE_DECODED_STRING'], st[0:75], TAG_WEIGHT.LOW)
                         # Create tags for strings matching indicators of interest
                         if len(st) >= self.st_min_length:
-                            self.ioc_to_tag(st, patterns, res, st_max_length=1000)
+                            hits = self.ioc_to_tag(st, patterns, res, st_max_length=1000, taglist=True)
+                            if len(hits) > 0:
+                                encoded_res.score = 500
+                                encoded_res.add_line("Suspicious string(s) found in decoded data.")
 
                 # Report Stacked String Results
                 if len(stacked_al_results) > 0:
@@ -934,6 +940,10 @@ class FrankenStrings(ServiceBase):
                         for st in s.stringl:
                             extract_st = re.sub(r'^[0-9]+:::', '', st)
                             if len(extract_st) >= self.st_min_length:
-                                self.ioc_to_tag(extract_st, patterns, res, st_max_length=1000)
+                                hits = self.ioc_to_tag(extract_st, patterns, res, st_max_length=1000, taglist=True)
+                                if len(hits) > 0:
+                                    group_res.score = 500
+                                    group_res.add_line("Suspicious string(s) found in decoded data.")
+
 
                 result.add_result(res)
