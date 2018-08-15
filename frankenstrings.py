@@ -881,7 +881,11 @@ class FrankenStrings(ServiceBase):
                     asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
                 if len(asciihex_dict) > 0:
-                    asciihex_res = (ResultSection(SCORE.VHIGH, "ASCII HEX DECODED IOC Strings:",
+                    if request.tag.startswith("document"):
+                        ascore = SCORE.LOW
+                    else:
+                        ascore = SCORE.VHIGH
+                    asciihex_res = (ResultSection(ascore, "ASCII HEX DECODED IOC Strings:",
                                                   body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                   parent=res))
                     for k, l in sorted(asciihex_dict.iteritems()):
