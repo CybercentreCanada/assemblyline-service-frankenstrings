@@ -308,6 +308,14 @@ It contains the functions and libraries that will be detected as blackListed by 
     <lib name="msjetoledb40" bl="1" dp="0"></lib>
     <lib name="inseng.dll" bl="1" dp="0"></lib>
     <lib name="winupd.exe" bl="1" dp="0"></lib>
+    <lib name="powershell" bl="1" dp="0"></lib>
+    <lib name="bitsadmin" bl="1" dp="0"></lib>
+    <lib name="bitstransfer" bl="1" dp="0"></lib>
+    <lib name="certutil" bl="1" dp="0"></lib>
+    <lib name="downloadstring" bl="1" dp="0"></lib>
+    <lib name="webclient" bl="1" dp="0"></lib>
+    <lib name="mshta.exe" bl="1" dp="0"></lib>
+    <lib name="scrobj.dll" bl="1" dp="0"></lib>
 
     <lib name="wlanapi.dll" bl="1" dp="0">
         <fcts>
