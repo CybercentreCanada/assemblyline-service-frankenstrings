@@ -169,9 +169,9 @@ class PatternMatch(object):
                 if len(fun.text) > pest_minlen and fun.text is not None:
                     self.pest_api.setdefault('fct', set()).add(fun.text.split('::', 1)[0])
         for li in tree.findall(".//lib"):
-            if hasattr(li, 'name') and li.name is not None:
-                if len(li.name) > pest_minlen:
-                    self.pest_api.setdefault('lib', set()).add(li.get("name"))
+            if li.attrib['name'] is not None:
+                if len(li.attrib['name']) > pest_minlen:
+                    self.pest_api.setdefault('lib', set()).add(li.attrib['name'])
         for tapi in tree.findall('.//topapi'):
             if tapi.text is not None:
                 if len(tapi.text) > pest_minlen:
