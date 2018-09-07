@@ -55,7 +55,7 @@ class PatternMatch(object):
                          'fj', 'fk', 'flickr', 'flir', 'flsmidth', 'fly', 'fm', 'fo', 'foo', 'fr', 'frl','ftr', 'ga',
                          'gb','gbiz', 'gd', 'gdn', 'ge', 'gea', 'gl', 'gle', 'gm', 'gmail', 'gmbh', 'gmo', 'gmx', 'gn',
                          'goog', 'google', 'gop','got', 'gov', 'gp', 'gq', 'gr', 'gs', 'gt', 'gu', 'guru', 'gw', 'gy',
-                         'hk', 'hkt', 'hm', 'hn', 'host', 'hotmail', 'hr', 'ht', 'htc', 'hu', 'icu', 'ie',
+                         'hk', 'hkt', 'hm', 'hn', 'host', 'hotmail', 'hr', 'ht', 'htc', 'hu', 'icu', 'id', 'ie',
                          'ifm', 'iinet', 'ikano', 'il', 'im', 'imamat', 'imdb', 'immo', 'immobilien', 'in','info',
                          'ing', 'ink', 'int', 'io', 'ipiranga', 'iq', 'ir', 'is', 'ist', 'istanbul', 'it', 'itau',
                          'itv', 'iwc', 'jaguar', 'jcb','jcp', 'je', 'jlc', 'jll', 'jm', 'jmp', 'jnj', 'jo',
