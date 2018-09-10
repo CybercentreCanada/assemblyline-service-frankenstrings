@@ -389,6 +389,10 @@ class FrankenStrings(ServiceBase):
         finally:
             try:
                 mm.close()
+                if pe_extract:
+                    return True
+                else:
+                    return False
             except:
                 if pe_extract:
                     return True
