@@ -841,8 +841,8 @@ class FrankenStrings(ServiceBase):
 
                 # Report Embedded PE
                 if embedded_pe:
-                    res.add_section(ResultSection(SCORE.VHIGH, "Embedded PE header discovered in sample. "
-                                                               "See extracted files."))
+                    res.add_section(ResultSection(SCORE.HIGH, "Embedded PE header discovered in sample. "
+                                                              "See extracted files."))
 
                 # Report Unicode Encoded Data:
                 if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
