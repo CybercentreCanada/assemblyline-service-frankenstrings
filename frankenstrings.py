@@ -57,11 +57,11 @@ class FrankenStrings(ServiceBase):
                                       dedent("""\
                                             ASCII hex-like strings found and decoded in non-executable file. 
                                             """))
-    AL_FRANKENSTRINGS_007 = Heuristic("AL_FRANKENSTRINGS_07", "ASCIIhex_xor_string", "",
+    AL_FRANKENSTRINGS_007 = Heuristic("AL_FRANKENSTRINGS_007", "ASCIIhex_xor_string", "",
                                       dedent("""\
                                             Popssible ASCII hex-like string with additional xor encoding found.
                                             """))
-    AL_FRANKENSTRINGS_008 = Heuristic("AL_FRANKENSTRINGS_08", "flare_encoded_string", "executable/",
+    AL_FRANKENSTRINGS_008 = Heuristic("AL_FRANKENSTRINGS_008", "flare_encoded_string", "executable/",
                                       dedent("""\
                                             Encoded string found and decoded in executable file by Flare-Floss modules.
                                             """))
