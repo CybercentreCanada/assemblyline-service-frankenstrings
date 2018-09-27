@@ -32,6 +32,45 @@ class FrankenStrings(ServiceBase):
         'FF_STACK_MIN_LENGTH': 7
     }
 
+    # Heuristics
+    AL_FRANKENSTRINGS_001 = Heuristic("AL_FRANKENSTRINGS_001", "Base64_Decoded", "",
+                                      dedent("""\
+                                            Base64-like strings discovered and decoded. 
+                                            """))
+    AL_FRANKENSTRINGS_002 = Heuristic("AL_FRANKENSTRINGS_002", "XOR_decoded", "",
+                                      dedent("""\
+                                            XOR'd IOC content found and decoded
+                                            """))
+    AL_FRANKENSTRINGS_003 = Heuristic("AL_FRANKENSTRINGS_003", "Embedded_PE", "",
+                                      dedent("""\
+                                            Embedded PE extracted.
+                                            """))
+    AL_FRANKENSTRINGS_004 = Heuristic("AL_FRANKENSTRINGS_004", "Unicode_decoded", "",
+                                      dedent("""\
+                                            Unicode-like data found and decoded in non-exectuable file. 
+                                            """))
+    AL_FRANKENSTRINGS_005 = Heuristic("AL_FRANKENSTRINGS_005", "ASCIIhex_file_decoded", "",
+                                      dedent("""\
+                                            Possible ASCII hex encoded file decoded in non-executable file. 
+                                            """))
+    AL_FRANKENSTRINGS_006 = Heuristic("AL_FRANKENSTRINGS_006", "ASCIIhex_strings_decoded", "",
+                                      dedent("""\
+                                            ASCII hex-like strings found and decoded in non-executable file. 
+                                            """))
+    AL_FRANKENSTRINGS_007 = Heuristic("AL_FRANKENSTRINGS_07", "ASCIIhex_xor_string", "",
+                                      dedent("""\
+                                            Popssible ASCII hex-like string with additional xor encoding found.
+                                            """))
+    AL_FRANKENSTRINGS_008 = Heuristic("AL_FRANKENSTRINGS_08", "flare_encoded_string", "executable/",
+                                      dedent("""\
+                                            Encoded string found and decoded in executable file by Flare-Floss modules.
+                                            """))
+    AL_FRANKENSTRINGS_009 = Heuristic("AL_FRANKENSTRINGS_009", "flare_stacked_string", "executable/",
+                                      dedent("""\
+                                            Stacked string found and decoded in executable file by Flare-Floss modules. 
+                                            """))
+
+
     def import_service_deps(self):
         global namedtuple, strings, binascii, hashlib, magic, mmap, os, re, string, unicodedata, \
             pefile, bbcrack, PatternMatch
@@ -651,6 +690,7 @@ class FrankenStrings(ServiceBase):
                     if asciihex_results != "":
                         for ask, asi in asciihex_results.iteritems():
                             if ask.startswith('BB_'):
+                                # Add any xor'd content to its own result set
                                 ask = ask.split('_', 1)[1]
                                 if ask not in asciihex_bb_dict:
                                     asciihex_bb_dict[ask] = []
@@ -791,6 +831,7 @@ class FrankenStrings(ServiceBase):
 
                 # Report B64 Results
                 if len(b64_al_results) > 0:
+                    result.report_heuristic(AL_FRANKENSTRINGS_001)
                     b64_ascii_content = []
                     b64_res = (ResultSection(SCORE.LOW, "Base64 Strings:", parent=res))
                     b64index = 0
@@ -825,6 +866,7 @@ class FrankenStrings(ServiceBase):
                 # Report XOR embedded results
                 # Result Graph:
                 if len(xor_al_results) > 0:
+                    result.report_heuristic(AL_FRANKENSTRINGS_002)
                     x_res = (ResultSection(SCORE.VHIGH, "BBCrack XOR'd Strings:", body_format=TEXT_FORMAT.MEMORY_DUMP,
                                            parent=res))
                     xformat_string = '%-20s %-7s %-7s %-50s'
@@ -841,11 +883,13 @@ class FrankenStrings(ServiceBase):
 
                 # Report Embedded PE
                 if embedded_pe:
+                    result.report_heuristic(AL_FRANKENSTRINGS_003)
                     res.add_section(ResultSection(SCORE.HIGH, "Embedded PE header discovered in sample. "
                                                               "See extracted files."))
 
                 # Report Unicode Encoded Data:
                 if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
+                    result.report_heuristic(AL_FRANKENSTRINGS_004)
                     unicode_emb_res = (ResultSection(SCORE.NULL, "Found Unicode-Like Strings in Non-Executable:",
                                                      body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                      parent=res))
@@ -878,13 +922,14 @@ class FrankenStrings(ServiceBase):
                                                      "encoding. SHA256: {1}. See extracted files." .format(uenc, uhas))
                 # Report Ascii Hex Encoded Data:
                 if asciihex_file_found:
-
+                    result.report_heuristic(AL_FRANKENSTRINGS_005)
                     asciihex_emb_res = (ResultSection(SCORE.MED, "Found Large Ascii Hex Strings in Non-Executable:",
                                                       body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                       parent=res))
                     asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
                 if len(asciihex_dict) > 0:
+                    result.report_heuristic(AL_FRANKENSTRINGS_006)
                     if request.tag.startswith("document"):
                         ascore = SCORE.LOW
                     else:
@@ -898,6 +943,7 @@ class FrankenStrings(ServiceBase):
                                 asciihex_res.add_line("Found %s decoded HEX string: %s" % (k.replace("_", " "), ii))
 
                 if len(asciihex_bb_dict) > 0:
+                    result.report_heuristic(AL_FRANKENSTRINGS_007)
                     asciihex_res = (ResultSection(SCORE.VHIGH, "ASCII HEX AND XOR DECODED IOC Strings:",
                                                   parent=res))
                     xindex = 0
@@ -917,6 +963,7 @@ class FrankenStrings(ServiceBase):
 
                 # Store Encoded String Results
                 if len(encoded_al_results) > 0:
+                    result.report_heuristic(AL_FRANKENSTRINGS_008)
                     encoded_res = (ResultSection(SCORE.LOW, "FLARE FLOSS Decoded Strings:",
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP,
                                                  parent=res))
@@ -933,6 +980,7 @@ class FrankenStrings(ServiceBase):
 
                 # Report Stacked String Results
                 if len(stacked_al_results) > 0:
+                    result.report_heuristic(AL_FRANKENSTRINGS_009)
                     # No score on these as there are many FPs
                     stacked_res = (ResultSection(SCORE.NULL, "FLARE FLOSS Stacked Strings:",
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP, parent=res))
@@ -952,6 +1000,5 @@ class FrankenStrings(ServiceBase):
                                 if len(hits) > 0:
                                     group_res.score = 500
                                     group_res.add_line("Suspicious string(s) found in decoded data.")
-
 
                 result.add_result(res)
