@@ -3,6 +3,7 @@ FrankenStrings Service
 See README.md for details about this service.
 """
 from assemblyline.al.service.base import ServiceBase
+from assemblyline.al.common.heuristics import Heuristic
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.al.common.result import Result, ResultSection, SCORE, TAG_TYPE, TAG_WEIGHT, TEXT_FORMAT
 from assemblyline.common.timeout import alarm_clock
