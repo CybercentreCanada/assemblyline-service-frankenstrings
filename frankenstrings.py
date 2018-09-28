@@ -35,39 +35,39 @@ class FrankenStrings(ServiceBase):
     }
 
     # Heuristics
-    AL_FRANKENSTRINGS_001 = Heuristic("AL_FRANKENSTRINGS_001", "Base64_Decoded", "",
+    AL_FRANKENSTRINGS_001 = Heuristic("AL_FrankenStrings_001", "Base64_Decoded", "",
                                       dedent("""\
                                             Base64-like strings discovered and decoded. 
                                             """))
-    AL_FRANKENSTRINGS_002 = Heuristic("AL_FRANKENSTRINGS_002", "XOR_decoded", "",
+    AL_FRANKENSTRINGS_002 = Heuristic("AL_FrankenStrings_002", "XOR_decoded", "",
                                       dedent("""\
                                             XOR'd IOC content found and decoded
                                             """))
-    AL_FRANKENSTRINGS_003 = Heuristic("AL_FRANKENSTRINGS_003", "Embedded_PE", "",
+    AL_FRANKENSTRINGS_003 = Heuristic("AL_FrankenStrings_003", "Embedded_PE", "",
                                       dedent("""\
                                             Embedded PE extracted.
                                             """))
-    AL_FRANKENSTRINGS_004 = Heuristic("AL_FRANKENSTRINGS_004", "Unicode_decoded", "",
+    AL_FRANKENSTRINGS_004 = Heuristic("AL_FrankenStrings_004", "Unicode_decoded", "",
                                       dedent("""\
                                             Unicode-like data found and decoded in non-exectuable file. 
                                             """))
-    AL_FRANKENSTRINGS_005 = Heuristic("AL_FRANKENSTRINGS_005", "ASCIIhex_file_decoded", "",
+    AL_FRANKENSTRINGS_005 = Heuristic("AL_FrankenStrings_005", "ASCIIhex_file_decoded", "",
                                       dedent("""\
                                             Possible ASCII hex encoded file decoded in non-executable file. 
                                             """))
-    AL_FRANKENSTRINGS_006 = Heuristic("AL_FRANKENSTRINGS_006", "ASCIIhex_strings_decoded", "",
+    AL_FRANKENSTRINGS_006 = Heuristic("AL_FrankenStrings_006", "ASCIIhex_strings_decoded", "",
                                       dedent("""\
                                             ASCII hex-like strings found and decoded in non-executable file. 
                                             """))
-    AL_FRANKENSTRINGS_007 = Heuristic("AL_FRANKENSTRINGS_007", "ASCIIhex_xor_string", "",
+    AL_FRANKENSTRINGS_007 = Heuristic("AL_FrankenStrings_007", "ASCIIhex_xor_string", "",
                                       dedent("""\
                                             Popssible ASCII hex-like string with additional xor encoding found.
                                             """))
-    AL_FRANKENSTRINGS_008 = Heuristic("AL_FRANKENSTRINGS_008", "flare_encoded_string", "executable/",
+    AL_FRANKENSTRINGS_008 = Heuristic("AL_FrankenStrings_008", "flare_encoded_string", "executable/",
                                       dedent("""\
                                             Encoded string found and decoded in executable file by Flare-Floss modules.
                                             """))
-    AL_FRANKENSTRINGS_009 = Heuristic("AL_FRANKENSTRINGS_009", "flare_stacked_string", "executable/",
+    AL_FRANKENSTRINGS_009 = Heuristic("AL_FrankenStrings_009", "flare_stacked_string", "executable/",
                                       dedent("""\
                                             Stacked string found and decoded in executable file by Flare-Floss modules. 
                                             """))
