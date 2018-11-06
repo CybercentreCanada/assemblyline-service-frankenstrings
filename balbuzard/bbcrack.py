@@ -807,6 +807,9 @@ def bbcrack(file_data, level=1):
     for Transform_class in transform_classes:
         for params in Transform_class.iter_params():
             transform = Transform_class(params)
+            if transform.shortname == "xor20":
+                # for basic alpha characters, will essentially convert lower and uppercase.
+                continue
             data = transform.transform_string(raw_data)
             score = 0
             for pattern, matches in bbz.scan(data):
@@ -814,11 +817,10 @@ def bbcrack(file_data, level=1):
                     regex = pattern.name
                     smatch = match
                     if regex == 'EXE_HEAD':
+                        if not 'This program cannot be run' in data:
+                            continue
                         score = 100000
                         results.append((transform.shortname, regex, index, score, data))
-                        continue
-                    if transform.shortname == "xor20":
-                        #for basic alpha characters, will essentially convert lower and uppercase.
                         continue
                     score += len(match) * pattern.weight
                     results.append((transform.shortname, regex, index, score, smatch[0:50]))
