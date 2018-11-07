@@ -116,8 +116,10 @@ class PatternMatch(object):
 
         pest_minlen = 6
 
-        self.pest_blacklist = {}
         self.pest_api = {}
+        self.pest_blacklist = {}
+        self.pest_powershell = {}
+
         for ag in tree.findall('.//agent'):
             if len(ag.text) > pest_minlen:
                 self.pest_blacklist.setdefault('agent', set()).add(ag.text)
@@ -176,6 +178,10 @@ class PatternMatch(object):
             if tapi.text is not None:
                 if len(tapi.text) > pest_minlen:
                     self.pest_api.setdefault('topapi', set()).add(tapi.text)
+
+        # Powershell indicator strings
+        for st in tree.findall('.//powershell'):
+            self.pest_powershell.setdefault('powershell', set()).add(st.text)
 
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
@@ -423,49 +429,39 @@ class PatternMatch(object):
         # ------------------------------------------------------------------------------
         # PEStudio Blacklist
         # Flags strings from PEStudio's Blacklist
-        final_values = ""
+        final_values = []
         for k, i in self.pest_blacklist.iteritems():
             for e in i:
-                psblfind = []
-                if e in value:
-                    psblfind.append(e)
-                if len(psblfind) > 0:
-                    longeststring = max(psblfind, key=len)
-                    if len(longeststring) == len(value):
-                        value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(value)
-                        return value_extract
-                    if len(psblfind) == 1:
-                        for val in psblfind:
-                            value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(val)
-                    else:
-                        like_ls = process.extract(longeststring, psblfind, limit=50)
-                        final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                        final_values.append((longeststring, 100))
-                        for val in final_values:
-                            value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(val[0])
+                if re.search(r'\b{}\b' .format(e), value):
+                    final_values.append(e)
+        if len(final_values) > 0:
+            value_extract['PESTUDIO_BLACKLIST_STRING'] = set()
+        for val in final_values:
+            value_extract['PESTUDIO_BLACKLIST_STRING'].add(val)
         # -----------------------------------------------------------------------------
         # Function/Library Strings
         # Win API strings from PEStudio's Blacklist
-        final_values = ""
+        final_values = []
         for k, i in self.pest_api.iteritems():
             for e in i:
-                pswinfind = []
-                if e in value:
-                    pswinfind.append(e)
-                if len(pswinfind) > 0:
-                    longeststring = max(pswinfind, key=len)
-                    if len(longeststring) == len(value):
-                        value_extract.setdefault('WIN_API_STRING', set()).add(value)
-                        return value_extract
-                    if len(pswinfind) == 1:
-                        for val in pswinfind:
-                            value_extract.setdefault('WIN_API_STRING', set()).add(val)
-                    else:
-                        like_ls = process.extract(longeststring, pswinfind, limit=50)
-                        final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                        final_values.append((longeststring, 100))
-                        for val in final_values:
-                            value_extract.setdefault('WIN_API_STRING', set()).add(val[0])
+                if re.search(r'\b{}\b' .format(e), value):
+                    final_values.append(e)
+        if len(final_values) > 0:
+            value_extract['WIN_API_STRING'] = set()
+        for val in final_values:
+            value_extract['WIN_API_STRING'].add(val)
+        # -----------------------------------------------------------------------------
+        # Powershell Strings
+        # Powershell Cmdlets added to PEStudio's strings.xml list
+        final_values = []
+        for k, i in self.pest_powershell.iteritems():
+            for e in i:
+                if re.search(r'\b{}\b' .format(e), value):
+                    final_values.append(e)
+        if len(final_values) > 0:
+            value_extract['POWERSHELL_CMDLET'] = set()
+        for val in final_values:
+            value_extract['POWERSHELL_CMDLET'].add(val)
 
         return value_extract
 
