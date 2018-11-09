@@ -154,12 +154,8 @@ class CrowBar(object):
                         d = binascii.a2b_base64(s)
                     except binascii.Error:
                         continue
-                    if len(d) > 1000:
-                        s1 = s1.replace(s, "[Decoded HEX data over 1000 bytes, extracted by service]")
-                        self.submit_extracted(d, filename="b64_decoded", raw=True)
-                    else:
-                        if all(ord(c) < 128 for c in d):
-                            s1 = s1.replace(s, ascii_dump(d))
+                    if all(ord(c) < 128 for c in d):
+                        s1 = s1.replace(s, ascii_dump(d))
 
         if s1 != text:
             output = s1
@@ -418,7 +414,7 @@ class CrowBar(object):
                         for v in val:
                             after.append(v)
                 diff_tags = list(set(before).symmetric_difference(set(after)))
-                # Add additional checks to see if the file should be extracted. 1500 is an arbitrary score...
+                # Add additional checks to see if the file should be extracted.
                 if (len(clean) > 1000 and final_score > 500) or (len(before) < len(after)) or extract_file:
                     res = (ResultSection(SCORE.NULL, "CrowBar Plugin Detected Possible Obfuscated Script:"))
                     mres = (ResultSection(SCORE.NULL, "The following CrowBar modules made deofuscation attempts:",
@@ -431,12 +427,9 @@ class CrowBar(object):
                     # Display final layer
                     lres = (ResultSection(SCORE.NULL, "Final layer:", body_format=TEXT_FORMAT.MEMORY_DUMP,
                                           parent=res))
-                    if extract_file:
-                        lres.add_line("First 500 bytes of file:")
-                        lres.add_line(clean[:500])
-                    else:
-                        lres.add_line("First 5000 bytes of file:")
-                        lres.add_line(clean[:5000])
+
+                    lres.add_line("First 500 bytes of file:")
+                    lres.add_line(clean[:500])
 
                     if len(pat_values) > 0 and len(diff_tags) > 0:
                         for ty, val in pat_values.iteritems():
