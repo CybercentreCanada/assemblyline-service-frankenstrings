@@ -436,7 +436,7 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_BLACKLIST.iteritems():
             for e in i:
-                if re.search(r'\b{}\b' .format(e), value):
+                if e in value:
                     final_values.append(e)
         if len(final_values) > 0:
             value_extract['PESTUDIO_BLACKLIST_STRING'] = set()
@@ -448,7 +448,7 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_API.iteritems():
             for e in i:
-                if re.search(r'\b{}\b' .format(e), value):
+                if e in value:
                     final_values.append(e)
         if len(final_values) > 0:
             value_extract['WIN_API_STRING'] = set()
@@ -460,7 +460,7 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_POWERSHELL.iteritems():
             for e in i:
-                if re.search(r'\b{}\b' .format(e), value):
+                if e in value:
                     final_values.append(e)
         if len(final_values) > 0:
             value_extract['POWERSHELL_CMDLET'] = set()

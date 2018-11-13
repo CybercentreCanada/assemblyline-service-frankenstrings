@@ -25,7 +25,6 @@ class CrowBar(object):
         return ''.join([chr((ord(c) + k) & 0xff) for c in s])
 
     def charcode(self, text):
-        final = False
         output = None
         arrayofints = filter(lambda n: n < 256,
                              map(int, re.findall('(\d+)', str(re.findall('\D{1,2}\d{2,3}', text)))))
@@ -35,11 +34,9 @@ class CrowBar(object):
                 # if the output is mostly readable and big enough
                 output = s1
 
-        return final, output
+        return output
 
     def charcode_hex(self, text):
-
-        final = False
         output = None
         s1 = text
         enc_str = ['\u', '%u', '\\x', '0x']
@@ -84,11 +81,10 @@ class CrowBar(object):
         if s1 != text:
             output = s1
 
-        return final, output
+        return output
 
     @staticmethod
     def string_replace(text):
-        final = False
         output = None
         if 'replace(' in text.lower():
             # Process string with replace functions calls
@@ -100,11 +96,11 @@ class CrowBar(object):
                 s2 = strreplace
                 # Extract all substitutions
                 for str1, str2 in re.findall('\.replace\([/\'"]([^,]+)[/\'\"]g?\s*,\s*[\'\"]([^)]*)[\'\"]\)',
-                                             s2):
+                                             s2, flags=re.I):
                     # Execute the substitution
                     s2 = s2.replace(str1, str2)
                 # Remove the replace calls from the layer (prevent accidental substitutions in the next step)
-                s2 = s2[:s2.index('.replace(')]
+                s2 = s2[:s2.lower().index('.replace(')]
                 s1 = s1.replace(strreplace, s2)
 
             # Process global string replace
@@ -116,7 +112,7 @@ class CrowBar(object):
             for str1, str2, str3 in replacements:
                 s1 = s1.replace(str1, str1.replace(str2, str3))
             output = re.sub('\.replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]\)', '', s1)
-        return final, output
+        return output
 
     def b64decode_str(self, text):
         def cic(expression):
@@ -141,7 +137,6 @@ class CrowBar(object):
             """
             return ''.join([iff(ord(b) >= 32, b, '') for b in data])
 
-        final = False
         output = None
         b64str = re.findall('([\x20](?:[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', text)
         s1 = text
@@ -159,11 +154,11 @@ class CrowBar(object):
 
         if s1 != text:
             output = s1
-        return final, output
+        return output
 
     @staticmethod
     def vars_of_fake_arrays(text):
-        final = False
+
         output = None
         replacements = re.findall('var\s+([^\s=]+)\s*=\s*\[([^\]]+)\]\[(\d+)\]', text)
         if len(replacements) > 0:
@@ -178,12 +173,11 @@ class CrowBar(object):
                 s1 = s1.replace(varname, value)
             if s1 != text:
                 output = s1
-        return final, output
+        return output
 
     @staticmethod
     def array_of_strings(text):
         try:
-            final = False
             output = None
             replacements = re.findall('var\s+([^\s=]+)\s*=\s*\[([^\]]+)\]\s*;', text)
             if len(replacements) > 0:
@@ -200,24 +194,21 @@ class CrowBar(object):
                 if s1 != text:
                     output = s1
         except:
-            final = False
             output = None
-        return final, output
+        return output
 
     @staticmethod
     def concat_strings(text):
-        final = False
         output = None
         # Line continuation character in VB -- '_'
         s1 = re.sub('[\'"][\s\n_]*?[+&][\s\n_]*[\'"]', '', text)
         if s1 != text:
             output = s1
 
-        return final, output
+        return output
 
     @staticmethod
     def str_reverse(text):
-        final = False
         output = None
         s1 = text
         # VBA format StrReverse("[text]")
@@ -227,17 +218,16 @@ class CrowBar(object):
             s1 = s1.replace(full, reversed_st)
         if s1 != text:
             output = s1
-        return final, output
+        return output
 
     @staticmethod
     def powershell_vars(text):
-        final = False
         output = None
-        replacements_string = re.findall(r'(\$\w+)\s*=[^=]\s*[\"\']([^\"\']+)[\"\']', text)
-        replacements_func = re.findall(r'(\$\w+)\s*=\s*([^=\"\'\s]{3,50})[\s]', text)
+        replacements_string = re.findall(r'(\$(?:\w+|{[^\}]+\}))\s*=[^=]\s*[\"\']([^\"\']+)[\"\']', text)
+        replacements_func = re.findall(r'(\$(?:\w+|{[^\}]+\}))\s*=\s*([^=\"\'\s\$]{3,50})[\s]', text)
         if len(replacements_string) > 0 or len(replacements_func) > 0:
             #    ,- Make sure we do not process these again
-            s1 = re.sub(r'[^_](\$\w+)\s*=', r'_\1 =', text)
+            s1 = re.sub(r'\$((?:\w+|{[^\}]+\}))\s*=', r'\$--\1 =', text)
             for varname, string in replacements_string:
                 s1 = s1.replace(varname, string)
             for varname, string in replacements_func:
@@ -245,25 +235,23 @@ class CrowBar(object):
             if output != text:
                 output = s1
 
-        return final, output
+        return output
 
     @staticmethod
     def powershell_carets(text):
-        final = False
         output = text
         for full in re.findall(r'"(?:[^"]+[A-Za-z0-9]+\^[A-Za-z0-9]+[^"]+)+"', text):
             output = output.replace(full, full.replace("^", ""))
         if output == text:
             output = None
-        return final, output
+        return output
 
     def mswordmacro_vars(self, text):
         try:
-            final = False
             output = text
             # bad, prevent false var replacements like YG="86"
             # Replace regular variables
-            replacements = re.findall(r'^((\w+)\s*=\s*(["\'][^"\']+["\'])[\r]?)$', output, re.M)
+            replacements = re.findall(r'^\s*((\w+)\s*=\s*(["\'][^"\']+["\'])[\r]?)$', output, re.MULTILINE|re.DOTALL)
             if len(replacements) > 0:
                 for full, varname, value in replacements:
                     if len(re.findall(r'(\b' + re.escape(varname) + r'\b)', output)) == 1:
@@ -275,18 +263,20 @@ class CrowBar(object):
                         # b = "he"
                         # b = b & "llo "
                         # b = b & "world!"
-                        stacked = re.findall(r'^(({0})\s*=\s*({1})\s*&\s*(["\'][^"\']+["\'])[\r]?)$'
-                                             .format(varname, varname), output, re.M)
+                        stacked = re.findall(r'^\s*(({0})\s*=\s*({1})\s*[+&]\s*(["\'][^"\']+["\'])[\r]?)$'
+                                             .format(varname, varname), output, re.MULTILINE|re.DOTALL)
                         if len(stacked) > 0:
                             for sfull, varname, varname_b, val in stacked:
                                 final_val += val.replace('"', "")
                                 output = output.replace(sfull, '<crowbar:mswordmacro_var_assignment>')
                         output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
-                        output = re.sub(r'(\b' + re.escape(varname) + r'\b)', '"{}"' .format(final_val), output)
+                        # If more than a few, assumption is that this did not
+                        # work according to plan, so just replace 1 for now.
+                        output = re.sub(r'(\b' + re.escape(varname) + r'\b)', '"{}"' .format(final_val), output, count=1)
 
             # Remaining stacked strings
-            replacements = re.findall(r'^((\w+)\s*=\s*(\w+)\s*&\s*(["\'][^"\']+["\'])[\r]?)$',
-                                      output, re.M)
+            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*&\s*(["\'][^"\']+["\'])[\r]?)$',
+                                      output, re.MULTILINE|re.DOTALL)
             vars = set([x[1] for x in replacements])
             for v in vars:
                 final_val = ""
@@ -301,12 +291,10 @@ class CrowBar(object):
                 output = None
 
         except:
-            final = False
             output = None
-        return final, output
+        return output
 
     def simple_xor_function(self, text):
-        final = False
         output = None
         xorstrings = re.findall('(\w+\("((?:[0-9A-Fa-f][0-9A-Fa-f])+)"\s*,\s*"([^"]+)"\))', text)
         option_a = []
@@ -339,7 +327,7 @@ class CrowBar(object):
 
         if text != s1:
             output = s1
-        return final, output
+        return output
 
     @staticmethod
     def xor_with_key(s, k):
@@ -367,37 +355,51 @@ class CrowBar(object):
         layers_list = []
         layer = raw
         techniques = [
-            ('Concat strings', self.concat_strings, False),
             ('MSWord macro vars', self.mswordmacro_vars, False),
             ('Powershell vars', self.powershell_vars, False),
             ('String replace', self.string_replace, False),
+            ('Concat strings', self.concat_strings, False),
             ('Powershell carets', self.powershell_carets, False),
             ('Array of strings', self.array_of_strings, False),
             ('Fake array vars', self.vars_of_fake_arrays, False),
             ('Reverse strings', self.str_reverse, False),
             ('B64 Decode', self.b64decode_str, True),
             ('Simple XOR function', self.simple_xor_function, False),
+        ]
+        finalpass_tech = [
             ('Charcode', self.charcode, False),
             ('Charcode hex', self.charcode_hex, False)
         ]
         extract_file = False
-        done = False
         idx = 0
-        while not done:
+        layers_count = 0
+        while True:
             if idx > self.max_attempts:
+                for name, technique, extract in finalpass_tech:
+                    res = technique(layer)
+                    if res:
+                        layers_list.append((name, res))
+                        if extract:
+                            extract_file = True
                 break
-            done = True
             for name, technique, extract in techniques:
-                final, res = technique(layer)
+                res = technique(layer)
                 if res:
                     layers_list.append((name, res))
                     if extract:
                         extract_file = True
                     # Looks like it worked, restart with new layer
                     layer = res
-                    done = final
-                    if done:
-                        break
+            # If the layers haven't changed in a passing, break
+            if layers_count == len(layers_list):
+                for name, technique, extract in finalpass_tech:
+                    res = technique(layer)
+                    if res:
+                        layers_list.append((name, res))
+                        if extract:
+                            extract_file = True
+                break
+            layers_count = len(layers_list)
             idx += 1
 
         if len(layers_list) > 0:

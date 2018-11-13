@@ -592,6 +592,7 @@ class FrankenStrings(ServiceBase):
             encoded_al_results = []
             encoded_al_tags = set()
             stacked_al_results = []
+            xresult = []
             xor_al_results = []
             unicode_al_results = {}
             unicode_al_dropped_results = []
@@ -660,7 +661,6 @@ class FrankenStrings(ServiceBase):
                                 b64_al_results.append(b64result)
 
                 # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
-                xresult = []
                 if (request.task.size or 0) < bb_max_size:
                     if request.deep_scan:
                         xresult = bbcrack(file_data, level=2)
