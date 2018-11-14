@@ -131,11 +131,17 @@ class FrankenStrings(ServiceBase):
 
         # Flare-FLOSS ascii string extract
         for ast in strings.extract_ascii_strings(data, n=self.st_min_length):
-            if len(ast.s) < st_max_length:
+            if check_length:
+                if len(ast.s) < st_max_length:
+                    strs.add(ast.s)
+            else:
                 strs.add(ast.s)
         # Flare-FLOSS unicode string extract
         for ust in strings.extract_unicode_strings(data, n=self.st_min_length):
-            if len(ust.s) < st_max_length:
+            if check_length:
+                if len(ust.s) < st_max_length:
+                    strs.add(ust.s)
+            else:
                 strs.add(ust.s)
 
         if check_length:

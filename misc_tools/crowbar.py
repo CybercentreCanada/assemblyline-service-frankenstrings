@@ -94,6 +94,18 @@ class CrowBar(object):
         return output
 
     @staticmethod
+    def chr_decode(text):
+        output = text
+        for fullc, c in re.findall(r'(chr[b]?\(([0-9]{1,3})\))', output, re.I):
+            try:
+               output = re.sub(re.escape(fullc), re.escape('{}' .format(chr(int(c)))), output)
+            except:
+                continue
+        if output == text:
+            output = None
+        return output
+
+    @staticmethod
     def string_replace(text):
         output = None
         if 'replace(' in text.lower():
@@ -298,11 +310,11 @@ class CrowBar(object):
                         output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
                         # If more than a few, assumption is that this did not
                         # work according to plan, so just replace 1 for now.
-                        output = re.sub(r'\b' + re.escape(varname) + r'(?!\s*=)\b', '"{}"' .format(final_val),
+                        output = re.sub(r'(\b' + re.escape(varname) + r'(?!\s*[+&=])\b)', '"{}"' .format(final_val),
                                         output, count=5)
 
             # Remaining stacked strings
-            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*[&+]\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$',
+            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$',
                                       output, re.MULTILINE|re.DOTALL)
             vars = set([x[1] for x in replacements])
             for v in vars:
@@ -312,7 +324,7 @@ class CrowBar(object):
                         continue
                     final_val += value.replace('"', "")
                     output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
-                output = re.sub(r'\b' + re.escape(v) + r'(?!\s*=)\b', final_val, output, count=5)
+                output = re.sub(r'(\b' + re.escape(v) + r'(?!\s*[+&=])\b)', final_val, output, count=5)
 
             if output == text:
                 output = None
@@ -394,6 +406,7 @@ class CrowBar(object):
             ('Array of strings', self.array_of_strings),
             ('Fake array vars', self.vars_of_fake_arrays),
             ('Reverse strings', self.str_reverse),
+            ('CHR and CHRB decode', self.chr_decode),
             ('B64 Decode', self.b64decode_str),
             ('Simple XOR function', self.simple_xor_function),
         ]
