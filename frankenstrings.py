@@ -334,7 +334,7 @@ class FrankenStrings(ServiceBase):
                 base64data = binascii.a2b_base64(b64_string)
                 sha256hash = hashlib.sha256(base64data).hexdigest()
                 # Search for embedded files of interest
-                if 800 < len(base64data) < 8000000:
+                if 200 < len(base64data) < 8000000:
                     m = magic.Magic(mime=True)
                     mag = magic.Magic()
                     ftype = m.from_buffer(base64data)
