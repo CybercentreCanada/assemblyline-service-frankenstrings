@@ -206,7 +206,7 @@ class CrowBar(object):
                     value = re.split('\s*,\s*', array)[int(pos)]
                 except IndexError:
                     # print '[' + array + '][' + pos + ']'
-                    raise
+                    break
                 s1 = s1.replace(varname, value)
             if s1 != text:
                 output = s1
@@ -227,7 +227,7 @@ class CrowBar(object):
                             s1 = re.sub(varname + '\s*\[(%d)\]' % i, values.split(',')[i], s1)
                         except IndexError:
                             # print '[' + array + '][' + pos + ']'
-                            raise
+                            break
                 if s1 != text:
                     output = s1
         except:

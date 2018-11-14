@@ -732,13 +732,12 @@ class FrankenStrings(ServiceBase):
                                 asciihex_dict[ask].append(asi)
 
             # Encoded/Stacked strings -- Windows executable sample types
-            if (request.task.size or 0) < ff_max_size:
+            if (request.task.size or 0) < ff_max_size and sample_type.startswith("executable/windows/"):
 
                 m = magic.Magic()
                 file_magic = m.from_buffer(file_data)
 
-                if sample_type.startswith("executable/windows/") and not file_magic.endswith("compressed"):
-
+                if not file_magic.endswith("compressed"):
                     try:
                         vw = viv_utils.getWorkspace(alfile, should_save=False)
                     except:
