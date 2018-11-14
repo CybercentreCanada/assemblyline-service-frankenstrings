@@ -393,7 +393,7 @@ class CrowBar(object):
         self.wd = wd
         self.files_extracted = set()
         self.hashes = set()
-        res = None
+        al_res = None
         clean = None
         layers_list = []
         layer = raw
@@ -457,9 +457,9 @@ class CrowBar(object):
                 diff_tags = list(before.symmetric_difference(set(after)))
                 # Add additional checks to see if the file should be extracted.
                 if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0 or len(self.files_extracted) > 0:
-                    res = (ResultSection(SCORE.NULL, "CrowBar Plugin Detected Possible Obfuscated Script:"))
+                    al_res = (ResultSection(SCORE.NULL, "CrowBar Plugin Detected Possible Obfuscated Script:"))
                     mres = (ResultSection(SCORE.NULL, "The following CrowBar modules made deofuscation attempts:",
-                                          parent=res))
+                                          parent=al_res))
                     mres.score = final_score
                     lcount = Counter([x[0] for x in layers_list])
                     for l, c in lcount.iteritems():
@@ -469,30 +469,31 @@ class CrowBar(object):
                         # Display any new IOC tags found
                         if len(pat_values) > 0 and len(diff_tags) > 0:
                             dres = (ResultSection(SCORE.HIGH, "IOCs discovered by Crowbar module:",
-                                                  body_format=TEXT_FORMAT.MEMORY_DUMP, parent=res))
+                                                  body_format=TEXT_FORMAT.MEMORY_DUMP, parent=al_res))
                             for ty, val in pat_values.iteritems():
                                 if val == "":
                                     asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
                                     if asc_asc in diff_tags:
                                         dres.add_line("{} string: {}" .format(ty.replace("_", " "), asc_asc))
-                                        res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                                        al_res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
                                 else:
                                     for v in val:
                                         if v in diff_tags:
                                             dres.add_line("{} string: {}".format(ty.replace("_", " "), v))
-                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                            al_res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
                         # Display final layer
                         lres = (ResultSection(SCORE.NULL, "Final layer:", body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                              parent=res))
+                                              parent=al_res))
 
                         lres.add_line("First 500 bytes of file:")
                         lres.add_line(clean[:500])
+
                     if len(self.files_extracted) > 0:
-                        res.add_section(ResultSection(SCORE.LOW, "Deobfuscated code of interest extracted in isolation. "
+                        al_res.add_section(ResultSection(SCORE.LOW, "Deobfuscated code of interest extracted in isolation. "
                                                                  "See extracted files."))
                 else:
                     clean = None
                     self.files_extracted = None
 
-        return res, clean, self.files_extracted
+        return al_res, clean, self.files_extracted
