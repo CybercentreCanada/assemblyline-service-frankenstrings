@@ -445,16 +445,16 @@ class CrowBar(object):
             final_score = len(layers_list) * 10
             clean = self.clean_up_final_layer(layers_list[-1][1])
             if clean != raw:
-                after = []
+                after = set()
                 pat_values = patterns.ioc_match(clean, bogon_ip=True, just_network=False)
                 for k, val in pat_values.iteritems():
                     if val == "":
                         asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                        after.append(asc_asc)
+                        after.add(asc_asc)
                     else:
                         for v in val:
-                            after.append(v)
-                diff_tags = list(before.symmetric_difference(set(after)))
+                            after.add(v)
+                diff_tags = after - before
                 # Add additional checks to see if the file should be extracted.
                 if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0 or len(self.files_extracted) > 0:
                     al_res = (ResultSection(SCORE.NULL, "CrowBar Plugin Detected Possible Obfuscated Script:"))
