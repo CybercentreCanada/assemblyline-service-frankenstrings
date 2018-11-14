@@ -251,7 +251,8 @@ class CrowBar(object):
             output = text
             # bad, prevent false var replacements like YG="86"
             # Replace regular variables
-            replacements = re.findall(r'^\s*((\w+)\s*=\s*(["\'][^"\']+["\'])[\r]?)$', output, re.MULTILINE|re.DOTALL)
+            replacements = re.findall(r'^\s*((\w+)\s*=\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$',
+                                      output, re.MULTILINE|re.DOTALL)
             if len(replacements) > 0:
                 for full, varname, value in replacements:
                     if len(re.findall(r'(\b' + re.escape(varname) + r'\b)', output)) == 1:
@@ -263,7 +264,7 @@ class CrowBar(object):
                         # b = "he"
                         # b = b & "llo "
                         # b = b & "world!"
-                        stacked = re.findall(r'^\s*(({0})\s*=\s*({1})\s*[+&]\s*(["\'][^"\']+["\'])[\r]?)$'
+                        stacked = re.findall(r'^\s*(({0})\s*=\s*({1})\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$'
                                              .format(varname, varname), output, re.MULTILINE|re.DOTALL)
                         if len(stacked) > 0:
                             for sfull, varname, varname_b, val in stacked:
@@ -275,7 +276,7 @@ class CrowBar(object):
                         output = re.sub(r'(\b' + re.escape(varname) + r'\b)', '"{}"' .format(final_val), output, count=1)
 
             # Remaining stacked strings
-            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*&\s*(["\'][^"\']+["\'])[\r]?)$',
+            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*[&+]\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$',
                                       output, re.MULTILINE|re.DOTALL)
             vars = set([x[1] for x in replacements])
             for v in vars:
@@ -285,7 +286,7 @@ class CrowBar(object):
                         continue
                     final_val += value.replace('"', "")
                     output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
-                output = re.sub(r'(\b' + re.escape(v) + r'\b)', final_val, output)
+                output = re.sub(r'(\b' + re.escape(v) + r'\b)', final_val, output, count=1)
 
             if output == text:
                 output = None
@@ -346,11 +347,10 @@ class CrowBar(object):
         return output
 
     # --- Main Module --------------------------------------------------------------------------------------------------
-    def hammertime(self, max_attempts, raw, before):
+    def hammertime(self, max_attempts, raw, before, patterns):
         """
         Main Module.
         """
-        patterns = PatternMatch()
         self.max_attempts = max_attempts
         layers_list = []
         layer = raw
@@ -415,9 +415,9 @@ class CrowBar(object):
                     else:
                         for v in val:
                             after.append(v)
-                diff_tags = list(set(before).symmetric_difference(set(after)))
+                diff_tags = list(before.symmetric_difference(set(after)))
                 # Add additional checks to see if the file should be extracted.
-                if (len(clean) > 1000 and final_score > 500) or (len(before) < len(after)) or extract_file:
+                if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0 or extract_file:
                     res = (ResultSection(SCORE.NULL, "CrowBar Plugin Detected Possible Obfuscated Script:"))
                     mres = (ResultSection(SCORE.NULL, "The following CrowBar modules made deofuscation attempts:",
                                           parent=res))
@@ -426,6 +426,22 @@ class CrowBar(object):
                     for l, c in lcount.iteritems():
                         mres.add_line("{0}, {1} time(s).".format(l, c))
 
+                    # Display any new IOC tags found
+                    if len(pat_values) > 0 and len(diff_tags) > 0:
+                        dres = (ResultSection(SCORE.HIGH, "IOCs discovered by Crowbar module:",
+                                              body_format=TEXT_FORMAT.MEMORY_DUMP, parent=res))
+                        for ty, val in pat_values.iteritems():
+                            if val == "":
+                                asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                                if asc_asc in diff_tags:
+                                    dres.add_line("{} string: {}" .format(ty.replace("_", " "), asc_asc))
+                                    res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                            else:
+                                for v in val:
+                                    if v in diff_tags:
+                                        dres.add_line("{} string: {}".format(ty.replace("_", " "), v))
+                                        res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+
                     # Display final layer
                     lres = (ResultSection(SCORE.NULL, "Final layer:", body_format=TEXT_FORMAT.MEMORY_DUMP,
                                           parent=res))
@@ -433,16 +449,6 @@ class CrowBar(object):
                     lres.add_line("First 500 bytes of file:")
                     lres.add_line(clean[:500])
 
-                    if len(pat_values) > 0 and len(diff_tags) > 0:
-                        for ty, val in pat_values.iteritems():
-                            if val == "":
-                                asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                if asc_asc in diff_tags:
-                                    res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
-                            else:
-                                for v in val:
-                                    if v in diff_tags:
-                                        res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
                     return res, clean
 
         return None, None

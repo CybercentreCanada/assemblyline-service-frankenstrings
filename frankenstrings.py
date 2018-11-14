@@ -163,6 +163,7 @@ class FrankenStrings(ServiceBase):
                                     tags[ty].add(asc_asc)
                         else:
                             for v in val:
+                                # For crowbar plugin
                                 if savetoset:
                                     self.before.add(v)
                                 if ty == 'NET_DOMAIN_NAME':
@@ -837,7 +838,7 @@ class FrankenStrings(ServiceBase):
                     max_attempts = 100
                 else:
                     max_attempts = 25
-                code_res, decoded_code_data = cb.hammertime(max_attempts, file_data, self.before)
+                code_res, decoded_code_data = cb.hammertime(max_attempts, file_data, self.before, patterns)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
