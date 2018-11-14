@@ -852,7 +852,7 @@ class FrankenStrings(ServiceBase):
                 if request.deep_scan:
                     max_attempts = 100
                 else:
-                    max_attempts = 10
+                    max_attempts = 5
                 cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.before, patterns,
                                                                        self.wd)
 
