@@ -71,6 +71,10 @@ class FrankenStrings(ServiceBase):
                                       dedent("""\
                                             Stacked string found and decoded in executable file by Flare-Floss modules. 
                                             """))
+    AL_FRANKENSTRINGS_010 = Heuristic("AL_FrankenStrings_010", "code_file_deobfuscation", "code/",
+                                      dedent("""\
+                                            Partial code potentially deobfuscated by Crowbar module. 
+                                            """))
 
     def import_service_deps(self):
         global namedtuple, strings, binascii, hashlib, magic, mmap, os, re, string, unicodedata, \
@@ -127,11 +131,17 @@ class FrankenStrings(ServiceBase):
 
         # Flare-FLOSS ascii string extract
         for ast in strings.extract_ascii_strings(data, n=self.st_min_length):
-            if len(ast.s) < st_max_length:
+            if check_length:
+                if len(ast.s) < st_max_length:
+                    strs.add(ast.s)
+            else:
                 strs.add(ast.s)
         # Flare-FLOSS unicode string extract
         for ust in strings.extract_unicode_strings(data, n=self.st_min_length):
-            if len(ust.s) < st_max_length:
+            if check_length:
+                if len(ust.s) < st_max_length:
+                    strs.add(ust.s)
+            else:
                 strs.add(ust.s)
 
         if check_length:
@@ -163,6 +173,7 @@ class FrankenStrings(ServiceBase):
                                     tags[ty].add(asc_asc)
                         else:
                             for v in val:
+                                # For crowbar plugin
                                 if savetoset:
                                     self.before.add(v)
                                 if ty == 'NET_DOMAIN_NAME':
@@ -600,8 +611,9 @@ class FrankenStrings(ServiceBase):
             asciihex_dict = {}
             asciihex_bb_dict = {}
             embedded_pe = False
-            code_res = None
-            decoded_code_data = None
+            cb_code_res = None
+            cb_decoded_data = None
+            cb_filex = None
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
             # Static strings -- all sample types
@@ -837,7 +849,8 @@ class FrankenStrings(ServiceBase):
                     max_attempts = 100
                 else:
                     max_attempts = 25
-                code_res, decoded_code_data = cb.hammertime(max_attempts, file_data, self.before)
+                cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.before, patterns,
+                                                                       self.wd)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
@@ -847,7 +860,8 @@ class FrankenStrings(ServiceBase):
                     or len(encoded_al_results) > 0 \
                     or len(stacked_al_results) > 0 \
                     or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0\
-                    or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict):
+                    or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict)\
+                    or cb_code_res:
 
                 # Report ASCII String Results
                 if len(file_plainstr_iocs) > 0:
@@ -1031,12 +1045,15 @@ class FrankenStrings(ServiceBase):
                                     group_res.add_line("Suspicious string(s) found in decoded data.")
 
                 # Report Crowbar deofuscation results and add deob code to result
-                if code_res:
-                    res.add_section(code_res)
+                if cb_code_res:
+                    result.report_heuristic(FrankenStrings.AL_FRANKENSTRINGS_010)
+                    res.add_section(cb_code_res)
                     decodefp = os.path.join(self.wd, "{}_decoded".format(request.md5))
-                    request.add_extracted(decodefp, "Debofuscated code extracted from sample")
+                    request.add_extracted(decodefp, "Debofuscated sample")
                     with open(decodefp, 'wb') as dcf:
-                        dcf.write(decoded_code_data)
+                        dcf.write(cb_decoded_data)
                         self.log.debug("Submitted dropped file for analysis: {}" .format(decodefp))
+                    for f in cb_filex:
+                        request.add_extracted(f, "Debofuscated file of interest extracted from sample")
 
                 result.add_result(res)

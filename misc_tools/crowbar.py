@@ -1,24 +1,34 @@
-from al_services.alsvc_frankenstrings.balbuzard.patterns import PatternMatch
 from assemblyline.al.common.result import ResultSection, SCORE, TAG_TYPE, TAG_WEIGHT, TEXT_FORMAT
 from collections import Counter
 import binascii
+import hashlib
+import magic
+import os
 import re
 import unicodedata
 
 
 class CrowBar(object):
+    FILETYPES = ['application',
+                      'document',
+                      'exec',
+                      'image',
+                      'Microsoft',
+                      'text',
+                      ]
+    VALIDCHARS = ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+    BINCHARS = ''.join([c for c in map(chr, range(0, 256)) if c not in VALIDCHARS])
 
     def __init__(self):
-
-        self.validchars = \
-            ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
-        self.binchars = ''.join([c for c in map(chr, range(0, 256)) if c not in self.validchars])
         self.max_attempts = None
+        self.files_extracted = None
+        self.wd = None
+        self.hashes = None
 
     # --- Support Modules ----------------------------------------------------------------------------------------------
 
     def printable_ratio(self, text):
-        return float(float(len(text.translate(None, self.binchars))) / float(len(text)))
+        return float(float(len(text.translate(None, self.BINCHARS))) / float(len(text)))
 
     @staticmethod
     def add1b(s, k):
@@ -84,6 +94,18 @@ class CrowBar(object):
         return output
 
     @staticmethod
+    def chr_decode(text):
+        output = text
+        for fullc, c in re.findall(r'(chr[b]?\(([0-9]{1,3})\))', output, re.I):
+            try:
+               output = re.sub(re.escape(fullc), re.escape('{}' .format(chr(int(c)))), output)
+            except:
+                continue
+        if output == text:
+            output = None
+        return output
+
+    @staticmethod
     def string_replace(text):
         output = None
         if 'replace(' in text.lower():
@@ -138,7 +160,7 @@ class CrowBar(object):
             return ''.join([iff(ord(b) >= 32, b, '') for b in data])
 
         output = None
-        b64str = re.findall('([\x20](?:[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', text)
+        b64str = re.findall('((?:[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', text)
         s1 = text
         for bmatch in b64str:
             s = bmatch.replace('\n', '').replace('\r', '').replace(' ', '')
@@ -149,6 +171,21 @@ class CrowBar(object):
                         d = binascii.a2b_base64(s)
                     except binascii.Error:
                         continue
+                    m = magic.Magic(mime=True)
+                    mag = magic.Magic()
+                    ftype = m.from_buffer(d)
+                    mag_ftype = mag.from_buffer(d)
+                    sha256hash = hashlib.sha256(d).hexdigest()
+                    for ft in self.FILETYPES:
+                        if ((ft in ftype and not 'octet-stream' in ftype) or ft in mag_ftype) and len(d) > 500 \
+                                and sha256hash not in self.hashes:
+                            b64_file_path = os.path.join(self.wd, "{}_cb_b64_decoded"
+                                                         .format(sha256hash[0:10]))
+                            with open(b64_file_path, 'wb') as b64_file:
+                                b64_file.write(d)
+                            self.files_extracted.add(b64_file_path)
+                            self.hashes.add(sha256hash)
+                            break
                     if all(ord(c) < 128 for c in d):
                         s1 = s1.replace(s, ascii_dump(d))
 
@@ -251,7 +288,8 @@ class CrowBar(object):
             output = text
             # bad, prevent false var replacements like YG="86"
             # Replace regular variables
-            replacements = re.findall(r'^\s*((\w+)\s*=\s*(["\'][^"\']+["\'])[\r]?)$', output, re.MULTILINE|re.DOTALL)
+            replacements = re.findall(r'^\s*((\w+)\s*=\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$',
+                                      output, re.MULTILINE|re.DOTALL)
             if len(replacements) > 0:
                 for full, varname, value in replacements:
                     if len(re.findall(r'(\b' + re.escape(varname) + r'\b)', output)) == 1:
@@ -263,7 +301,7 @@ class CrowBar(object):
                         # b = "he"
                         # b = b & "llo "
                         # b = b & "world!"
-                        stacked = re.findall(r'^\s*(({0})\s*=\s*({1})\s*[+&]\s*(["\'][^"\']+["\'])[\r]?)$'
+                        stacked = re.findall(r'^\s*(({0})\s*=\s*({1})\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$'
                                              .format(varname, varname), output, re.MULTILINE|re.DOTALL)
                         if len(stacked) > 0:
                             for sfull, varname, varname_b, val in stacked:
@@ -272,10 +310,11 @@ class CrowBar(object):
                         output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
                         # If more than a few, assumption is that this did not
                         # work according to plan, so just replace 1 for now.
-                        output = re.sub(r'(\b' + re.escape(varname) + r'\b)', '"{}"' .format(final_val), output, count=1)
+                        output = re.sub(r'(\b' + re.escape(varname) + r'(?!\s*[+&=])\b)', '"{}"' .format(final_val),
+                                        output, count=5)
 
             # Remaining stacked strings
-            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*&\s*(["\'][^"\']+["\'])[\r]?)$',
+            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$',
                                       output, re.MULTILINE|re.DOTALL)
             vars = set([x[1] for x in replacements])
             for v in vars:
@@ -285,7 +324,7 @@ class CrowBar(object):
                         continue
                     final_val += value.replace('"', "")
                     output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
-                output = re.sub(r'(\b' + re.escape(v) + r'\b)', final_val, output)
+                output = re.sub(r'(\b' + re.escape(v) + r'(?!\s*[+&=])\b)', final_val, output, count=5)
 
             if output == text:
                 output = None
@@ -346,58 +385,58 @@ class CrowBar(object):
         return output
 
     # --- Main Module --------------------------------------------------------------------------------------------------
-    def hammertime(self, max_attempts, raw, before):
+    def hammertime(self, max_attempts, raw, before, patterns, wd):
         """
         Main Module.
         """
-        patterns = PatternMatch()
         self.max_attempts = max_attempts
+        self.wd = wd
+        self.files_extracted = set()
+        self.hashes = set()
+        res = None
+        clean = None
         layers_list = []
         layer = raw
         techniques = [
-            ('MSWord macro vars', self.mswordmacro_vars, False),
-            ('Powershell vars', self.powershell_vars, False),
-            ('String replace', self.string_replace, False),
-            ('Concat strings', self.concat_strings, False),
-            ('Powershell carets', self.powershell_carets, False),
-            ('Array of strings', self.array_of_strings, False),
-            ('Fake array vars', self.vars_of_fake_arrays, False),
-            ('Reverse strings', self.str_reverse, False),
-            ('B64 Decode', self.b64decode_str, True),
-            ('Simple XOR function', self.simple_xor_function, False),
+            ('MSWord macro vars', self.mswordmacro_vars),
+            ('Powershell vars', self.powershell_vars),
+            ('String replace', self.string_replace),
+            ('Concat strings', self.concat_strings),
+            ('Powershell carets', self.powershell_carets),
+            ('Array of strings', self.array_of_strings),
+            ('Fake array vars', self.vars_of_fake_arrays),
+            ('Reverse strings', self.str_reverse),
+            ('CHR and CHRB decode', self.chr_decode),
+            ('B64 Decode', self.b64decode_str),
+            ('Simple XOR function', self.simple_xor_function),
         ]
         finalpass_tech = [
-            ('Charcode', self.charcode, False),
-            ('Charcode hex', self.charcode_hex, False)
+            ('Charcode', self.charcode),
+            ('Charcode hex', self.charcode_hex)
         ]
-        extract_file = False
+
         idx = 0
         layers_count = 0
         while True:
             if idx > self.max_attempts:
-                for name, technique, extract in finalpass_tech:
+                for name, technique in finalpass_tech:
                     res = technique(layer)
                     if res:
                         layers_list.append((name, res))
-                        if extract:
-                            extract_file = True
                 break
-            for name, technique, extract in techniques:
+            for name, technique in techniques:
                 res = technique(layer)
                 if res:
                     layers_list.append((name, res))
-                    if extract:
-                        extract_file = True
+
                     # Looks like it worked, restart with new layer
                     layer = res
             # If the layers haven't changed in a passing, break
             if layers_count == len(layers_list):
-                for name, technique, extract in finalpass_tech:
+                for name, technique in finalpass_tech:
                     res = technique(layer)
                     if res:
                         layers_list.append((name, res))
-                        if extract:
-                            extract_file = True
                 break
             layers_count = len(layers_list)
             idx += 1
@@ -415,9 +454,9 @@ class CrowBar(object):
                     else:
                         for v in val:
                             after.append(v)
-                diff_tags = list(set(before).symmetric_difference(set(after)))
+                diff_tags = list(before.symmetric_difference(set(after)))
                 # Add additional checks to see if the file should be extracted.
-                if (len(clean) > 1000 and final_score > 500) or (len(before) < len(after)) or extract_file:
+                if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0 or len(self.files_extracted) > 0:
                     res = (ResultSection(SCORE.NULL, "CrowBar Plugin Detected Possible Obfuscated Script:"))
                     mres = (ResultSection(SCORE.NULL, "The following CrowBar modules made deofuscation attempts:",
                                           parent=res))
@@ -426,23 +465,34 @@ class CrowBar(object):
                     for l, c in lcount.iteritems():
                         mres.add_line("{0}, {1} time(s).".format(l, c))
 
-                    # Display final layer
-                    lres = (ResultSection(SCORE.NULL, "Final layer:", body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                          parent=res))
+                    if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0:
+                        # Display any new IOC tags found
+                        if len(pat_values) > 0 and len(diff_tags) > 0:
+                            dres = (ResultSection(SCORE.HIGH, "IOCs discovered by Crowbar module:",
+                                                  body_format=TEXT_FORMAT.MEMORY_DUMP, parent=res))
+                            for ty, val in pat_values.iteritems():
+                                if val == "":
+                                    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                                    if asc_asc in diff_tags:
+                                        dres.add_line("{} string: {}" .format(ty.replace("_", " "), asc_asc))
+                                        res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                                else:
+                                    for v in val:
+                                        if v in diff_tags:
+                                            dres.add_line("{} string: {}".format(ty.replace("_", " "), v))
+                                            res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
 
-                    lres.add_line("First 500 bytes of file:")
-                    lres.add_line(clean[:500])
+                        # Display final layer
+                        lres = (ResultSection(SCORE.NULL, "Final layer:", body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                              parent=res))
 
-                    if len(pat_values) > 0 and len(diff_tags) > 0:
-                        for ty, val in pat_values.iteritems():
-                            if val == "":
-                                asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                if asc_asc in diff_tags:
-                                    res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
-                            else:
-                                for v in val:
-                                    if v in diff_tags:
-                                        res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
-                    return res, clean
+                        lres.add_line("First 500 bytes of file:")
+                        lres.add_line(clean[:500])
+                    if len(self.files_extracted) > 0:
+                        res.add_section(ResultSection(SCORE.LOW, "Deobfuscated code of interest extracted in isolation. "
+                                                                 "See extracted files."))
+                else:
+                    clean = None
+                    self.files_extracted = None
 
-        return None, None
+        return res, clean, self.files_extracted

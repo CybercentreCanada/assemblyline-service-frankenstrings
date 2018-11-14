@@ -50,68 +50,68 @@ def get_xml_strings():
     with open(path.join(path.dirname(__file__), "../pestudio/xml/strings.xml"), 'rt') as f:
         tree = ElementTree.parse(f)
 
-    for ag in tree.findall('.//agent'):
-        if len(ag.text) > pest_minlen:
-            blacklist.setdefault('agent', set()).add(ag.text)
-    for av in tree.findall('.//av'):
-        if len(av.text) > pest_minlen:
-            blacklist.setdefault('av', set()).add(av.text)
-    for ev in tree.findall('.//event'):
-        if len(ev.text) > pest_minlen:
-            blacklist.setdefault('event', set()).add(ev.text)
-    for gu in tree.findall('.//guid'):
-        if len(gu.text) > pest_minlen:
-            blacklist.setdefault('guid', set()).add(gu.text)
-    for ins in tree.findall('.//insult'):
-        if len(ins.text) > pest_minlen:
-            blacklist.setdefault('insult', set()).add(ins.text)
-    for ke in tree.findall('.//key'):
-        if len(ke.text) > pest_minlen:
-            blacklist.setdefault('key', set()).add(ke.text)
-    for oi in tree.findall('.//oid'):
-        if len(oi.text) > pest_minlen:
-            blacklist.setdefault('oid', set()).add(oi.text)
-    for os in tree.findall('.//os'):
-        if len(os.text) > pest_minlen:
-            blacklist.setdefault('os', set()).add(os.text)
-    for pr in tree.findall('.//priv'):
-        if len(pr.text) > pest_minlen:
-            blacklist.setdefault('priv', set()).add(pr.text)
-    for pro in tree.findall('.//product'):
-        if len(pro.text) > pest_minlen:
-            blacklist.setdefault('product', set()).add(pro.text)
-    for proto in tree.findall('.//protocol'):
-        blacklist.setdefault('protocol', set()).add(proto.text)
-    for reg in tree.findall('.//reg'):
-        if len(reg.text) > pest_minlen:
-            blacklist.setdefault('reg', set()).add(reg.text)
-    for si in tree.findall('.//sid'):
-        if len(si.text) > pest_minlen:
-            blacklist.setdefault('sid', set()).add(si.text)
+    for st in tree.findall('.//agent'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('agent', set()).add(st.text)
+    for st in tree.findall('.//av'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('av', set()).add(st.text)
+    for st in tree.findall('.//event'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('event', set()).add(st.text)
+    for st in tree.findall('.//guid'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('guid', set()).add(st.text)
+    for st in tree.findall('.//insult'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('insult', set()).add(st.text)
+    for st in tree.findall('.//key'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('key', set()).add(st.text)
+    for st in tree.findall('.//oid'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('oid', set()).add(st.text)
+    for st in tree.findall('.//os'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('os', set()).add(st.text)
+    for st in tree.findall('.//priv'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('priv', set()).add(st.text)
+    for st in tree.findall('.//product'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('product', set()).add(st.text)
+    for st in tree.findall('.//protocol'):
+        blacklist.setdefault('protocol', set()).add(st.text)
+    for st in tree.findall('.//reg'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('reg', set()).add(st.text)
+    for st in tree.findall('.//sid'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('sid', set()).add(st.text)
     for st in tree.findall('.//string'):
         if len(st.text) > pest_minlen:
             blacklist.setdefault('string', set()).add(st.text)
+    # Powershell indicator strings
+    for st in tree.findall('.//powershell'):
+        if len(st.text) > pest_minlen:
+            powershell.setdefault('powershell', set()).add(st.text)
 
     # Adding Popular API
     with open(path.join(path.dirname(__file__), '../pestudio/xml/functions.xml'), 'rt') as f:
         tree = ElementTree.parse(f)
 
-    for fun in tree.findall(".//fct"):
-        if fun.text is not None:
-            if len(fun.text) > pest_minlen and fun.text is not None:
-                api.setdefault('fct', set()).add(fun.text.split('::', 1)[0])
-    for li in tree.findall(".//lib"):
-        if li.attrib['name'] is not None:
-            if len(li.attrib['name']) > pest_minlen:
-                api.setdefault('lib', set()).add(li.attrib['name'])
-    for tapi in tree.findall('.//topapi'):
-        if tapi.text is not None:
-            if len(tapi.text) > pest_minlen:
-                api.setdefault('topapi', set()).add(tapi.text)
-
-    # Powershell indicator strings
-    for st in tree.findall('.//powershell'):
-        powershell.setdefault('powershell', set()).add(st.text)
+    for st in tree.findall(".//fct"):
+        if st.text is not None:
+            if len(st.text) > pest_minlen and st.text is not None:
+                api.setdefault('fct', set()).add(st.text.split('::', 1)[0])
+    for st in tree.findall(".//lib"):
+        if st.attrib['name'] is not None:
+            if len(st.attrib['name']) > pest_minlen:
+                api.setdefault('lib', set()).add(st.attrib['name'])
+    for st in tree.findall('.//topapi'):
+        if st.text is not None:
+            if len(st.text) > pest_minlen:
+                api.setdefault('topapi', set()).add(st.text)
 
     return api, blacklist, powershell
 
