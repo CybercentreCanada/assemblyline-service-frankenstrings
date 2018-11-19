@@ -468,7 +468,7 @@ class CrowBar(object):
                     if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0:
                         # Display any new IOC tags found
                         if len(pat_values) > 0 and len(diff_tags) > 0:
-                            dres = (ResultSection(SCORE.HIGH, "IOCs discovered by Crowbar module:",
+                            dres = (ResultSection(SCORE.LOW, "IOCs discovered by Crowbar module:",
                                                   body_format=TEXT_FORMAT.MEMORY_DUMP, parent=al_res))
                             for ty, val in pat_values.iteritems():
                                 if val == "":
