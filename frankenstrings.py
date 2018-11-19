@@ -129,7 +129,7 @@ class FrankenStrings(ServiceBase):
         if check_length:
             ml = self.st_min_length
         else:
-            ml = 1000000
+            ml = 4
 
         strs = set()
         jn = False
