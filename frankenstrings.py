@@ -126,18 +126,23 @@ class FrankenStrings(ServiceBase):
         if taglist:
             tags = {}
 
+        if check_length:
+            ml = self.st_min_length
+        else:
+            ml = 1000000
+
         strs = set()
         jn = False
 
         # Flare-FLOSS ascii string extract
-        for ast in strings.extract_ascii_strings(data, n=self.st_min_length):
+        for ast in strings.extract_ascii_strings(data, n=ml):
             if check_length:
                 if len(ast.s) < st_max_length:
                     strs.add(ast.s)
             else:
                 strs.add(ast.s)
         # Flare-FLOSS unicode string extract
-        for ust in strings.extract_unicode_strings(data, n=self.st_min_length):
+        for ust in strings.extract_unicode_strings(data, n=ml):
             if check_length:
                 if len(ust.s) < st_max_length:
                     strs.add(ust.s)
@@ -847,7 +852,7 @@ class FrankenStrings(ServiceBase):
                 if request.deep_scan:
                     max_attempts = 100
                 else:
-                    max_attempts = 10
+                    max_attempts = 5
                 cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.before, patterns,
                                                                        self.wd)
 
