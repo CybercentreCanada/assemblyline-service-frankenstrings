@@ -39,188 +39,198 @@ from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Pattern, Patter
 from xml.etree import ElementTree
 from fuzzywuzzy import process
 
+def get_xml_strings():
+
+    pest_minlen = 6
+
+    api = {}
+    blacklist = {}
+    powershell = {}
+
+    with open(path.join(path.dirname(__file__), "../pestudio/xml/strings.xml"), 'rt') as f:
+        tree = ElementTree.parse(f)
+
+    for st in tree.findall('.//agent'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('agent', set()).add(st.text)
+    for st in tree.findall('.//av'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('av', set()).add(st.text)
+    for st in tree.findall('.//event'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('event', set()).add(st.text)
+    for st in tree.findall('.//guid'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('guid', set()).add(st.text)
+    for st in tree.findall('.//insult'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('insult', set()).add(st.text)
+    for st in tree.findall('.//key'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('key', set()).add(st.text)
+    for st in tree.findall('.//oid'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('oid', set()).add(st.text)
+    for st in tree.findall('.//os'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('os', set()).add(st.text)
+    for st in tree.findall('.//priv'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('priv', set()).add(st.text)
+    for st in tree.findall('.//product'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('product', set()).add(st.text)
+    for st in tree.findall('.//protocol'):
+        blacklist.setdefault('protocol', set()).add(st.text)
+    for st in tree.findall('.//reg'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('reg', set()).add(st.text)
+    for st in tree.findall('.//sid'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('sid', set()).add(st.text)
+    for st in tree.findall('.//string'):
+        if len(st.text) > pest_minlen:
+            blacklist.setdefault('string', set()).add(st.text)
+    # Powershell indicator strings
+    for st in tree.findall('.//powershell'):
+        if len(st.text) > pest_minlen:
+            powershell.setdefault('powershell', set()).add(st.text)
+
+    # Adding Popular API
+    with open(path.join(path.dirname(__file__), '../pestudio/xml/functions.xml'), 'rt') as f:
+        tree = ElementTree.parse(f)
+
+    for st in tree.findall(".//fct"):
+        if st.text is not None:
+            if len(st.text) > pest_minlen and st.text is not None:
+                api.setdefault('fct', set()).add(st.text.split('::', 1)[0])
+    for st in tree.findall(".//lib"):
+        if st.attrib['name'] is not None:
+            if len(st.attrib['name']) > pest_minlen:
+                api.setdefault('lib', set()).add(st.attrib['name'])
+    for st in tree.findall('.//topapi'):
+        if st.text is not None:
+            if len(st.text) > pest_minlen:
+                api.setdefault('topapi', set()).add(st.text)
+
+    return api, blacklist, powershell
+
+
 class PatternMatch(object):
 
-    def __init__(self):
-        # Curated list to avoid false positives.
-        self.tlds = {'ac', 'aco', 'ad', 'adac', 'ads','ae', 'aeg', 'aero', 'af', 'afl', 'ag', 'agakhan','ai', 'aig',
-                         'akdn', 'al', 'am', 'amica', 'anz', 'ao', 'apple', 'aq', 'ar', 'army', 'arpa',
-                         'at', 'au', 'aw', 'aws', 'ax', 'axa', 'az', 'ba', 'baidu', 'bbc', 'bbva', 'bcg', 'bcn',
-                         'bd', 'be', 'bf', 'bg', 'bh', 'bharti', 'bi', 'bing', 'biz', 'bj', 'blog', 'bm', 'bms', 'bn',
-                         'bnl', 'bo', 'bom', 'bot', 'br', 'bs', 'bt', 'bv', 'bw', 'by', 'bz', 'bzh', 'ca', 'cba', 'cbn',
-                         'cbre', 'ceb', 'cf', 'cfa', 'cfd', 'cg', 'ch', 'ci', 'ck', 'cl', 'cm', 'cn', 'co', 'com', 'cr',
-                         'crs', 'csc', 'cu', 'cv', 'cw', 'cx', 'cy', 'cz', 'dclk', 'dds', 'de', 'dev', 'dhl', 'dj',
-                         'dk', 'dm', 'dnp', 'do', 'docs', 'doha', 'domains', 'download', 'drive','dtv', 'dubai', 'dvag',
-                         'dz', 'ec', 'edu', 'er', 'erni', 'es', 'esq', 'et', 'eu', 'eurovision', 'eus', 'fi',
-                         'fj', 'fk', 'flickr', 'flir', 'flsmidth', 'fly', 'fm', 'fo', 'foo', 'fr', 'frl','ftr', 'ga',
-                         'gb','gbiz', 'gd', 'gdn', 'ge', 'gea', 'gl', 'gle', 'gm', 'gmail', 'gmbh', 'gmo', 'gmx', 'gn',
-                         'goog', 'google', 'gop','got', 'gov', 'gp', 'gq', 'gr', 'gs', 'gt', 'gu', 'guru', 'gw', 'gy',
-                         'hk', 'hkt', 'hm', 'hn', 'host', 'hotmail', 'hr', 'ht', 'htc', 'hu', 'icu', 'id', 'ie',
-                         'ifm', 'iinet', 'ikano', 'il', 'im', 'imamat', 'imdb', 'immo', 'immobilien', 'in','info',
-                         'ing', 'ink', 'int', 'io', 'ipiranga', 'iq', 'ir', 'is', 'ist', 'istanbul', 'it', 'itau',
-                         'itv', 'iwc', 'jaguar', 'jcb','jcp', 'je', 'jlc', 'jll', 'jm', 'jmp', 'jnj', 'jo',
-                         'jot', 'jp', 'ke', 'kfh', 'kg', 'kh', 'ki', 'kia', 'kindle', 'km', 'kn', 'kp', 'kpmg', 'kpn',
-                         'kr', 'krd', 'kw', 'ky', 'kyoto', 'kz', 'la', 'lat', 'lb', 'lc', 'lds', 'li', 'link', 'lk',
-                         'lol', 'lr', 'ls', 'lt', 'ltd', 'ltda', 'lu', 'lv', 'ly', 'ma', 'madrid', 'mba', 'mc', 'md',
-                         'me', 'med', 'meme', 'meo', 'mg', 'mh', 'microsoft', 'mil', 'mk', 'ml', 'mlb', 'mls', 'mma',
-                         'mn', 'mo', 'mobi', 'mobily', 'mov', 'mp', 'mq', 'mr', 'ms', 'mt', 'mtn', 'mtpc', 'mtr', 'mu',
-                         'mv', 'mw', 'mx', 'my', 'mz', 'na', 'navy', 'nc', 'ne', 'nec', 'net', 'netbank',
-                         'neustar', 'nexus', 'nf', 'ng', 'ngo', 'nhk', 'ni', 'nico', 'nl', 'nowruz', 'nowtv',
-                         'np', 'nr', 'nra', 'nrw', 'ntt', 'nu', 'nyc', 'nz', 'obi', 'ollo', 'om', 'ong', 'onl', 'org',
-                         'ott', 'ovh', 'pa', 'pccw', 'pe', 'pet', 'pf', 'pg', 'ph', 'pid', 'pin', 'ping', 'pk', 'pl',
-                         'pm', 'pn', 'pnc', 'pohl', 'porn', 'post', 'pr', 'pro', 'prod', 'ps', 'pt', 'pub', 'pw', 'pwc',
-                         'py', 'qa', 'qpon', 'quebec', 're', 'ren', 'rio', 'ro', 'rocher', 'rs', 'rsvp', 'ru', 'ruhr',
-                         'rw', 'rwe', 'ryukyu', 'sa', 'sap', 'sapo', 'sarl', 'sas', 'saxo', 'sb', 'sbi', 'sbs',
-                         'sc', 'sca', 'scb', 'sd', 'se', 'sew', 'sex', 'sfr', 'sg', 'sh', 'si', 'sina', 'site',
-                         'sj', 'sk', 'skype', 'sl', 'sm', 'sn', 'sncf', 'so', 'sr', 'srl', 'st', 'stc', 'stcgroup',
-                         'su', 'sv', 'sx', 'sy', 'sydney', 'symantec', 'systems', 'sz', 'tab',
-                         'taipei', 'taobao', 'tc', 'tci', 'td', 'tdk', 'tel', 'teva', 'tf', 'tg', 'th', 'thd', 'tj',
-                         'tk', 'tl', 'tm', 'tmall', 'tn', 'to', 'tokyo', 'tr', 'trv', 'tt', 'tube', 'tui', 'tunes',
-                         'tushu', 'tv', 'tw', 'tz', 'ua', 'ubs', 'ug', 'uk', 'uno', 'uol', 'ups', 'us', 'uy', 'uz',
-                         'va', 'vc', 've', 'vet', 'vg', 'vi', 'vig', 'vin', 'vip', 'vista', 'vistaprint', 'vn',
-                         'vu', 'wed', 'weibo', 'weir', 'wf', 'whoswho', 'wien', 'wiki','win', 'windows', 'wme', 'ws',
-                         'wtc', 'wtf', 'xbox', 'xerox', 'xihuan', 'xin', 'xn--11b4c3d', 'xn--1ck2e1b',
-                         'xn--1qqw23a', 'xn--30rr7y', 'xn--3bst00m', 'xn--3ds443g', 'xn--3e0b707e', 'xn--3pxu8k',
-                         'xn--42c2d9a', 'xn--45brj9c', 'xn--45q11c', 'xn--4gbrim', 'xn--55qw42g', 'xn--55qx5d',
-                         'xn--5su34j936bgsg', 'xn--5tzm5g', 'xn--6frz82g', 'xn--6qq986b3xl', 'xn--80adxhks',
-                         'xn--80ao21a', 'xn--80asehdb', 'xn--80aswg', 'xn--8y0a063a', 'xn--90a3ac', 'xn--90ae',
-                         'xn--90ais', 'xn--9dbq2a', 'xn--9et52u', 'xn--9krt00a', 'xn--b4w605ferd', 'xn--bck1b9a5dre4c',
-                         'xn--c1avg', 'xn--c2br7g', 'xn--cck2b3b', 'xn--cg4bki', 'xn--clchc0ea0b2g2a9gcd',
-                         'xn--czr694b', 'xn--czrs0t', 'xn--czru2d', 'xn--d1acj3b', 'xn--d1alf', 'xn--e1a4c',
-                         'xn--eckvdtc9d', 'xn--efvy88h', 'xn--estv75g', 'xn--fct429k', 'xn--fhbei', 'xn--fiq228c5hs',
-                         'xn--fiq64b', 'xn--fiqs8s', 'xn--fiqz9s', 'xn--fjq720a', 'xn--flw351e', 'xn--fpcrj9c3d',
-                         'xn--fzc2c9e2c', 'xn--fzys8d69uvgm', 'xn--g2xx48c', 'xn--gckr3f0f', 'xn--gecrj9c',
-                         'xn--h2brj9c', 'xn--hxt814e', 'xn--i1b6b1a6a2e', 'xn--imr513n', 'xn--io0a7i', 'xn--j1aef',
-                         'xn--j1amh', 'xn--j6w193g', 'xn--jlq61u9w7b', 'xn--jvr189m', 'xn--kcrx77d1x4a', 'xn--kprw13d',
-                         'xn--kpry57d', 'xn--kpu716f', 'xn--kput3i', 'xn--l1acc', 'xn--lgbbat1ad8j', 'xn--mgb9awbf',
-                         'xn--mgba3a3ejt', 'xn--mgba3a4f16a', 'xn--mgba7c0bbn0a', 'xn--mgbaam7a8h', 'xn--mgbab2bd',
-                         'xn--mgbayh7gpa', 'xn--mgbb9fbpob', 'xn--mgbbh1a71e', 'xn--mgbc0a9azcg', 'xn--mgbca7dzdo',
-                         'xn--mgberp4a5d4ar', 'xn--mgbpl2fh', 'xn--mgbt3dhd', 'xn--mgbtx2b', 'xn--mgbx4cd0ab',
-                         'xn--mix891f', 'xn--mk1bu44c', 'xn--mxtq1m', 'xn--ngbc5azd', 'xn--ngbe9e0a', 'xn--node',
-                         'xn--nqv7f', 'xn--nqv7fs00ema', 'xn--nyqy26a', 'xn--o3cw4h', 'xn--ogbpf8fl', 'xn--p1acf',
-                         'xn--p1ai', 'xn--pbt977c', 'xn--pgbs0dh', 'xn--pssy2u', 'xn--q9jyb4c', 'xn--qcka1pmc',
-                         'xn--qxam', 'xn--rhqv96g', 'xn--rovu88b', 'xn--s9brj9c', 'xn--ses554g', 'xn--t60b56a',
-                         'xn--tckwe', 'xn--unup4y', 'xn--vermgensberater-ctb', 'xn--vermgensberatung-pwb', 'xn--vhquv',
-                         'xn--vuq861b', 'xn--w4r85el8fhu5dnra', 'xn--w4rs40l', 'xn--wgbh1c', 'xn--wgbl6a',
-                         'xn--xhq521b', 'xn--xkc2al3hye2a', 'xn--xkc2dl3a5ee0h', 'xn--y9a3aq', 'xn--yfro4i67o',
-                         'xn--ygbi2ammx', 'xn--zfr164b', 'xperia', 'xyz', 'yahoo', 'yamaxun',
-                         'yandex', 'ye', 'yokohama', 'you', 'youtube', 'yt', 'yun', 'za', 'zappos',
-                         'zara', 'zero', 'zippo', 'zm', 'zone', 'zuerich', 'zw'}
+    # Curated list to avoid false positives.
+    TDLS = {'ac', 'aco', 'ad', 'adac', 'ads','ae', 'aeg', 'aero', 'af', 'afl', 'ag', 'agakhan','ai', 'aig',
+                     'akdn', 'al', 'am', 'amica', 'anz', 'ao', 'apple', 'aq', 'ar', 'army', 'arpa',
+                     'at', 'au', 'aw', 'aws', 'ax', 'axa', 'az', 'ba', 'baidu', 'bbc', 'bbva', 'bcg', 'bcn',
+                     'bd', 'be', 'bf', 'bg', 'bh', 'bharti', 'bi', 'bing', 'biz', 'bj', 'blog', 'bm', 'bms', 'bn',
+                     'bnl', 'bo', 'bom', 'bot', 'br', 'bs', 'bt', 'bv', 'bw', 'by', 'bz', 'bzh', 'ca', 'cba', 'cbn',
+                     'cbre', 'ceb', 'cf', 'cfa', 'cfd', 'cg', 'ch', 'ci', 'ck', 'cl', 'cm', 'cn', 'co', 'com', 'cr',
+                     'crs', 'csc', 'cu', 'cv', 'cw', 'cx', 'cy', 'cz', 'dclk', 'dds', 'de', 'dev', 'dhl', 'dj',
+                     'dk', 'dm', 'dnp', 'do', 'docs', 'doha', 'domains', 'download', 'drive','dtv', 'dubai', 'dvag',
+                     'dz', 'ec', 'edu', 'er', 'erni', 'es', 'esq', 'et', 'eu', 'eurovision', 'eus', 'fi',
+                     'fj', 'fk', 'flickr', 'flir', 'flsmidth', 'fly', 'fm', 'fo', 'foo', 'fr', 'frl','ftr', 'ga',
+                     'gb','gbiz', 'gd', 'gdn', 'ge', 'gea', 'gl', 'gle', 'gm', 'gmail', 'gmbh', 'gmo', 'gmx', 'gn',
+                     'goog', 'google', 'gop','got', 'gov', 'gp', 'gq', 'gr', 'gs', 'gt', 'gu', 'guru', 'gw', 'gy',
+                     'hk', 'hkt', 'hm', 'hn', 'host', 'hotmail', 'hr', 'ht', 'htc', 'hu', 'icu', 'id', 'ie',
+                     'ifm', 'iinet', 'ikano', 'il', 'im', 'imamat', 'imdb', 'immo', 'immobilien', 'in','info',
+                     'ing', 'ink', 'int', 'io', 'ipiranga', 'iq', 'ir', 'is', 'ist', 'istanbul', 'it', 'itau',
+                     'itv', 'iwc', 'jaguar', 'jcb','jcp', 'je', 'jlc', 'jll', 'jm', 'jmp', 'jnj', 'jo',
+                     'jot', 'jp', 'ke', 'kfh', 'kg', 'kh', 'ki', 'kia', 'kindle', 'km', 'kn', 'kp', 'kpmg', 'kpn',
+                     'kr', 'krd', 'kw', 'ky', 'kyoto', 'kz', 'la', 'lat', 'lb', 'lc', 'lds', 'li', 'link', 'lk',
+                     'lol', 'lr', 'ls', 'lt', 'ltd', 'ltda', 'lu', 'lv', 'ly', 'ma', 'madrid', 'mba', 'mc', 'md',
+                     'me', 'med', 'meme', 'meo', 'mg', 'mh', 'microsoft', 'mil', 'mk', 'ml', 'mlb', 'mls', 'mma',
+                     'mn', 'mo', 'mobi', 'mobily', 'mov', 'mp', 'mq', 'mr', 'ms', 'mt', 'mtn', 'mtpc', 'mtr', 'mu',
+                     'mv', 'mw', 'mx', 'my', 'mz', 'na', 'navy', 'nc', 'ne', 'nec', 'net', 'netbank',
+                     'neustar', 'nexus', 'nf', 'ng', 'ngo', 'nhk', 'ni', 'nico', 'nl', 'nowruz', 'nowtv',
+                     'np', 'nr', 'nra', 'nrw', 'ntt', 'nu', 'nyc', 'nz', 'obi', 'ollo', 'om', 'ong', 'onl', 'org',
+                     'ott', 'ovh', 'pa', 'pccw', 'pe', 'pet', 'pf', 'pg', 'ph', 'pid', 'pin', 'ping', 'pk', 'pl',
+                     'pm', 'pn', 'pnc', 'pohl', 'porn', 'post', 'pr', 'pro', 'prod', 'ps', 'pt', 'pub', 'pw', 'pwc',
+                     'py', 'qa', 'qpon', 'quebec', 're', 'ren', 'rio', 'ro', 'rocher', 'rs', 'rsvp', 'ru', 'ruhr',
+                     'rw', 'rwe', 'ryukyu', 'sa', 'sap', 'sapo', 'sarl', 'sas', 'saxo', 'sb', 'sbi', 'sbs',
+                     'sc', 'sca', 'scb', 'sd', 'se', 'sew', 'sex', 'sfr', 'sg', 'sh', 'si', 'sina', 'site',
+                     'sj', 'sk', 'skype', 'sl', 'sm', 'sn', 'sncf', 'so', 'sr', 'srl', 'st', 'stc', 'stcgroup',
+                     'su', 'sv', 'sx', 'sy', 'sydney', 'symantec', 'systems', 'sz', 'tab',
+                     'taipei', 'taobao', 'tc', 'tci', 'td', 'tdk', 'tel', 'teva', 'tf', 'tg', 'th', 'thd', 'tj',
+                     'tk', 'tl', 'tm', 'tmall', 'tn', 'to', 'tokyo', 'tr', 'trv', 'tt', 'tube', 'tui', 'tunes',
+                     'tushu', 'tv', 'tw', 'tz', 'ua', 'ubs', 'ug', 'uk', 'uno', 'uol', 'ups', 'us', 'uy', 'uz',
+                     'va', 'vc', 've', 'vet', 'vg', 'vi', 'vig', 'vin', 'vip', 'vista', 'vistaprint', 'vn',
+                     'vu', 'wed', 'weibo', 'weir', 'wf', 'whoswho', 'wien', 'wiki','win', 'windows', 'wme', 'ws',
+                     'wtc', 'wtf', 'xbox', 'xerox', 'xihuan', 'xin', 'xn--11b4c3d', 'xn--1ck2e1b',
+                     'xn--1qqw23a', 'xn--30rr7y', 'xn--3bst00m', 'xn--3ds443g', 'xn--3e0b707e', 'xn--3pxu8k',
+                     'xn--42c2d9a', 'xn--45brj9c', 'xn--45q11c', 'xn--4gbrim', 'xn--55qw42g', 'xn--55qx5d',
+                     'xn--5su34j936bgsg', 'xn--5tzm5g', 'xn--6frz82g', 'xn--6qq986b3xl', 'xn--80adxhks',
+                     'xn--80ao21a', 'xn--80asehdb', 'xn--80aswg', 'xn--8y0a063a', 'xn--90a3ac', 'xn--90ae',
+                     'xn--90ais', 'xn--9dbq2a', 'xn--9et52u', 'xn--9krt00a', 'xn--b4w605ferd', 'xn--bck1b9a5dre4c',
+                     'xn--c1avg', 'xn--c2br7g', 'xn--cck2b3b', 'xn--cg4bki', 'xn--clchc0ea0b2g2a9gcd',
+                     'xn--czr694b', 'xn--czrs0t', 'xn--czru2d', 'xn--d1acj3b', 'xn--d1alf', 'xn--e1a4c',
+                     'xn--eckvdtc9d', 'xn--efvy88h', 'xn--estv75g', 'xn--fct429k', 'xn--fhbei', 'xn--fiq228c5hs',
+                     'xn--fiq64b', 'xn--fiqs8s', 'xn--fiqz9s', 'xn--fjq720a', 'xn--flw351e', 'xn--fpcrj9c3d',
+                     'xn--fzc2c9e2c', 'xn--fzys8d69uvgm', 'xn--g2xx48c', 'xn--gckr3f0f', 'xn--gecrj9c',
+                     'xn--h2brj9c', 'xn--hxt814e', 'xn--i1b6b1a6a2e', 'xn--imr513n', 'xn--io0a7i', 'xn--j1aef',
+                     'xn--j1amh', 'xn--j6w193g', 'xn--jlq61u9w7b', 'xn--jvr189m', 'xn--kcrx77d1x4a', 'xn--kprw13d',
+                     'xn--kpry57d', 'xn--kpu716f', 'xn--kput3i', 'xn--l1acc', 'xn--lgbbat1ad8j', 'xn--mgb9awbf',
+                     'xn--mgba3a3ejt', 'xn--mgba3a4f16a', 'xn--mgba7c0bbn0a', 'xn--mgbaam7a8h', 'xn--mgbab2bd',
+                     'xn--mgbayh7gpa', 'xn--mgbb9fbpob', 'xn--mgbbh1a71e', 'xn--mgbc0a9azcg', 'xn--mgbca7dzdo',
+                     'xn--mgberp4a5d4ar', 'xn--mgbpl2fh', 'xn--mgbt3dhd', 'xn--mgbtx2b', 'xn--mgbx4cd0ab',
+                     'xn--mix891f', 'xn--mk1bu44c', 'xn--mxtq1m', 'xn--ngbc5azd', 'xn--ngbe9e0a', 'xn--node',
+                     'xn--nqv7f', 'xn--nqv7fs00ema', 'xn--nyqy26a', 'xn--o3cw4h', 'xn--ogbpf8fl', 'xn--p1acf',
+                     'xn--p1ai', 'xn--pbt977c', 'xn--pgbs0dh', 'xn--pssy2u', 'xn--q9jyb4c', 'xn--qcka1pmc',
+                     'xn--qxam', 'xn--rhqv96g', 'xn--rovu88b', 'xn--s9brj9c', 'xn--ses554g', 'xn--t60b56a',
+                     'xn--tckwe', 'xn--unup4y', 'xn--vermgensberater-ctb', 'xn--vermgensberatung-pwb', 'xn--vhquv',
+                     'xn--vuq861b', 'xn--w4r85el8fhu5dnra', 'xn--w4rs40l', 'xn--wgbh1c', 'xn--wgbl6a',
+                     'xn--xhq521b', 'xn--xkc2al3hye2a', 'xn--xkc2dl3a5ee0h', 'xn--y9a3aq', 'xn--yfro4i67o',
+                     'xn--ygbi2ammx', 'xn--zfr164b', 'xperia', 'xyz', 'yahoo', 'yamaxun',
+                     'yandex', 'ye', 'yokohama', 'you', 'youtube', 'yt', 'yun', 'za', 'zappos',
+                     'zara', 'zero', 'zippo', 'zm', 'zone', 'zuerich', 'zw'}
 
 # --- PEStudio Patterns ------------------------------------------------------------------------------------------------
 
-        with open(path.join(path.dirname(__file__), "../pestudio/xml/strings.xml"), 'rt') as f:
-            tree = ElementTree.parse(f)
-
-        # Adding a min length for less FPs
-
-        pest_minlen = 6
-
-        self.pest_blacklist = {}
-        self.pest_api = {}
-        for ag in tree.findall('.//agent'):
-            if len(ag.text) > pest_minlen:
-                self.pest_blacklist.setdefault('agent', set()).add(ag.text)
-        for av in tree.findall('.//av'):
-            if len(av.text) > pest_minlen:
-                self.pest_blacklist.setdefault('av', set()).add(av.text)
-        for ev in tree.findall('.//event'):
-            if len(ev.text) > pest_minlen:
-                self.pest_blacklist.setdefault('event', set()).add(ev.text)
-        for gu in tree.findall('.//guid'):
-            if len(gu.text) > pest_minlen:
-                self.pest_blacklist.setdefault('guid', set()).add(gu.text)
-        for ins in tree.findall('.//insult'):
-            if len(ins.text) > pest_minlen:
-                self.pest_blacklist.setdefault('insult', set()).add(ins.text)
-        for ke in tree.findall('.//key'):
-            if len(ke.text) > pest_minlen:
-                self.pest_blacklist.setdefault('key', set()).add(ke.text)
-        for oi in tree.findall('.//oid'):
-            if len(oi.text) > pest_minlen:
-                self.pest_blacklist.setdefault('oid', set()).add(oi.text)
-        for os in tree.findall('.//os'):
-            if len(os.text) > pest_minlen:
-                self.pest_blacklist.setdefault('os', set()).add(os.text)
-        for pr in tree.findall('.//priv'):
-            if len(pr.text) > pest_minlen:
-                self.pest_blacklist.setdefault('priv', set()).add(pr.text)
-        for pro in tree.findall('.//product'):
-            if len(pro.text) > pest_minlen:
-                self.pest_blacklist.setdefault('product', set()).add(pro.text)
-        for proto in tree.findall('.//protocol'):
-            self.pest_blacklist.setdefault('protocol', set()).add(proto.text)
-        for reg in tree.findall('.//reg'):
-            if len(reg.text) > pest_minlen:
-                self.pest_blacklist.setdefault('reg', set()).add(reg.text)
-        for si in tree.findall('.//sid'):
-            if len(si.text) > pest_minlen:
-                self.pest_blacklist.setdefault('sid', set()).add(si.text)
-        for st in tree.findall('.//string'):
-            if len(st.text) > pest_minlen:
-                self.pest_blacklist.setdefault('string', set()).add(st.text)
-
-        # Adding Popular API
-        with open(path.join(path.dirname(__file__), '../pestudio/xml/functions.xml'), 'rt') as f:
-            tree = ElementTree.parse(f)
-
-        for fun in tree.findall(".//fct"):
-            if fun.text is not None:
-                if len(fun.text) > pest_minlen and fun.text is not None:
-                    self.pest_api.setdefault('fct', set()).add(fun.text.split('::', 1)[0])
-        for li in tree.findall(".//lib"):
-            if li.attrib['name'] is not None:
-                if len(li.attrib['name']) > pest_minlen:
-                    self.pest_api.setdefault('lib', set()).add(li.attrib['name'])
-        for tapi in tree.findall('.//topapi'):
-            if tapi.text is not None:
-                if len(tapi.text) > pest_minlen:
-                    self.pest_api.setdefault('topapi', set()).add(tapi.text)
+    PEST_API, PEST_BLACKLIST, PEST_POWERSHELL = get_xml_strings()
 
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
-        self.pat_domain = r'(?i)\b(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
-        self.pat_filecom = r'(?i)(?:\b[- _A-Z0-9.\\]{0,75}[%]?' \
-                           r'(?:ALLUSERPROFILE|APPDATA|commonappdata|CommonProgramFiles|HOMEPATH|LOCALAPPDATA|' \
-                           r'ProgramData|ProgramFiles|PUBLIC|SystemDrive|SystemRoot|\\TEMP|USERPROFILE|' \
-                           r'windir|system32|syswow64|\\user)[%]?\\[-_A-Z0-9\.\\]{1,200}\b|' \
-                           r'/home/[-_A-Z0-9\./]{0,50}|/usr/local[-_A-Z0-9\./]{0,50}|/usr/bin[-_A-Z0-9\./]{0,50}|' \
-                           r'/var/log[-_A-Z0-9\./]{0,50}|/etc/(?:shadow|group|passwd))'
-        self.pat_fileext = r'(?i)\b[a-z]?[:]?[-_A-Z0-9.\\]{0,200}\w\.' \
-                           r'(?:7Z|APK|APP|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPEG|JPG|JS|JSE|LNK|LOG|MSI|' \
-                           r'OSX|PAF|PDF|PNG|PPT|PPTX|PS1|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|WSF|WSH|XLS' \
-                           r'|XLSX|ZIP)\b'
-        self.pat_filepdb = r'(?i)\b[-_A-Z0-9.\\]{0,200}\w\.PDB\b'
-        self.pat_email = r'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
-        self.pat_ip = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
-        self.pat_regis = r'(?i)\b[- _A-Z0-9.\\]{0,25}' \
-                         r'(?:controlset001|controlset002|currentcontrolset|currentversion|HKCC|HKCR|HKCU|HKDD|' \
-                         r'hkey_classes_root|hkey_current_config|hkey_current_user|hkey_dyn_data|hkey_local_machine|' \
-                         r'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
-                         r'\\userinit)' \
-                         r'\\[-_A-Z0-9.\\ ]{1,200}\b'
-        self.pat_url = '(?i)(?:ftp|http|https)://' \
-                       '[A-Z0-9.-]{1,}\.(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-                       '(?::[0-9]{1,5})?' \
-                       '(?:/[A-Z0-9/\-\.&%\$#=~\?_]{3,200}){0,1}'
-        self.pat_anyhttp = r'(?i)http://' \
-                           r'[A-Z0-9.-]{6,}\.' \
-                           r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-                           r'(?::[0-9]{1,5})?' \
-                           r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
-        self.pat_anyhttps = r'(?i)https://' \
-                            r'[A-Z0-9.-]{6,}\.' \
-                            r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-                            r'(?::[0-9]{1,5})?' \
-                            r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
-        self.pat_anyftp = r'(?i)ftp://' \
-                          r'[A-Z0-9.-]{6,}\.' \
-                          r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-                          r'(?::[0-9]{1,5})?' \
-                          r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
+    PAT_DOMAIN = r'(?i)\b(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
+    PAT_FILECOM = r'(?i)(?:\b[- _A-Z0-9.\\]{0,75}[%]?' \
+                       r'(?:ALLUSERPROFILE|APPDATA|commonappdata|CommonProgramFiles|HOMEPATH|LOCALAPPDATA|' \
+                       r'ProgramData|ProgramFiles|PUBLIC|SystemDrive|SystemRoot|\\TEMP|USERPROFILE|' \
+                       r'windir|system32|syswow64|\\user)[%]?\\[-_A-Z0-9\.\\]{1,200}\b|' \
+                       r'/home/[-_A-Z0-9\./]{0,50}|/usr/local[-_A-Z0-9\./]{0,50}|/usr/bin[-_A-Z0-9\./]{0,50}|' \
+                       r'/var/log[-_A-Z0-9\./]{0,50}|/etc/(?:shadow|group|passwd))'
+    PAT_FILEEXT = r'(?i)\b[a-z]?[:]?[-_A-Z0-9.\\]{0,200}\w\.' \
+                       r'(?:7Z|APK|APP|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPEG|JPG|JS|JSE|LNK|LOG|MSI|' \
+                       r'OSX|PAF|PDF|PNG|PPT|PPTX|PS1|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|WSF|WSH|XLS' \
+                       r'|XLSX|ZIP)\b'
+    PAT_FILEPDB = r'(?i)\b[-_A-Z0-9.\\]{0,200}\w\.PDB\b'
+    PAT_EMAIL = r'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
+    PAT_IP = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
+    PAT_REGIS = r'(?i)\b[- _A-Z0-9.\\]{0,25}' \
+                     r'(?:controlset001|controlset002|currentcontrolset|currentversion|HKCC|HKCR|HKCU|HKDD|' \
+                     r'hkey_classes_root|hkey_current_config|hkey_current_user|hkey_dyn_data|hkey_local_machine|' \
+                     r'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
+                     r'\\userinit)' \
+                     r'\\[-_A-Z0-9.\\ ]{1,200}\b'
+    PAT_URL = '(?i)(?:ftp|http|https)://' \
+                   '[A-Z0-9.-]{1,}\.(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+                   '(?::[0-9]{1,5})?' \
+                   '(?:/[A-Z0-9/\-\.&%\$#=~\?_]{3,200}){0,1}'
+    PAT_ANYHTTP = r'(?i)http://' \
+                       r'[A-Z0-9.-]{6,}\.' \
+                       r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+                       r'(?::[0-9]{1,5})?' \
+                       r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
+    PAT_ANYHTTPS = r'(?i)https://' \
+                        r'[A-Z0-9.-]{6,}\.' \
+                        r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+                        r'(?::[0-9]{1,5})?' \
+                        r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
+    PAT_ANYFTP = r'(?i)ftp://' \
+                      r'[A-Z0-9.-]{6,}\.' \
+                      r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+                      r'(?::[0-9]{1,5})?' \
+                      r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
 
-        self.pat_exedos = r'This program cannot be run in DOS mode'
-        self.pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000'
+    PAT_EXEDOS = r'This program cannot be run in DOS mode'
+    PAT_EXEHEADER = r'(?s)MZ.{32,1024}PE\000\000'
 
 # --- Find Match for IOC Regex, Return Dictionary: {[AL Tag Type:(Match Values)]} --------------------------------------
 
@@ -236,7 +246,7 @@ class PatternMatch(object):
         # Here I use \b to make sure there is no other digit around and to speedup search
         #print("ips")
         final_values = ""
-        find_ip = re.findall(self.pat_ip, value)
+        find_ip = re.findall(self.PAT_IP, value)
         if len(find_ip) > 0:
             longeststring = max(find_ip, key=len)
             if len(longeststring) == len(value):
@@ -262,7 +272,7 @@ class PatternMatch(object):
         # URLs
         #print("urls")
         final_values = ""
-        find_url = re.findall(self.pat_url, value)
+        find_url = re.findall(self.PAT_URL, value)
         if len(find_url) > 0:
             ret = False
             longeststring = max(find_url, key=len)
@@ -280,7 +290,7 @@ class PatternMatch(object):
                 value_extract.setdefault('NET_FULL_URI', set()).add(val[0])
 
                 # Extract domain from URL
-                find_domain = re.findall(self.pat_domain, val[0])
+                find_domain = re.findall(self.PAT_DOMAIN, val[0])
                 if len(find_domain) != 0:
                     longeststring = max(find_domain, key=len)
                     not_filtered = self.domain_filter(longeststring)
@@ -295,7 +305,7 @@ class PatternMatch(object):
         # TLD = either only chars from 2 to 12, or 'XN--' followed by up to 18 chars and digits
         #print("emails")
         final_values = ""
-        find_email = re.findall(self.pat_email, value)
+        find_email = re.findall(self.PAT_EMAIL, value)
         if len(find_email) > 0:
             longeststring = max(find_email, key=len)
             if len(longeststring) == len(value):
@@ -322,7 +332,7 @@ class PatternMatch(object):
         # Below is taken from email regex above
         #print("domains")
         final_values = ""
-        find_domain = re.findall(self.pat_domain, value)
+        find_domain = re.findall(self.PAT_DOMAIN, value)
         if len(find_domain) > 0 and len(max(find_domain, key=len)) > 11:
             longeststring = max(find_domain, key=len)
             if len(longeststring) == len(value):
@@ -353,7 +363,7 @@ class PatternMatch(object):
         # Ends with extension of interest or contains strings of interest
         #print("files")
         final_values = ""
-        filefind_pdb = re.findall(self.pat_filepdb, value)
+        filefind_pdb = re.findall(self.PAT_FILEPDB, value)
         if len(filefind_pdb) > 0:
             if len(max(filefind_pdb, key=len)) > 6:
                 longeststring = max(filefind_pdb, key=len)
@@ -369,7 +379,7 @@ class PatternMatch(object):
                     final_values.append((longeststring, 100))
                     for val in final_values:
                         value_extract.setdefault('FILE_PDB_STRING', set()).add(val[0])
-        filefind_ext = re.findall(self.pat_fileext, value)
+        filefind_ext = re.findall(self.PAT_FILEEXT, value)
         if len(filefind_ext) > 0:
             if len(max(filefind_ext, key=len)) > 6:
                 longeststring = max(filefind_ext, key=len)
@@ -385,7 +395,7 @@ class PatternMatch(object):
                     final_values.append((longeststring, 100))
                     for val in final_values:
                         value_extract.setdefault('FILE_NAME', set()).add(val[0])
-        filefind_com = re.findall(self.pat_filecom, value)
+        filefind_com = re.findall(self.PAT_FILECOM, value)
         if len(filefind_com) > 0 and len(max(filefind_com, key=len)) > 6:
             longeststring = max(filefind_com, key=len)
             if len(longeststring) == len(value):
@@ -405,7 +415,7 @@ class PatternMatch(object):
         # Looks for alpha numeric characters seperated by at least two sets of '\'s
         #print("reg")
         final_values = ""
-        regfind = re.findall(self.pat_regis, value)
+        regfind = re.findall(self.PAT_REGIS, value)
         if len(regfind) > 0 and len(max(regfind, key=len)) > 15:
             longeststring = max(regfind, key=len)
             if len(longeststring) == len(value):
@@ -423,49 +433,39 @@ class PatternMatch(object):
         # ------------------------------------------------------------------------------
         # PEStudio Blacklist
         # Flags strings from PEStudio's Blacklist
-        final_values = ""
-        for k, i in self.pest_blacklist.iteritems():
+        final_values = []
+        for k, i in self.PEST_BLACKLIST.iteritems():
             for e in i:
-                psblfind = []
                 if e in value:
-                    psblfind.append(e)
-                if len(psblfind) > 0:
-                    longeststring = max(psblfind, key=len)
-                    if len(longeststring) == len(value):
-                        value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(value)
-                        return value_extract
-                    if len(psblfind) == 1:
-                        for val in psblfind:
-                            value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(val)
-                    else:
-                        like_ls = process.extract(longeststring, psblfind, limit=50)
-                        final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                        final_values.append((longeststring, 100))
-                        for val in final_values:
-                            value_extract.setdefault('PESTUDIO_BLACKLIST_STRING', set()).add(val[0])
+                    final_values.append(e)
+        if len(final_values) > 0:
+            value_extract['PESTUDIO_BLACKLIST_STRING'] = set()
+        for val in final_values:
+            value_extract['PESTUDIO_BLACKLIST_STRING'].add(val)
         # -----------------------------------------------------------------------------
         # Function/Library Strings
         # Win API strings from PEStudio's Blacklist
-        final_values = ""
-        for k, i in self.pest_api.iteritems():
+        final_values = []
+        for k, i in self.PEST_API.iteritems():
             for e in i:
-                pswinfind = []
                 if e in value:
-                    pswinfind.append(e)
-                if len(pswinfind) > 0:
-                    longeststring = max(pswinfind, key=len)
-                    if len(longeststring) == len(value):
-                        value_extract.setdefault('WIN_API_STRING', set()).add(value)
-                        return value_extract
-                    if len(pswinfind) == 1:
-                        for val in pswinfind:
-                            value_extract.setdefault('WIN_API_STRING', set()).add(val)
-                    else:
-                        like_ls = process.extract(longeststring, pswinfind, limit=50)
-                        final_values = filter(lambda ls: ls[1] < 95, like_ls)
-                        final_values.append((longeststring, 100))
-                        for val in final_values:
-                            value_extract.setdefault('WIN_API_STRING', set()).add(val[0])
+                    final_values.append(e)
+        if len(final_values) > 0:
+            value_extract['WIN_API_STRING'] = set()
+        for val in final_values:
+            value_extract['WIN_API_STRING'].add(val)
+        # -----------------------------------------------------------------------------
+        # Powershell Strings
+        # Powershell Cmdlets added to PEStudio's strings.xml list
+        final_values = []
+        for k, i in self.PEST_POWERSHELL.iteritems():
+            for e in i:
+                if e in value:
+                    final_values.append(e)
+        if len(final_values) > 0:
+            value_extract['POWERSHELL_CMDLET'] = set()
+        for val in final_values:
+            value_extract['POWERSHELL_CMDLET'].add(val)
 
         return value_extract
 
@@ -548,7 +548,7 @@ class PatternMatch(object):
         if len(domain) < 5:
             return False
         tld = domain.rsplit('.', 1)[1].lower()
-        if tld not in self.tlds:
+        if tld not in self.TDLS:
             return False
 
         return True
@@ -567,7 +567,7 @@ class PatternMatch(object):
         fld = value.split('.')
         tld = value.rsplit('.', 1)[1].lower()
         # If only two domain levels and either second level < 6 char or tld <= 2 char, or top-level not in list
-        if (len(fld) <= 2 and len(fld[0]) < 6) or tld not in self.tlds:
+        if (len(fld) <= 2 and len(fld[0]) < 6) or tld not in self.TDLS:
             return False
         return True
 
@@ -602,21 +602,21 @@ class PatternMatch(object):
 
         if level == 'small_string':
             bbcrack_patterns = [
-                Pattern_re("FTP://_NET_FULL_URI", self.pat_anyftp, weight=100),
-                Pattern_re("HTTP://_NET_FULL_URI", self.pat_anyhttp, weight=100),
-                Pattern_re("HTTPS://_NET_FULL_URI", self.pat_anyhttps, weight=100),
+                Pattern_re("FTP://_NET_FULL_URI", self.PAT_ANYFTP, weight=100),
+                Pattern_re("HTTP://_NET_FULL_URI", self.PAT_ANYHTTP, weight=100),
+                Pattern_re("HTTPS://_NET_FULL_URI", self.PAT_ANYHTTPS, weight=100),
             ]
             return bbcrack_patterns
 
         bbcrack_patterns = [
-            Pattern_re("EXE_HEAD", self.pat_exeheader, weight=100),
-            Pattern_re("EXE_DOS", self.pat_exedos, weight=100),
-            Pattern_re("NET_FULL_URI", self.pat_url, weight=100),
+            Pattern_re("EXE_HEAD", self.PAT_EXEHEADER, weight=100),
+            Pattern_re("EXE_DOS", self.PAT_EXEDOS, weight=100),
+            Pattern_re("NET_FULL_URI", self.PAT_URL, weight=100),
         ]
 
         if level == 2:
             # Add PEStudio's API String list, weight will default to 1:
-            for k, i in self.pest_api.iteritems():
+            for k, i in self.PEST_API.iteritems():
                 if k == "topapi" or k == "lib":
                     for e in i:
                         if len(e) > 6:
