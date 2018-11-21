@@ -176,18 +176,19 @@ class CrowBar(object):
                     ftype = m.from_buffer(d)
                     mag_ftype = mag.from_buffer(d)
                     sha256hash = hashlib.sha256(d).hexdigest()
-                    if len(d) > 500 and sha256hash not in self.hashes:
-                        for ft in self.FILETYPES:
-                            if (ft in ftype and not 'octet-stream' in ftype) or ft in mag_ftype:
-                                b64_file_path = os.path.join(self.wd, "{}_cb_b64_decoded"
-                                                             .format(sha256hash[0:10]))
-                                with open(b64_file_path, 'wb') as b64_file:
-                                    b64_file.write(d)
-                                self.files_extracted.add(b64_file_path)
-                                self.hashes.add(sha256hash)
-                                break
-                    if all(ord(c) < 128 for c in d):
-                        s1 = s1.replace(bmatch, ascii_dump(d))
+                    if sha256hash not in self.hashes:
+                        if len(d) > 500:
+                            for ft in self.FILETYPES:
+                                if (ft in ftype and not 'octet-stream' in ftype) or ft in mag_ftype:
+                                    b64_file_path = os.path.join(self.wd, "{}_cb_b64_decoded"
+                                                                 .format(sha256hash[0:10]))
+                                    with open(b64_file_path, 'wb') as b64_file:
+                                        b64_file.write(d)
+                                    self.files_extracted.add(b64_file_path)
+                                    self.hashes.add(sha256hash)
+                                    break
+                        if all(ord(c) < 128 for c in d):
+                            s1 = s1.replace(bmatch, ascii_dump(d))
 
         if s1 != text:
             output = s1
