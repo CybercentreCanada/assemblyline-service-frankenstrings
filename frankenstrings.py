@@ -329,7 +329,7 @@ class FrankenStrings(ServiceBase):
         return shalist, decoded_res
 
     # Base64 Parse
-    def b64(self, request, b64_string):
+    def b64(self, request, b64_string, patterns, res):
         """
         Using some selected code from 'base64dump.py' by Didier Stevens@https://DidierStevens.com
         """
@@ -339,7 +339,7 @@ class FrankenStrings(ServiceBase):
                 base64data = binascii.a2b_base64(b64_string)
                 sha256hash = hashlib.sha256(base64data).hexdigest()
                 # Search for embedded files of interest
-                if 200 < len(base64data) < 8000000:
+                if 200 < len(base64data) < 10000000:
                     m = magic.Magic(mime=True)
                     mag = magic.Magic()
                     ftype = m.from_buffer(base64data)
@@ -357,13 +357,29 @@ class FrankenStrings(ServiceBase):
                                                    "[Possible file contents. See extracted files.]", ""]
                             return results
 
+                # See if any IOCs in decoded data
+                pat = self.ioc_to_tag(base64data, patterns, res, taglist=True)
+                # If all printable charcaters then put in results
                 if all(ord(c) < 128 for c in base64data):
                     asc_b64 = self.ascii_dump(base64data)
                     # If data has less then 7 uniq chars then ignore
                     uniq_char = ''.join(set(asc_b64))
                     if len(uniq_char) > 6:
                         results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
-            except:
+                # If not all printable characters but IOCs discovered, extract to file
+                elif len(pat) > 0:
+                    b64_file_path = os.path.join(self.wd, "{}_b64_decoded"
+                                                 .format(sha256hash[0:10]))
+                    request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
+                    with open(b64_file_path, 'wb') as b64_file:
+                        b64_file.write(base64data)
+                        self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
+
+                    results[sha256hash] = [len(b64_string), b64_string[0:50],
+                                           "[IOCs discovered with other non-printable data. "
+                                           "See extracted files.]", ""]
+
+            except Exception:
                 return results
         return results
 
@@ -663,7 +679,7 @@ class FrankenStrings(ServiceBase):
                     b64_string = b64_match.replace('\n', '').replace('\r', '').replace(' ', '')
                     uniq_char = ''.join(set(b64_string))
                     if len(uniq_char) > 6:
-                        b64result = self.b64(request, b64_string)
+                        b64result = self.b64(request, b64_string, patterns, res)
                         if len(b64result) > 0:
                             b64_al_results.append(b64result)
 
@@ -892,9 +908,8 @@ class FrankenStrings(ServiceBase):
                             subb_b64_res = (ResultSection(SCORE.NULL, "DECODED ASCII DUMP:",
                                                           body_format=TEXT_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
                             subb_b64_res.add_line('{}' .format(b64l[2]))
-                            if b64l[3] != "":
-                                self.ioc_to_tag(b64l[3], patterns, res, st_max_length=1000)
-                            if b64l[2] != "[Possible file contents. See extracted files.]":
+                            if b64l[2] not in ["[Possible file contents. See extracted files.]",
+                                               "[IOCs discovered with other non-printable data. See extracted files.]"]:
                                 b64_ascii_content.append(b64l[2])
                     # Write all non-extracted decoded b64 content to file
                     if len(b64_ascii_content) > 0:
