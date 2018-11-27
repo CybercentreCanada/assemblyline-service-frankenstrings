@@ -689,7 +689,7 @@ class FrankenStrings(ServiceBase):
                         b64_string = b64_match.decode('utf-8').replace('\n', '').replace('\r', '').replace(' ', '')
                         uniq_char = ''.join(set(b64_string))
                         if len(uniq_char) > 6:
-                            b64result = self.b64(request, b64_string)
+                            b64result = self.b64(request, b64_string, patterns, res)
                             if len(b64result) > 0:
                                 b64_al_results.append(b64result)
 
