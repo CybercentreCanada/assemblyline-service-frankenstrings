@@ -289,11 +289,12 @@ class CrowBar(object):
             output = text
             # bad, prevent false var replacements like YG="86"
             # Replace regular variables
-            replacements = re.findall(r'^\s*((\w+)\s*=\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$',
+            replacements = re.findall(r'^\s*((?:Const[\s]*)?(\w+)\s*='
+                                      r'\s*((?:["][^"]+["]|[\'][^\']+[\']|[0-9]*)))[\s\r]*$',
                                       output, re.MULTILINE|re.DOTALL)
             if len(replacements) > 0:
                 for full, varname, value in replacements:
-                    if len(re.findall(r'(\b' + re.escape(varname) + r'\b)', output)) == 1:
+                    if len(re.findall(r'([\b(]' + re.escape(varname) + r'[\b)])', output)) == 1:
                         # If there is only one instance of these, it's probably noise.
                         output = output.replace(full, '<crowbar:mswordmacro_unused_variable_assignment>')
                     else:
@@ -302,20 +303,23 @@ class CrowBar(object):
                         # b = "he"
                         # b = b & "llo "
                         # b = b & "world!"
-                        stacked = re.findall(r'^\s*(({0})\s*=\s*({1})\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$'
+                        stacked = re.findall(r'^\s*(({0})\s*='
+                                             r'\s*({1})\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$'
                                              .format(varname, varname), output, re.MULTILINE|re.DOTALL)
                         if len(stacked) > 0:
                             for sfull, varname, varname_b, val in stacked:
                                 final_val += val.replace('"', "")
                                 output = output.replace(sfull, '<crowbar:mswordmacro_var_assignment>')
                         output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
-                        # If more than a few, assumption is that this did not
-                        # work according to plan, so just replace 1 for now.
-                        output = re.sub(r'(\b' + re.escape(varname) + r'(?!\s*[+&=])\b)', '"{}"' .format(final_val),
+                        # If more than a of the variable name left, the assumption is that this did not
+                        # work according to plan, so just replace a few for now.
+                        output = re.sub(r'(\b' + re.escape(varname) +
+                                        r'(?!\s*(?:=|[+&]\s*{}))\b)'.format(re.escape(varname)),
+                                        '"{}"' .format(final_val),
                                         output, count=5)
 
             # Remaining stacked strings
-            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\']))[\r]?)$',
+            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
                                       output, re.MULTILINE|re.DOTALL)
             vars = set([x[1] for x in replacements])
             for v in vars:
@@ -325,7 +329,10 @@ class CrowBar(object):
                         continue
                     final_val += value.replace('"', "")
                     output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
-                output = re.sub(r'(\b' + re.escape(v) + r'(?!\s*[+&=])\b)', final_val, output, count=5)
+                output = re.sub(r'(\b' + re.escape(v) +
+                                r'(?!\s*(?:=|[+&]\s*{}))\b)'.format(re.escape(v)),
+                                '"{}"' .format(final_val),
+                                output, count=5)
 
             if output == text:
                 output = None
