@@ -487,7 +487,6 @@ class PatternMatch(object):
         # 0.0.0.0 255.0.0.0e
         # > 255
         if ip.startswith('0'): return False
-        if ip.startswith('255'): return False
         for x in ip.split("."):
             if int(x) > 255:
                 return False
