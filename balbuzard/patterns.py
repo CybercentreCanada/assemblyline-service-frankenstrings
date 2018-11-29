@@ -485,8 +485,11 @@ class PatternMatch(object):
             #return False
 
         # 0.0.0.0 255.0.0.0e
+        # > 255
         if ip.startswith('0'): return False
-        if int(ip.split(".", 1)[0]) > 255: return False
+        for x in ip.split("."):
+            if int(x) > 255:
+                return False
 
         # also reject IPs ending with .0 or .255
         if ip.endswith('.0') or ip.endswith('.255'): return False
