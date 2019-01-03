@@ -190,13 +190,13 @@ class PatternMatch(object):
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
     PAT_DOMAIN = r'(?i)\b(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
-    PAT_FILECOM = r'(?i)(?:\b[- _A-Z0-9.\\]{0,75}[%]?' \
+    PAT_FILECOM = r'(?i)(?:\b[a-z]?[:]?[- _A-Z0-9.\\~]{0,75}[%]?' \
                        r'(?:ALLUSERPROFILE|APPDATA|commonappdata|CommonProgramFiles|HOMEPATH|LOCALAPPDATA|' \
                        r'ProgramData|ProgramFiles|PUBLIC|SystemDrive|SystemRoot|\\TEMP|USERPROFILE|' \
                        r'windir|system32|syswow64|\\user)[%]?\\[-_A-Z0-9\.\\]{1,200}\b|' \
                        r'/home/[-_A-Z0-9\./]{0,50}|/usr/local[-_A-Z0-9\./]{0,50}|/usr/bin[-_A-Z0-9\./]{0,50}|' \
                        r'/var/log[-_A-Z0-9\./]{0,50}|/etc/(?:shadow|group|passwd))'
-    PAT_FILEEXT = r'(?i)\b[a-z]?[:]?[-_A-Z0-9.\\]{0,200}\w\.' \
+    PAT_FILEEXT = r'(?i)\b[a-z]?[:]?[- _A-Z0-9.\\~]{0,200}\w\.' \
                        r'(?:7Z|APK|APP|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPEG|JPG|JS|JSE|LNK|LOG|MSI|' \
                        r'OSX|PAF|PDF|PNG|PPT|PPTX|PS1|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|WSF|WSH|XLS' \
                        r'|XLSX|ZIP)\b'
