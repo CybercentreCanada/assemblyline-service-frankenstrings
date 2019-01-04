@@ -2056,7 +2056,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">UltraVnc</string>
     <string score="0">UltraVncSC</string>
     <string score="0">RunProgram</string>
-    <string score="0">Signature</string>
     <string score="0">Fast decoding</string>
     <string score="0">Gina</string>
     <string score="0">cgets</string>
