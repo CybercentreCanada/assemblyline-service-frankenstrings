@@ -76,6 +76,22 @@ class FrankenStrings(ServiceBase):
                                             Partial code potentially deobfuscated by Crowbar module. 
                                             """))
 
+    FILETYPES = [
+        'application',
+        'document',
+        'exec',
+        'image',
+        'Microsoft',
+        'text',
+    ]
+    HEXENC_STRINGS = [
+        '\u',
+        '%u',
+        '\\x',
+        '0x',
+        '&H',  # hex notation in VBA
+    ]
+
     def import_service_deps(self):
         global namedtuple, strings, binascii, hashlib, magic, mmap, os, re, string, unicodedata, \
             pefile, bbcrack, PatternMatch, CrowBar
@@ -96,32 +112,33 @@ class FrankenStrings(ServiceBase):
 
     def __init__(self, cfg=None):
         super(FrankenStrings, self).__init__(cfg)
-        self.filetypes = ['application',
-                          'document',
-                          'exec',
-                          'image',
-                          'Microsoft',
-                          'text',
-                          ]
-        self.hexencode_strings = ['\u',
-                                  '%u',
-                                  '\\x',
-                                  '0x',
-                                  '&H',  # hex notation in VBA
-                                  ]
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
         self.before = None
-        self.wd = None
 
     def start(self):
         self.log.debug("FrankenStrings service started")
 
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
-    # Will search for ALL IOC patterns.
     def ioc_to_tag(self, data, patterns, res, taglist=False, check_length=False, strs_max_size=0,
                    st_max_length=300, savetoset=False):
+        """Searches data for patterns and adds as AL tag to result output.
+
+        Args:
+            data: Data to be searched.
+            patterns: FrankenStrings Patterns() object.
+            res: AL result.
+            taglist: True if tag list should be returned.
+            check_length: True if length of string should be compared to st_max_length.
+            strs_max_size: Maximum size of strings list. If greater then only network IOCs will be searched.
+            st_max_length: Maximum length of a string from data that can be searched.
+            savetoset: When True tag value will be saved to self.before (for Crowbar module).
+
+        Returns:
+            If tag list has been requested, returns tag list as dictionary. Otherwise returns None.
+
+        """
 
         if taglist:
             tags = {}
@@ -172,6 +189,7 @@ class FrankenStrings(ServiceBase):
                             if ty == 'NET_EMAIL':
                                 if not is_valid_email(asc_asc):
                                     continue
+                            # 1000 is the maximum allowed size of an AL tag
                             if len(asc_asc) < 1001:
                                 res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
                                 if taglist:
@@ -199,8 +217,7 @@ class FrankenStrings(ServiceBase):
     # CIC: Call If Callable
     @staticmethod
     def cic(expression):
-        """
-        From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
+        """ From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
         """
         if callable(expression):
             return expression()
@@ -210,8 +227,7 @@ class FrankenStrings(ServiceBase):
     # IFF: IF Function
     @classmethod
     def iff(cls, expression, value_true, value_false):
-        """
-        From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
+        """ From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
         """
         if expression:
             return cls.cic(value_true)
@@ -225,8 +241,7 @@ class FrankenStrings(ServiceBase):
 
     @staticmethod
     def decode_bu(data, size):
-        """
-        Adjusted to take in to account byte, word, dword, qword
+        """ From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
         """
         decoded = ''
 
@@ -255,14 +270,19 @@ class FrankenStrings(ServiceBase):
 
     @staticmethod
     def unicode_longest_string(lisdata):
+        """ Compare sizes of unicode strings.
 
+        Args:
+            lisdata: A list of strings
+
+        Returns:
+            Result of test: Do all strings match in length?
+                If True, returns all strings combined.
+                If False, returns longest string greater than 50 bytes.
+                If no string lonfer than 50 bytes, returns empty string.
+        """
         maxstr = len(max(lisdata, key=len))
         newstr = ""
-
-        # Test if all match size of longest string (if by chance the data was separated by a character --i.e. ','--).
-        # if true, combine all data and return string,
-        # else return longest string if greater than 50 bytes,
-        # else return empty string
 
         if all(len(i) == maxstr for i in lisdata):
             for i in lisdata:
@@ -274,8 +294,15 @@ class FrankenStrings(ServiceBase):
             return newstr
 
     def decode_encoded_udata(self, request, encoding, data):
-        """
-        Some code taken from bas64dump.py. Adjusted for different hex lengths.
+        """ Compare sizes of unicode strings. Some code taken from bas64dump.py @ https://DidierStevens.com.
+
+        Args:
+            request: AL request object (for submitting extracted files to AL when needed).
+            encoding: Encoding string used (i.e. '0x').
+            data: Data to be examined.
+
+        Returns:
+            List of hashes of extracted files submitted to AL and list of decoded unicode data information.
         """
 
         decoded_list = []
@@ -316,7 +343,7 @@ class FrankenStrings(ServiceBase):
                 if len(uniq_char) > 20:
                     sha256hash = hashlib.sha256(decoded[0]).hexdigest()
                     shalist.append(sha256hash)
-                    udata_file_path = os.path.join(self.wd, "{0}_enchex_{1}_decoded"
+                    udata_file_path = os.path.join(self.working_directory, "{0}_enchex_{1}_decoded"
                                                .format(sha256hash[0:10], encoding))
                     request.add_extracted(udata_file_path, "Extracted unicode file during FrankenStrings analysis.")
                     with open(udata_file_path, 'wb') as unibu_file:
@@ -330,8 +357,16 @@ class FrankenStrings(ServiceBase):
 
     # Base64 Parse
     def b64(self, request, b64_string, patterns, res):
-        """
-        Using some selected code from 'base64dump.py' by Didier Stevens@https://DidierStevens.com
+        """ Decode B64 data. Select code taken from bas64dump.py @ https://DidierStevens.com.
+
+        Args:
+            request: AL request object (for submitting extracted files to AL when needed).
+            b64_string: Possible base64 string.
+            patterns: FrankenStrings Patterns() object.
+            res: AL result object.
+
+        Returns:
+            List of result information.
         """
         results = {}
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
@@ -344,9 +379,9 @@ class FrankenStrings(ServiceBase):
                     mag = magic.Magic()
                     ftype = m.from_buffer(base64data)
                     mag_ftype = mag.from_buffer(base64data)
-                    for ft in self.filetypes:
+                    for ft in self.FILETYPES:
                         if (ft in ftype and not 'octet-stream' in ftype) or ft in mag_ftype:
-                            b64_file_path = os.path.join(self.wd, "{}_b64_decoded"
+                            b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
                                                      .format(sha256hash[0:10]))
                             request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
                             with open(b64_file_path, 'wb') as b64_file:
@@ -368,7 +403,7 @@ class FrankenStrings(ServiceBase):
                         results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
                 # If not all printable characters but IOCs discovered, extract to file
                 elif len(pat) > 0:
-                    b64_file_path = os.path.join(self.wd, "{}_b64_decoded"
+                    b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
                                                  .format(sha256hash[0:10]))
                     request.add_extracted(b64_file_path, "Extracted b64 file during FrankenStrings analysis.")
                     with open(b64_file_path, 'wb') as b64_file:
@@ -384,16 +419,25 @@ class FrankenStrings(ServiceBase):
         return results
 
     def unhexlify_ascii(self, request, data, tag, patterns, res):
+        """ Plain ascii hex conversion.
+
+        Args:
+            request: AL request object (for submitting extracted files to AL when needed).
+            data: Data to examine.
+            tag: AL request.tag (file type string).
+            patterns: Frankenstrings Patterns() object.
+            res: AL result object.
+
+        Returns:
+            List of result information.
         """
-        Plain ascii hex conversion.
-        '"""
         filefound = False
         tags = {}
         if len(data) % 2 != 0:
             data = data[:-1]
         try:
             binstr = binascii.unhexlify(data)
-        except Exception as e:
+        except Exception:
             return filefound, tags
         # If data has less than 7 uniq chars return
         uniq_char = ''.join(set(binstr))
@@ -405,7 +449,7 @@ class FrankenStrings(ServiceBase):
                 return filefound, tags
             filefound = True
             sha256hash = hashlib.sha256(binstr).hexdigest()
-            ascihex_file_path = os.path.join(self.wd, "{}_asciihex_decoded"
+            ascihex_file_path = os.path.join(self.working_directory, "{}_asciihex_decoded"
                                                  .format(sha256hash[0:10]))
             request.add_extracted(ascihex_file_path, "Extracted ascii-hex file during FrankenStrings analysis.")
             with open(ascihex_file_path, 'wb') as fh:
@@ -429,9 +473,17 @@ class FrankenStrings(ServiceBase):
 
     # Executable extraction
     def pe_dump(self, request, temp_file, offset, fn, msg, fail_on_except=False):
-        """
-        Use PEFile application to find the end of the file (biggest section length wins). Option if PEFile fails,
-        extract from offset all the way to the end of the initial file (granted, this is uglier).
+        """ Use PEFile application to find the end of the file (biggest section length wins).
+
+        Args:
+            request: AL request object (for submitting extracted PE AL).
+            temp_file: Sample file with possible embedded PE.
+            offset: Offset of temp_file where PE file begins.
+            fn: String appended to extracted PE file name.
+            fail_on_except: When False, if PEFile fails, extract from offset all the way to the end of the initial file.
+
+        Returns:
+            True if PE extracted.
         """
         pe_extract = None
         try:
@@ -458,7 +510,7 @@ class FrankenStrings(ServiceBase):
                     pe_extract = pedata
 
             if pe_extract:
-                pe_file_path = os.path.join(self.wd, "{0}_{1}"
+                pe_file_path = os.path.join(self.working_directory, "{0}_{1}"
                                             .format(hashlib.sha256(pe_extract).hexdigest()[0:10], fn))
                 request.add_extracted(pe_file_path, "{}" .format(msg))
                 with open(pe_file_path, 'wb') as exe_file:
@@ -573,13 +625,11 @@ class FrankenStrings(ServiceBase):
 # --- Execute ----------------------------------------------------------------------------------------------------------
 
     def execute(self, request):
-        """
-        Main Module.
+        """ Main Module. See README for details.
         """
         result = Result()
         request.result = result
         patterns = PatternMatch()
-        self.wd = self.working_directory
         # For crowbar plugin
         self.before = set()
         sample_type = request.tag
@@ -664,7 +714,7 @@ class FrankenStrings(ServiceBase):
             for pos_exe in re.findall(pat_exeheader, file_data[1:]):
                 if re.search(pat_exedos, pos_exe):
                     pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
-                    temp_file = os.path.join(self.wd, "EXE_TEMP_{}".format(pe_sha256))
+                    temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
 
                     with open(temp_file, 'wb') as pedata:
                         pedata.write(pos_exe)
@@ -704,7 +754,7 @@ class FrankenStrings(ServiceBase):
                     for transform, regex, offset, score, smatch in xresult:
                         if regex == 'EXE_HEAD':
                             xindex += 1
-                            xtemp_file = os.path.join(self.wd, "EXE_HEAD_{0}_{1}_{2}.unXORD"
+                            xtemp_file = os.path.join(self.working_directory, "EXE_HEAD_{0}_{1}_{2}.unXORD"
                                                       .format(xindex, offset, score))
                             with open(xtemp_file, 'wb') as xdata:
                                 xdata.write(smatch)
@@ -720,7 +770,7 @@ class FrankenStrings(ServiceBase):
             # Other possible encoded strings -- all sample types but code and executables
             if not sample_type.split('/', 1)[0] in ['executable', 'code']:
                 # Unicode/Hex Strings
-                for hes in self.hexencode_strings:
+                for hes in self.HEXENC_STRINGS:
                     hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
                     if re.search(hes_regex, file_data) is not None:
                         uhash, unires = self.decode_encoded_udata(request, hes, file_data)
@@ -870,7 +920,7 @@ class FrankenStrings(ServiceBase):
                 else:
                     max_attempts = 5
                 cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.before, patterns,
-                                                                       self.wd)
+                                                                       self.working_directory)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
@@ -915,7 +965,7 @@ class FrankenStrings(ServiceBase):
                     if len(b64_ascii_content) > 0:
                         all_b64 = "\n".join(b64_ascii_content)
                         b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
-                        b64_file_path = os.path.join(self.wd, b64_all_sha256)
+                        b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
                         try:
                             with open(b64_file_path, 'wb') as fh:
                                 fh.write(all_b64)
@@ -1063,11 +1113,11 @@ class FrankenStrings(ServiceBase):
                                     group_res.score = 500
                                     group_res.add_line("Suspicious string(s) found in decoded data.")
 
-                # Report Crowbar deofuscation results and add deob code to result
+                # Report Crowbar de-obfuscate results and add deob code to result
                 if cb_code_res:
                     result.report_heuristic(FrankenStrings.AL_FRANKENSTRINGS_010)
                     res.add_section(cb_code_res)
-                    decodefp = os.path.join(self.wd, "{}_decoded".format(request.md5))
+                    decodefp = os.path.join(self.working_directory, "{}_decoded".format(request.md5))
                     request.add_extracted(decodefp, "Debofuscated sample")
                     with open(decodefp, 'wb') as dcf:
                         dcf.write(cb_decoded_data)
