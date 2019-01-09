@@ -138,24 +138,23 @@ class CrowBar(object):
 
     def b64decode_str(self, text):
         def cic(expression):
-            """
-            From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
+            """From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
             """
             if callable(expression):
                 return expression()
             else:
                 return expression
+
         def iff(expression, value_true, value_false):
-            """
-            From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
+            """From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
             """
             if expression:
                 return cic(value_true)
             else:
                 return cic(value_false)
+
         def ascii_dump(data):
-            """
-            From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
+            """From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
             """
             return ''.join([iff(ord(b) >= 32, b, '') for b in data])
 
@@ -394,8 +393,18 @@ class CrowBar(object):
 
     # --- Main Module --------------------------------------------------------------------------------------------------
     def hammertime(self, max_attempts, raw, before, patterns, wd):
-        """
-        Main Module.
+        """ Iterate through different decoding mechanisms in attempt to extract embedded IOCs in file content.
+
+        Args:
+            max_attempts: Number of iterations data should undertake.
+            raw: Data to be examined.
+            before: List of IOCs in raw data.
+            patterns: FrankenStrings Patterns() object.
+            wd: Directory where temporary content should be stored.
+
+        Returns:
+            If new IOCs found: AL result object, final decoded data, list of file names of extracted content.
+            Else: None for all values.
         """
         self.max_attempts = max_attempts
         self.wd = wd
