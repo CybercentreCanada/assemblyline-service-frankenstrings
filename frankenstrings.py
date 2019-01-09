@@ -273,7 +273,7 @@ class FrankenStrings(ServiceBase):
         """ Compare sizes of unicode strings.
 
         Args:
-            lisdata: A list of strings
+            lisdata: A list of strings.
 
         Returns:
             Result of test: Do all strings match in length?
