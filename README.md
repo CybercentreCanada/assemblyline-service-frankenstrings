@@ -45,7 +45,7 @@ This service does the following:
         - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)       
     * other file types (except code/*):
         - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)
-        - Unicode, Hex, Ascii-Hex extraction modules (for possible shellcode and rtf objdata objects)
+        - Unicode, Hex, Ascii-Hex extraction modules (for possible shellcode)
         - Balbuzard's bbcrack level 1 XOR transform modules. Searches for PE files only
         - [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR modules. Searches for PE files only
 
@@ -71,7 +71,7 @@ This service does the following:
     * Strings matching IOC patterns of interest [Result Text and Tag]
     * Decoded BASE64. Extract content over 200 bytes, otherwise combine all decoded content and extract in single text file.  [Extracted File OR Result Text and Tag]
 2. ASCII Hex Strings:
-    * Content extraction of ascii hex data successfully decoded (any RTF objdata or data over 500 bytes) 
+    * Content extraction of ascii hex data successfully decoded (any data over 500 bytes)
     [Extracted File]
     * IOC pattern matching for any successfully decoded data [Result Text and Tag]
     * URI pattern matching after custom brute force xor module (see bbcrack.py for added module)

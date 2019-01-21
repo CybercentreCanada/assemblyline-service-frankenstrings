@@ -137,27 +137,6 @@ class CrowBar(object):
         return output
 
     def b64decode_str(self, text):
-        def cic(expression):
-            """From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-            """
-            if callable(expression):
-                return expression()
-            else:
-                return expression
-
-        def iff(expression, value_true, value_false):
-            """From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-            """
-            if expression:
-                return cic(value_true)
-            else:
-                return cic(value_false)
-
-        def ascii_dump(data):
-            """From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-            """
-            return ''.join([iff(ord(b) >= 32, b, '') for b in data])
-
         output = None
         b64str = re.findall('((?:[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', text)
         s1 = text
@@ -186,8 +165,8 @@ class CrowBar(object):
                                     self.files_extracted.add(b64_file_path)
                                     self.hashes.add(sha256hash)
                                     break
-                        if all(ord(c) < 128 for c in d):
-                            s1 = s1.replace(bmatch, ascii_dump(d))
+                        if all(31 < ord(c) < 127 for c in d):
+                            s1 = s1.replace(bmatch, d)
 
         if s1 != text:
             output = s1
@@ -393,7 +372,7 @@ class CrowBar(object):
 
     # --- Main Module --------------------------------------------------------------------------------------------------
     def hammertime(self, max_attempts, raw, before, patterns, wd):
-        """ Iterate through different decoding mechanisms in attempt to extract embedded IOCs in file content.
+        """Iterate through different decoding mechanisms in attempt to extract embedded IOCs in file content.
 
         Args:
             max_attempts: Number of iterations data should undertake.
