@@ -138,7 +138,7 @@ class CrowBar(object):
 
     def b64decode_str(self, text):
         output = None
-        b64str = re.findall('((?:[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', text)
+        b64str = re.findall('((?:[A-Za-z0-9+/]{3,}={0,2}(?:&#[x1][A0];){0,1}[\r]?[\n]?){6,})', text)
         s1 = text
         for bmatch in b64str:
             s = bmatch.replace('\n', '').replace('\r', '').replace(' ', '')
