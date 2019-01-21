@@ -165,7 +165,8 @@ class CrowBar(object):
                                     self.files_extracted.add(b64_file_path)
                                     self.hashes.add(sha256hash)
                                     break
-                        if all(31 < ord(c) < 127 for c in d):
+                        uniq_char = ''.join(set(d))
+                        if len(uniq_char) > 6 and all(31 < ord(c) < 127 for c in d) and len(re.sub("\s", "", d)) > 14:
                             s1 = s1.replace(bmatch, d)
 
         if s1 != text:
