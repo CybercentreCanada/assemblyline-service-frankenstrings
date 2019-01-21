@@ -84,6 +84,7 @@ class FrankenStrings(ServiceBase):
         'Microsoft',
         'text',
     ]
+
     HEXENC_STRINGS = [
         '\u',
         '%u',
@@ -214,34 +215,16 @@ class FrankenStrings(ServiceBase):
         else:
             return
 
-    # CIC: Call If Callable
-    @staticmethod
-    def cic(expression):
-        """ From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-        """
-        if callable(expression):
-            return expression()
-        else:
-            return expression
-
-    # IFF: IF Function
-    @classmethod
-    def iff(cls, expression, value_true, value_false):
-        """ From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-        """
-        if expression:
-            return cls.cic(value_true)
-        else:
-            return cls.cic(value_false)
-
-    # Ascii Dump
-    @classmethod
-    def ascii_dump(cls, data):
-        return ''.join([cls.iff(ord(b) >= 32, b, '.') for b in data])
-
     @staticmethod
     def decode_bu(data, size):
-        """ From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
+        """ Adjusted 'base64dump.py' by Didier Stevens@https://DidierStevens.com. Convert ascii to hex.
+
+        Args:
+            data: Ascii string to be converted.
+            size: Unit size.
+
+        Returns:
+            Decoded data.
         """
         decoded = ''
 
@@ -270,7 +253,7 @@ class FrankenStrings(ServiceBase):
 
     @staticmethod
     def unicode_longest_string(lisdata):
-        """ Compare sizes of unicode strings.
+        """Compare sizes of unicode strings.
 
         Args:
             lisdata: A list of strings.
@@ -294,7 +277,7 @@ class FrankenStrings(ServiceBase):
             return newstr
 
     def decode_encoded_udata(self, request, encoding, data):
-        """ Compare sizes of unicode strings. Some code taken from bas64dump.py @ https://DidierStevens.com.
+        """Compare sizes of unicode strings. Some code taken from bas64dump.py @ https://DidierStevens.com.
 
         Args:
             request: AL request object (for submitting extracted files to AL when needed).
@@ -357,7 +340,7 @@ class FrankenStrings(ServiceBase):
 
     # Base64 Parse
     def b64(self, request, b64_string, patterns, res):
-        """ Decode B64 data. Select code taken from bas64dump.py @ https://DidierStevens.com.
+        """Decode B64 data. Select code taken from bas64dump.py @ https://DidierStevens.com.
 
         Args:
             request: AL request object (for submitting extracted files to AL when needed).
@@ -394,13 +377,12 @@ class FrankenStrings(ServiceBase):
 
                 # See if any IOCs in decoded data
                 pat = self.ioc_to_tag(base64data, patterns, res, taglist=True)
-                # If all printable charcaters then put in results
-                if all(ord(c) < 128 for c in base64data):
-                    asc_b64 = self.ascii_dump(base64data)
-                    # If data has less then 7 uniq chars then ignore
-                    uniq_char = ''.join(set(asc_b64))
-                    if len(uniq_char) > 6:
-                        results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
+                # Filter printable characters then put in results
+                asc_b64 = "".join(i for i in base64data if 31 < ord(i) < 127)
+                # If data has less then 7 uniq chars then ignore
+                uniq_char = ''.join(set(asc_b64))
+                if len(uniq_char) > 6:
+                    results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
                 # If not all printable characters but IOCs discovered, extract to file
                 elif len(pat) > 0:
                     b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
@@ -419,7 +401,7 @@ class FrankenStrings(ServiceBase):
         return results
 
     def unhexlify_ascii(self, request, data, tag, patterns, res):
-        """ Plain ascii hex conversion.
+        """Plain ascii hex conversion.
 
         Args:
             request: AL request object (for submitting extracted files to AL when needed).
@@ -473,7 +455,7 @@ class FrankenStrings(ServiceBase):
 
     # Executable extraction
     def pe_dump(self, request, temp_file, offset, fn, msg, fail_on_except=False):
-        """ Use PEFile application to find the end of the file (biggest section length wins).
+        """Use PEFile application to find the end of the file (biggest section length wins).
 
         Args:
             request: AL request object (for submitting extracted PE AL).
@@ -625,8 +607,7 @@ class FrankenStrings(ServiceBase):
 # --- Execute ----------------------------------------------------------------------------------------------------------
 
     def execute(self, request):
-        """ Main Module. See README for details.
-        """
+        """ Main Module. See README for details."""
         result = Result()
         request.result = result
         patterns = PatternMatch()
