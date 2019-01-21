@@ -137,33 +137,11 @@ class CrowBar(object):
         return output
 
     def b64decode_str(self, text):
-        def cic(expression):
-            """
-            From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-            """
-            if callable(expression):
-                return expression()
-            else:
-                return expression
-        def iff(expression, value_true, value_false):
-            """
-            From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-            """
-            if expression:
-                return cic(value_true)
-            else:
-                return cic(value_false)
-        def ascii_dump(data):
-            """
-            From 'base64dump.py' by Didier Stevens@https://DidierStevens.com
-            """
-            return ''.join([iff(ord(b) >= 32, b, '') for b in data])
-
         output = None
-        b64str = re.findall('((?:[A-Za-z0-9+/]{3,}={0,2}[\r]?[\n]?){6,})', text)
+        b64str = re.findall('((?:[A-Za-z0-9+/]{3,}={0,2}(?:&#[x1][A0];){0,1}[\r]?[\n]?){6,})', text)
         s1 = text
         for bmatch in b64str:
-            s = bmatch.replace('\n', '').replace('\r', '').replace(' ', '')
+            s = bmatch.replace('\n', '').replace('\r', '').replace(' ', '').replace('&#xA;', '').replace('&#10;', '')
             uniq_char = ''.join(set(s))
             if len(uniq_char) > 6:
                 if len(s) >= 16 and len(s) % 4 == 0:
@@ -187,8 +165,9 @@ class CrowBar(object):
                                     self.files_extracted.add(b64_file_path)
                                     self.hashes.add(sha256hash)
                                     break
-                        if all(ord(c) < 128 for c in d):
-                            s1 = s1.replace(bmatch, ascii_dump(d))
+                        uniq_char = ''.join(set(d))
+                        if len(uniq_char) > 6 and all(31 < ord(c) < 127 for c in d) and len(re.sub("\s", "", d)) > 14:
+                            s1 = s1.replace(bmatch, d)
 
         if s1 != text:
             output = s1
@@ -394,8 +373,18 @@ class CrowBar(object):
 
     # --- Main Module --------------------------------------------------------------------------------------------------
     def hammertime(self, max_attempts, raw, before, patterns, wd):
-        """
-        Main Module.
+        """Iterate through different decoding mechanisms in attempt to extract embedded IOCs in file content.
+
+        Args:
+            max_attempts: Number of iterations data should undertake.
+            raw: Data to be examined.
+            before: List of IOCs in raw data.
+            patterns: FrankenStrings Patterns() object.
+            wd: Directory where temporary content should be stored.
+
+        Returns:
+            If new IOCs found: AL result object, final decoded data, list of file names of extracted content.
+            Else: None for all values.
         """
         self.max_attempts = max_attempts
         self.wd = wd

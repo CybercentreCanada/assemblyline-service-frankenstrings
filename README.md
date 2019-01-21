@@ -43,18 +43,35 @@ This service does the following:
         - Balbuzard's bbcrack level 1 XOR transform modules. Searches for PE files only
         - [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR modules. Searches for PE files only
         - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)       
-    * other file types:
+    * other file types (except code/*):
         - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)
-        - Unicode, Hex, Ascii-Hex extraction modules (for possible shellcode and rtf objdata objects)
+        - Unicode, Hex, Ascii-Hex extraction modules (for possible shellcode)
         - Balbuzard's bbcrack level 1 XOR transform modules. Searches for PE files only
         - [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR modules. Searches for PE files only
+
+3. Code/* File Type Evaluation:
+    * Attempts to de-obfuscate IOC values from code samples by iterating 5x (100x deep scan) through the following
+     modules in crowbar.py:
+        1. VBE Decode
+        2. Concat strings
+        3. MSWord macro vars
+        4. Powershell vars
+        5. String replace
+        6. Powershell carets
+        7. Array of strings
+        8. Fake array vars
+        9. Reverse strings
+        10. B64 Decode
+        11. Simple XOR function
+        12. Charcode
+        13. Charcode hex
 
 #### Result Output
 1. Static Strings (ASCII, UNICODE, BASE64):
     * Strings matching IOC patterns of interest [Result Text and Tag]
-    * Decoded BASE64. Extract content over 800 bytes, otherwise combine all decoded content and extract in single text file.  [Extracted File OR Result Text and Tag]
+    * Decoded BASE64. Extract content over 200 bytes, otherwise combine all decoded content and extract in single text file.  [Extracted File OR Result Text and Tag]
 2. ASCII Hex Strings:
-    * Content extraction of ascii hex data successfully decoded (any RTF objdata or data over 500 bytes) 
+    * Content extraction of ascii hex data successfully decoded (any data over 500 bytes)
     [Extracted File]
     * IOC pattern matching for any successfully decoded data [Result Text and Tag]
     * URI pattern matching after custom brute force xor module (see bbcrack.py for added module)
@@ -68,3 +85,6 @@ This service does the following:
 5. BBCrack XOR Strings:
     * All strings matching IOC patterns of interest [Result Text and Tag]
     * Decoded XOR'd PE File [Extracted File]
+6. CrowBar Decoded Strings:
+    * All IOC strings discovered [Result Text and Tag]
+    * Decoded B64 content over 500 bytes [Extracted File] 
