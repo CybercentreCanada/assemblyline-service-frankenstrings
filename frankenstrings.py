@@ -381,7 +381,7 @@ class FrankenStrings(ServiceBase):
                 asc_b64 = "".join(i for i in base64data if 31 < ord(i) < 127)
                 # If data has less then 7 uniq chars then ignore
                 uniq_char = ''.join(set(asc_b64))
-                if len(uniq_char) > 6:
+                if len(uniq_char) > 6 and len(re.sub("\s", "", asc_b64)) > 14:
                     results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
                 # If not all printable characters but IOCs discovered, extract to file
                 elif len(pat) > 0:
