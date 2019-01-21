@@ -28,8 +28,8 @@ class FrankenStrings(ServiceBase):
         'MAX_SIZE': 3000000,
         'MAX_LENGTH': 5000,
         'ST_MAX_SIZE': 0,
-        'BB_MAX_SIZE': 200000,
-        'FF_MAX_SIZE': 200000,
+        'BB_MAX_SIZE': 85000,
+        'FF_MAX_SIZE': 85000,
         'FF_ENC_MIN_LENGTH': 7,
         'FF_STACK_MIN_LENGTH': 7
     }
