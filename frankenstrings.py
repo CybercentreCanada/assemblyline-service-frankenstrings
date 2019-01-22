@@ -706,11 +706,15 @@ class FrankenStrings(ServiceBase):
             # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
             # Find Base64 encoded strings and files of interest
             if not sample_type.startswith('code'):
+                b64_matches = set()
                 # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
                 for b64_match in re.findall('([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
                                             '(?:&#[x1][A0];){0,1}[\r]?[\n]?){2,})', file_data):
                     b64_string = b64_match.replace('\n', '').replace('\r', '').replace(' ', '').replace('&#xA;', '')\
                         .replace('&#10;', '')
+                    if b64_string in b64_matches:
+                        continue
+                    b64_matches.add(b64_string)
                     uniq_char = ''.join(set(b64_string))
                     if len(uniq_char) > 6:
                         b64result = self.b64(request, b64_string, patterns, res)
