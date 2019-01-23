@@ -96,9 +96,9 @@ class CrowBar(object):
     @staticmethod
     def chr_decode(text):
         output = text
-        for fullc, c in re.findall(r'(chr[b]?\(([0-9]{1,3})\))', output, re.I):
+        for fullc, c in re.findall(r'(chr[bw]?\(([0-9]{1,3})\))', output, re.I):
             try:
-               output = re.sub(re.escape(fullc), re.escape('{}' .format(chr(int(c)))), output)
+               output = re.sub(re.escape(fullc), '"{}"' .format(chr(int(c))), output)
             except:
                 continue
         if output == text:
@@ -266,14 +266,14 @@ class CrowBar(object):
     def mswordmacro_vars(self, text):
         try:
             output = text
-            # bad, prevent false var replacements like YG="86"
+            # prevent false var replacements like YG="86"
             # Replace regular variables
             replacements = re.findall(r'^\s*((?:Const[\s]*)?(\w+)\s*='
                                       r'\s*((?:["][^"]+["]|[\'][^\']+[\']|[0-9]*)))[\s\r]*$',
-                                      output, re.MULTILINE|re.DOTALL)
+                                      output, re.MULTILINE | re.DOTALL)
             if len(replacements) > 0:
                 for full, varname, value in replacements:
-                    if len(re.findall(r'([\b(]' + re.escape(varname) + r'[\b)])', output)) == 1:
+                    if len(re.findall(r'\b' + varname + r'\b', output)) == 1:
                         # If there is only one instance of these, it's probably noise.
                         output = output.replace(full, '<crowbar:mswordmacro_unused_variable_assignment>')
                     else:
@@ -284,7 +284,7 @@ class CrowBar(object):
                         # b = b & "world!"
                         stacked = re.findall(r'^\s*(({0})\s*='
                                              r'\s*({1})\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$'
-                                             .format(varname, varname), output, re.MULTILINE|re.DOTALL)
+                                             .format(varname, varname), output, re.MULTILINE | re.DOTALL)
                         if len(stacked) > 0:
                             for sfull, varname, varname_b, val in stacked:
                                 final_val += val.replace('"', "")
@@ -299,7 +299,7 @@ class CrowBar(object):
 
             # Remaining stacked strings
             replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
-                                      output, re.MULTILINE|re.DOTALL)
+                                      output, re.MULTILINE | re.DOTALL)
             vars = set([x[1] for x in replacements])
             for v in vars:
                 final_val = ""
@@ -308,8 +308,8 @@ class CrowBar(object):
                         continue
                     final_val += value.replace('"', "")
                     output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
-                output = re.sub(r'(\b' + re.escape(v) +
-                                r'(?!\s*(?:=|[+&]\s*{}))\b)'.format(re.escape(v)),
+                output = re.sub(r'(\b' + v +
+                                r'(?!\s*(?:=|[+&]\s*{}))\b)'.format(v),
                                 '"{}"' .format(final_val),
                                 output, count=5)
 
@@ -395,28 +395,32 @@ class CrowBar(object):
         layers_list = []
         layer = raw
         techniques = [
-            ('MSWord macro vars', self.mswordmacro_vars),
-            ('Powershell vars', self.powershell_vars),
+            ('CHR and CHRB decode', self.chr_decode),
             ('String replace', self.string_replace),
             ('Concat strings', self.concat_strings),
             ('Powershell carets', self.powershell_carets),
             ('Array of strings', self.array_of_strings),
             ('Fake array vars', self.vars_of_fake_arrays),
             ('Reverse strings', self.str_reverse),
-            ('CHR and CHRB decode', self.chr_decode),
             ('B64 Decode', self.b64decode_str),
             ('Simple XOR function', self.simple_xor_function),
         ]
-        finalpass_tech = [
+        second_pass = [
+            ('MSWord macro vars', self.mswordmacro_vars),
+            ('Powershell vars', self.powershell_vars),
+        ]
+        final_pass = [
             ('Charcode', self.charcode),
             ('Charcode hex', self.charcode_hex)
         ]
 
         idx = 0
+        first_pass_len = len(techniques)
         layers_count = 0
         while True:
             if idx > self.max_attempts:
-                for name, technique in finalpass_tech:
+                final_pass.extend(techniques)
+                for name, technique in final_pass:
                     res = technique(layer)
                     if res:
                         layers_list.append((name, res))
@@ -425,16 +429,20 @@ class CrowBar(object):
                 res = technique(layer)
                 if res:
                     layers_list.append((name, res))
-
                     # Looks like it worked, restart with new layer
                     layer = res
             # If the layers haven't changed in a passing, break
             if layers_count == len(layers_list):
-                for name, technique in finalpass_tech:
-                    res = technique(layer)
-                    if res:
-                        layers_list.append((name, res))
-                break
+                if len(techniques) != first_pass_len:
+                    final_pass.extend(techniques)
+                    for name, technique in final_pass:
+                        res = technique(layer)
+                        if res:
+                            layers_list.append((name, res))
+                    break
+                else:
+                    for x in second_pass:
+                        techniques.insert(0, x)
             layers_count = len(layers_list)
             idx += 1
 
