@@ -3289,12 +3289,16 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">AUTOITSETOPTION</string>
     <string score="0">AUTOITWINGETTITLE</string>
     <string score="0">AUTOITWINSETTITLE</string>
-    <string score="0">"powershell"</string>
-    <string score="0">"bitsadmin"</string>
-    <string score="0">"bitstransfer"</string>
-    <string score="0">"certutil"</string>
-    <string score="0">"downloadstring"</string>
-    <string score="0">"webclient"</string>
+    <string score="0">powershell</string>
+    <string score="0">bitsadmin</string>
+    <string score="0">bitstransfer</string>
+    <string score="0">certutil</string>
+    <string score="0">downloadstring</string>
+    <string score="0">webclient</string>
+    <string score="0">ADODB.Stream</string>
+    <string score="0">SaveToFile</string>
+    <string score="0">Microsoft.XMLHTTP</string>
+    <string score="0">WinHttpRequest</string>
 
   </strings>
 
