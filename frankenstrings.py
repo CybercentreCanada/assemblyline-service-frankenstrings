@@ -116,6 +116,7 @@ class FrankenStrings(ServiceBase):
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
         self.before = None
+        self.sample_type = None
 
     def start(self):
         self.log.debug("FrankenStrings service started")
@@ -379,10 +380,17 @@ class FrankenStrings(ServiceBase):
                 pat = self.ioc_to_tag(base64data, patterns, res, taglist=True)
                 # Filter printable characters then put in results
                 asc_b64 = "".join(i for i in base64data if 31 < ord(i) < 127)
-                # If data has less then 7 uniq chars then ignore
-                uniq_char = ''.join(set(asc_b64))
-                if len(uniq_char) > 6 and len(re.sub("\s", "", asc_b64)) > 14:
-                    results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
+                if len(asc_b64) > 0:
+                    # If patterns exists, report. If not, report only if string looks interesting
+                    if len(pat) > 0:
+                        results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
+                    # PDF and Office documents have too many FPS
+                    elif not self.sample_type.startswith('document/office') \
+                            and not self.sample_type.startswith('document/pdf'):
+                        # If data has length greater than 14, and unique character to length ratio is high
+                        uniq_char = ''.join(set(asc_b64))
+                        if len(uniq_char) > 6 and len(re.sub("[^A-Za-z0-9]+", "", asc_b64)) > 14:
+                            results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
                 # If not all printable characters but IOCs discovered, extract to file
                 elif len(pat) > 0:
                     b64_file_path = os.path.join(self.working_directory, "{}_b64_decoded"
@@ -613,7 +621,7 @@ class FrankenStrings(ServiceBase):
         patterns = PatternMatch()
         # For crowbar plugin
         self.before = set()
-        sample_type = request.tag
+        self.sample_type = request.tag
         # Filters for submission modes. Listed in order of use.
         if request.deep_scan:
             # Maximum size of submitted file to run this service:
@@ -643,7 +651,7 @@ class FrankenStrings(ServiceBase):
                                                self.SERVICE_DEFAULT_CONFIG['FF_STACK_MIN_LENGTH'])
 
         # Begin analysis
-        if (request.task.size or 0) < max_size and not sample_type.startswith("archive/"):
+        if (request.task.size or 0) < max_size and not self.sample_type.startswith("archive/"):
             # Generate section in results set
             from floss import decoding_manager
             from floss import identification_manager as im, stackstrings
@@ -678,7 +686,7 @@ class FrankenStrings(ServiceBase):
 
             # Find ASCII & Unicode IOC Strings
             # Find all patterns if the file is identified as code (for crowbar plugin)
-            if sample_type.startswith('code'):
+            if self.sample_type.startswith('code'):
                 chkl = False
                 svse = True
             else:
@@ -705,7 +713,7 @@ class FrankenStrings(ServiceBase):
 
             # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
             # Find Base64 encoded strings and files of interest
-            if not sample_type.startswith('code'):
+            if not self.sample_type.startswith('code'):
                 b64_matches = set()
                 # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
                 for b64_match in re.findall('([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
@@ -756,7 +764,7 @@ class FrankenStrings(ServiceBase):
                             xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
 
             # Other possible encoded strings -- all sample types but code and executables
-            if not sample_type.split('/', 1)[0] in ['executable', 'code']:
+            if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
                 # Unicode/Hex Strings
                 for hes in self.HEXENC_STRINGS:
                     hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
@@ -770,28 +778,29 @@ class FrankenStrings(ServiceBase):
                                 unicode_al_results[i[0]] = [i[1], i[2], i[3]]
 
                 # Go over again, looking for long ASCII-HEX character strings
-                hex_pat = re.compile('((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
-                for hex_match in re.findall(hex_pat, file_data):
-                    hex_string = hex_match.replace('\r', '').replace('\n', '')
-                    afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag, patterns,
-                                                                         res)
-                    if afile_found:
-                        asciihex_file_found = True
-                    if asciihex_results != "":
-                        for ask, asi in asciihex_results.iteritems():
-                            if ask.startswith('BB_'):
-                                # Add any xor'd content to its own result set
-                                ask = ask.split('_', 1)[1]
-                                if ask not in asciihex_bb_dict:
-                                    asciihex_bb_dict[ask] = []
-                                asciihex_bb_dict[ask].append(asi)
-                            else:
-                                if ask not in asciihex_dict:
-                                    asciihex_dict[ask] = []
-                                asciihex_dict[ask].append(asi)
+                if not self.sample_type.startswith('document/office'):
+                    hex_pat = re.compile('((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
+                    for hex_match in re.findall(hex_pat, file_data):
+                        hex_string = hex_match.replace('\r', '').replace('\n', '')
+                        afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.tag, patterns,
+                                                                             res)
+                        if afile_found:
+                            asciihex_file_found = True
+                        if asciihex_results != "":
+                            for ask, asi in asciihex_results.iteritems():
+                                if ask.startswith('BB_'):
+                                    # Add any xor'd content to its own result set
+                                    ask = ask.split('_', 1)[1]
+                                    if ask not in asciihex_bb_dict:
+                                        asciihex_bb_dict[ask] = []
+                                    asciihex_bb_dict[ask].append(asi)
+                                else:
+                                    if ask not in asciihex_dict:
+                                        asciihex_dict[ask] = []
+                                    asciihex_dict[ask].append(asi)
 
             # Encoded/Stacked strings -- Windows executable sample types
-            if (request.task.size or 0) < ff_max_size and sample_type.startswith("executable/windows/"):
+            if (request.task.size or 0) < ff_max_size and self.sample_type.startswith("executable/windows/"):
 
                 m = magic.Magic()
                 file_magic = m.from_buffer(file_data)
@@ -901,7 +910,7 @@ class FrankenStrings(ServiceBase):
                             pass
 
             # Static decoding of code files
-            if sample_type.startswith('code'):
+            if self.sample_type.startswith('code'):
                 cb = CrowBar()
                 if request.deep_scan:
                     max_attempts = 100
