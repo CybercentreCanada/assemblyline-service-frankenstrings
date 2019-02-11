@@ -387,9 +387,9 @@ class FrankenStrings(ServiceBase):
                     # PDF and Office documents have too many FPS
                     elif not self.sample_type.startswith('document/office') \
                             and not self.sample_type.startswith('document/pdf'):
-                        # If data has length greater than 14, and unique character to length ratio is high
+                        # If data has length greater than 50, and unique character to length ratio is high
                         uniq_char = ''.join(set(asc_b64))
-                        if len(uniq_char) > 6 and len(re.sub("[^A-Za-z0-9]+", "", asc_b64)) > 14:
+                        if len(uniq_char) > 12 and len(re.sub("[^A-Za-z0-9]+", "", asc_b64)) > 50:
                             results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
                 # If not all printable characters but IOCs discovered, extract to file
                 elif len(pat) > 0:
