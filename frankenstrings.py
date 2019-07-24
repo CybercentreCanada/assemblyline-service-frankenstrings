@@ -709,7 +709,8 @@ class FrankenStrings(ServiceBase):
                         pedata.write(pos_exe)
 
                     embedded_pe = self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
-                                               msg="PE header strings discovered in sample")
+                                               msg="PE header strings discovered in sample",
+                                               fail_on_except=True)
 
             # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
             # Find Base64 encoded strings and files of interest
