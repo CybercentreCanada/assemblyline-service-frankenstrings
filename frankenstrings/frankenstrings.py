@@ -112,10 +112,10 @@ class FrankenStrings(ServiceBase):
                             if savetoset:
                                 self.before.add(asc_asc)
                             # Ensure AL will accept domain tags:
-                            if ty == 'NET_DOMAIN_NAME':
+                            if ty == 'network.domain':
                                 if not is_valid_domain(asc_asc):
                                     continue
-                            if ty == 'NET_EMAIL':
+                            if ty == 'network.email.address':
                                 if not is_valid_email(asc_asc):
                                     continue
                             # 1000 is the maximum allowed size of an AL tag
