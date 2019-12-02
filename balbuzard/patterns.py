@@ -35,7 +35,7 @@ For more info and updates: http://www.decalage.info/balbuzard
 
 import re
 from os import path
-from al_services.alsvc_frankenstrings.balbuzard.balbuzard import Pattern, Pattern_re
+from alv4_services.alsvc4_frankenstrings.balbuzard.balbuzard import Pattern, Pattern_re
 from xml.etree import ElementTree
 from fuzzywuzzy import process
 
