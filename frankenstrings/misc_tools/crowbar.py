@@ -1,21 +1,23 @@
-from assemblyline.al.common.result import ResultSection, SCORE, TAG_TYPE, TAG_WEIGHT, TEXT_FORMAT
-from collections import Counter
 import binascii
 import hashlib
-import magic
 import os
 import re
 import unicodedata
+from collections import Counter
+
+import magic
+
+from assemblyline_v4_service.common.result import ResultSection, BODY_FORMAT
 
 
 class CrowBar(object):
     FILETYPES = ['application',
-                      'document',
-                      'exec',
-                      'image',
-                      'Microsoft',
-                      'text',
-                      ]
+                 'document',
+                 'exec',
+                 'image',
+                 'Microsoft',
+                 'text',
+                 ]
     VALIDCHARS = ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
     BINCHARS = ''.join([c for c in map(chr, range(0, 256)) if c not in VALIDCHARS])
 
@@ -158,8 +160,8 @@ class CrowBar(object):
                         if len(d) > 500:
                             for ft in self.FILETYPES:
                                 if (ft in ftype and not 'octet-stream' in ftype) or ft in mag_ftype:
-                                    b64_file_path = os.path.join(self.wd, "{}_cb_b64_decoded"
-                                                                 .format(sha256hash[0:10]))
+                                    b64_file_name = f"{sha256hash[0:10]}_cb_b64_decoded"
+                                    b64_file_path = os.path.join(self.wd, b64_file_name)
                                     with open(b64_file_path, 'wb') as b64_file:
                                         b64_file.write(d)
                                     self.files_extracted.add(b64_file_path)
@@ -452,7 +454,7 @@ class CrowBar(object):
             if clean != raw:
                 after = set()
                 pat_values = patterns.ioc_match(clean, bogon_ip=True, just_network=False)
-                for k, val in pat_values.iteritems():
+                for k, val in pat_values.items():
                     if val == "":
                         asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
                         after.add(asc_asc)
@@ -462,40 +464,39 @@ class CrowBar(object):
                 diff_tags = after - before
                 # Add additional checks to see if the file should be extracted.
                 if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0 or len(self.files_extracted) > 0:
-                    al_res = (ResultSection(SCORE.NULL, "CrowBar Plugin Detected Possible Obfuscated Script:"))
-                    mres = (ResultSection(SCORE.NULL, "The following CrowBar modules made deofuscation attempts:",
+                    al_res = (ResultSection("CrowBar Plugin Detected Possible Obfuscated Script:"))
+                    mres = (ResultSection("The following CrowBar modules made deofuscation attempts:",
                                           parent=al_res))
                     mres.score = final_score
                     lcount = Counter([x[0] for x in layers_list])
-                    for l, c in lcount.iteritems():
-                        mres.add_line("{0}, {1} time(s).".format(l, c))
+                    for l, c in lcount.items():
+                        mres.add_line(f"{l}, {c} time(s).")
 
                     if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0:
                         # Display any new IOC tags found
                         if len(pat_values) > 0 and len(diff_tags) > 0:
                             dres = (ResultSection(SCORE.LOW, "IOCs discovered by Crowbar module:",
-                                                  body_format=TEXT_FORMAT.MEMORY_DUMP, parent=al_res))
-                            for ty, val in pat_values.iteritems():
+                                                  body_format=BODY_FORMAT.MEMORY_DUMP, parent=al_res))
+                            for ty, val in pat_values.items():
                                 if val == "":
                                     asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
                                     if asc_asc in diff_tags:
-                                        dres.add_line("{} string: {}" .format(ty.replace("_", " "), asc_asc))
-                                        al_res.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                                        dres.add_line(f"{ty.replace('_', ' ')} string: {asc_asc}")
+                                        al_res.add_tag(TAG_TYPE[ty], asc_asc)
                                 else:
                                     for v in val:
                                         if v in diff_tags:
-                                            dres.add_line("{} string: {}".format(ty.replace("_", " "), v))
-                                            al_res.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                            dres.add_line(f"{ty.replace('_', ' ')} string: {v}")
+                                            al_res.add_tag(TAG_TYPE[ty], v)
 
                         # Display final layer
-                        lres = (ResultSection(SCORE.NULL, "Final layer:", body_format=TEXT_FORMAT.MEMORY_DUMP,
-                                              parent=al_res))
+                        lres = (ResultSection("Final layer:", body_format=BODY_FORMAT.MEMORY_DUMP, parent=al_res))
 
                         lres.add_line("First 500 bytes of file:")
                         lres.add_line(clean[:500])
 
                     if len(self.files_extracted) > 0:
-                        al_res.add_section(ResultSection(SCORE.LOW, "Deobfuscated code of interest extracted in isolation. "
+                        al_res.add_subsection(ResultSection(SCORE.LOW, "Deobfuscated code of interest extracted in isolation. "
                                                                  "See extracted files."))
                 else:
                     clean = None

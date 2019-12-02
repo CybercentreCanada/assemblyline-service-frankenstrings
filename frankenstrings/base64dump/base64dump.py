@@ -37,7 +37,7 @@ import optparse
 import sys
 import os
 import zipfile
-import cStringIO
+from io import StringIO
 import binascii
 import textwrap
 import re
@@ -50,10 +50,7 @@ try:
     import yara
 except:
     pass
-if sys.version_info[0] >= 3:
-    from io import StringIO
-else:
-    from cStringIO import StringIO
+
 
 dumplinelength = 16
 MALWARE_PASSWORD = 'infected'
