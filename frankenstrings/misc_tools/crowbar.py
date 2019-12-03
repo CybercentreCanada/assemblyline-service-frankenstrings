@@ -7,7 +7,7 @@ from collections import Counter
 
 import magic
 
-from assemblyline_v4_service.common.result import ResultSection, BODY_FORMAT
+from assemblyline_v4_service.common.result import ResultSection, BODY_FORMAT, Heuristic
 
 
 class CrowBar(object):
@@ -38,8 +38,8 @@ class CrowBar(object):
 
     def charcode(self, text):
         output = None
-        arrayofints = filter(lambda n: n < 256,
-                             map(int, re.findall('(\d+)', str(re.findall('\D{1,2}\d{2,3}', text)))))
+        arrayofints = list(filter(lambda n: n < 256,
+                             map(int, re.findall('(\d+)', str(re.findall('\D{1,2}\d{2,3}', text))))))
         if len(arrayofints) > 20:
             s1 = ''.join(map(chr, arrayofints))
             if self.printable_ratio(s1) > .75 and (float(len(s1)) / float(len(text))) > .10:
@@ -51,7 +51,7 @@ class CrowBar(object):
     def charcode_hex(self, text):
         output = None
         s1 = text
-        enc_str = ['\u', '%u', '\\x', '0x']
+        enc_str = ['\\u', '%u', '\\x', '0x']
 
         for encoding in enc_str:
             char_len = [(16, re.compile(r'(?:' + re.escape(encoding) + '[A-Fa-f0-9]{16})+')),
@@ -475,19 +475,20 @@ class CrowBar(object):
                     if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0:
                         # Display any new IOC tags found
                         if len(pat_values) > 0 and len(diff_tags) > 0:
-                            dres = (ResultSection(SCORE.LOW, "IOCs discovered by Crowbar module:",
-                                                  body_format=BODY_FORMAT.MEMORY_DUMP, parent=al_res))
+                            dres = (ResultSection("IOCs discovered by Crowbar module:",
+                                                  body_format=BODY_FORMAT.MEMORY_DUMP, heuristic=Heuristic(11),
+                                                  parent=al_res))
                             for ty, val in pat_values.items():
                                 if val == "":
                                     asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
                                     if asc_asc in diff_tags:
                                         dres.add_line(f"{ty.replace('_', ' ')} string: {asc_asc}")
-                                        al_res.add_tag(TAG_TYPE[ty], asc_asc)
+                                        al_res.add_tag(ty, asc_asc)
                                 else:
                                     for v in val:
                                         if v in diff_tags:
                                             dres.add_line(f"{ty.replace('_', ' ')} string: {v}")
-                                            al_res.add_tag(TAG_TYPE[ty], v)
+                                            al_res.add_tag(ty, v)
 
                         # Display final layer
                         lres = (ResultSection("Final layer:", body_format=BODY_FORMAT.MEMORY_DUMP, parent=al_res))
@@ -496,8 +497,8 @@ class CrowBar(object):
                         lres.add_line(clean[:500])
 
                     if len(self.files_extracted) > 0:
-                        al_res.add_subsection(ResultSection(SCORE.LOW, "Deobfuscated code of interest extracted in isolation. "
-                                                                 "See extracted files."))
+                        al_res.add_subsection(ResultSection("Deobfuscated code of interest extracted in isolation. "
+                                                            "See extracted files.", heuristic=Heuristic(10)))
                 else:
                     clean = None
                     self.files_extracted = None

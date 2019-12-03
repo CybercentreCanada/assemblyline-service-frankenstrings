@@ -9,7 +9,7 @@ from collections import namedtuple
 
 import magic
 import pefile
-from assemblyline.common.timeout import alarm_clock
+from assemblyline_v4_service.common.utils import alarm_clock
 from floss import strings
 
 from assemblyline.common.net import is_valid_domain, is_valid_email
@@ -31,7 +31,7 @@ class FrankenStrings(ServiceBase):
     ]
 
     HEXENC_STRINGS = [
-        '\u',
+        '\\u',
         '%u',
         '\\x',
         '0x',
@@ -120,7 +120,7 @@ class FrankenStrings(ServiceBase):
                                     continue
                             # 1000 is the maximum allowed size of an AL tag
                             if len(asc_asc) < 1001:
-                                res.add_tag(TAG_TYPE[ty], asc_asc)
+                                res.add_tag(ty, asc_asc)
                                 if taglist:
                                     tags[ty].add(asc_asc)
                         else:
@@ -135,7 +135,7 @@ class FrankenStrings(ServiceBase):
                                     if not is_valid_email(v):
                                         continue
                                 if len(v) < 1001:
-                                    res.add_tag(TAG_TYPE[ty], v)
+                                    res.add_tag(ty, v)
                                     if taglist:
                                         tags[ty].add(v)
         if taglist:
@@ -552,7 +552,7 @@ class FrankenStrings(ServiceBase):
         patterns = PatternMatch()
         # For crowbar plugin
         self.before = set()
-        self.sample_type = request.tag
+        self.sample_type = request.file_type
         # Filters for submission modes. Listed in order of use.
         if request.deep_scan:
             # Maximum size of submitted file to run this service:
@@ -572,14 +572,13 @@ class FrankenStrings(ServiceBase):
             ff_enc_min_length = 7
             ff_stack_min_length = 7
         else:
-            max_size = self.config.get('max_size', self.SERVICE_DEFAULT_CONFIG['MAX_SIZE'])
-            max_length = self.config.get('max_length', self.SERVICE_DEFAULT_CONFIG['MAX_LENGTH'])
-            st_max_size = self.config.get('st_max_size', self.SERVICE_DEFAULT_CONFIG['ST_MAX_SIZE'])
-            bb_max_size = self.config.get('bb_max_size', self.SERVICE_DEFAULT_CONFIG['BB_MAX_SIZE'])
-            ff_max_size = self.config.get('ff_max_size', self.SERVICE_DEFAULT_CONFIG['FF_MAX_SIZE'])
-            ff_enc_min_length = self.config.get('ff_enc_min_length', self.SERVICE_DEFAULT_CONFIG['FF_ENC_MIN_LENGTH'])
-            ff_stack_min_length = self.config.get('ff_stack_min_length',
-                                                  self.SERVICE_DEFAULT_CONFIG['FF_STACK_MIN_LENGTH'])
+            max_size = self.config.get('max_size', 3000000)
+            max_length = self.config.get('max_length', 5000)
+            st_max_size = self.config.get('st_max_size', 0)
+            bb_max_size = self.config.get('bb_max_size', 85000)
+            ff_max_size = self.config.get('ff_max_size', 85000)
+            ff_enc_min_length = self.config.get('ff_enc_min_length', 7)
+            ff_stack_min_length = self.config.get('ff_stack_min_length', 7)
 
         # Begin analysis
         if (request.task.size or 0) < max_size and not self.sample_type.startswith("archive/"):
@@ -912,8 +911,8 @@ class FrankenStrings(ServiceBase):
                 # Result Tags:
                 for transform, regex, offset, score, smatch in xresult:
                     if not regex.startswith("EXE_"):
-                        res.add_tag(TAG_TYPE[regex], smatch)
-                        res.add_tag(TAG_TYPE[regex], smatch)
+                        res.add_tag(regex, smatch)
+                        res.add_tag(regex, smatch)
 
                 # Report Embedded PE
                 if embedded_pe:
@@ -990,7 +989,7 @@ class FrankenStrings(ServiceBase):
                                 asx_res.add_line(ii[0])
                                 asx_res.add_line("Original ASCII HEX String:")
                                 asx_res.add_line(kk)
-                                res.add_tag(TAG_TYPE[k], ii[0])
+                                res.add_tag(k, ii[0])
 
                 # Store Encoded String Results
                 if len(encoded_al_results) > 0:
@@ -1031,7 +1030,6 @@ class FrankenStrings(ServiceBase):
 
                 # Report Crowbar de-obfuscate results and add deob code to result
                 if cb_code_res:
-                    result.report_heuristic(FrankenStrings.AL_FRANKENSTRINGS_010)
                     res.add_subsection(cb_code_res)
                     decodefn = f"{request.md5}_decoded"
                     decodefp = os.path.join(self.working_directory, decodefn)
@@ -1043,4 +1041,4 @@ class FrankenStrings(ServiceBase):
                         request.add_extracted(f, os.path.basename(f),
                                               "Debofuscated file of interest extracted from sample")
 
-                result.add_result(res)
+                result.add_section(res)

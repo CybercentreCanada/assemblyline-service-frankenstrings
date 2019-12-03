@@ -82,9 +82,15 @@ heuristics:
 
   - heur_id: 10
     name: code_file_deobfuscation
-    score: 0
+    score: 10
     filetype: 'code/'
     description: Partial code potentially deobfuscated by Crowbar module.
+
+  - heur_id: 11
+    name: IOCs found by Crowbar
+    score: 10
+    filetype: 'code/'
+    description: IOCs discovered by Crowbar module.
 
 #  - heur_id: 2
 #    name:
