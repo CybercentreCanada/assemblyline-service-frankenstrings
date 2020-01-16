@@ -9,7 +9,6 @@ from collections import namedtuple
 
 import magic
 import pefile
-from assemblyline_v4_service.common.utils import alarm_clock
 from floss import strings
 
 from assemblyline.common.net import is_valid_domain, is_valid_email
@@ -17,6 +16,7 @@ from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
+from assemblyline_v4_service.common.utils import alarm_clock
 from frankenstrings.misc_tools.crowbar import CrowBar
 
 
@@ -112,7 +112,7 @@ class FrankenStrings(ServiceBase):
                             if savetoset:
                                 self.before.add(asc_asc)
                             # Ensure AL will accept domain tags:
-                            if ty == 'network.domain':
+                            if ty == 'network.static.domain':
                                 if not is_valid_domain(asc_asc):
                                     continue
                             if ty == 'network.email.address':
@@ -128,10 +128,10 @@ class FrankenStrings(ServiceBase):
                                 # For crowbar plugin
                                 if savetoset:
                                     self.before.add(v)
-                                if ty == 'NET_DOMAIN_NAME':
+                                if ty == 'network.static.domain':
                                     if not is_valid_domain(v):
                                         continue
-                                if ty == 'NET_EMAIL':
+                                if ty == 'network.email.address':
                                     if not is_valid_email(v):
                                         continue
                                 if len(v) < 1001:
@@ -258,7 +258,7 @@ class FrankenStrings(ServiceBase):
                     udata_file_path = os.path.join(self.working_directory, udata_file_name)
                     request.add_extracted(udata_file_path, udata_file_name,
                                           "Extracted unicode file during FrankenStrings analysis")
-                    with open(udata_file_path, 'wb') as unibu_file:
+                    with open(udata_file_path, 'w') as unibu_file:
                         unibu_file.write(decoded[0])
                         self.log.debug(f"Submitted dropped file for analysis: {udata_file_path}")
             else:
@@ -292,7 +292,7 @@ class FrankenStrings(ServiceBase):
                     ftype = m.from_buffer(base64data)
                     mag_ftype = mag.from_buffer(base64data)
                     for ft in self.FILETYPES:
-                        if (ft in ftype and not 'octet-stream' in ftype) or ft in mag_ftype:
+                        if (ft in ftype and 'octet-stream' not in ftype) or ft in mag_ftype:
                             b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
                             b64_file_path = os.path.join(self.working_directory, b64_file_name)
                             request.add_extracted(b64_file_path, b64_file_name,
@@ -374,7 +374,7 @@ class FrankenStrings(ServiceBase):
             request.add_extracted(ascihex_file_path, ascihex_file_name,
                                   "Extracted ascii-hex file during FrankenStrings analysis")
             with open(ascihex_file_path, 'wb') as fh:
-                    fh.write(binstr)
+                fh.write(binstr)
             return filefound, tags
         # Else look for patterns
         tags = self.ioc_to_tag(binstr, patterns, res, taglist=True, st_max_length=1000)
@@ -386,9 +386,9 @@ class FrankenStrings(ServiceBase):
             if len(xresult) > 0:
                 for transform, regex, match in xresult:
                     if regex.startswith('EXE_'):
-                        tags['BB_PESTUDIO_BLACKLIST_STRING'] = {data: [match, transform]}
+                        tags['file.string.blacklisted'] = {data: [match, transform]}
                     else:
-                        tags["BB_{}" .format(regex)] = {data: [match, transform]}
+                        tags[regex] = {data: [match, transform]}
                     return filefound, tags
         return filefound, tags
 
@@ -647,8 +647,8 @@ class FrankenStrings(ServiceBase):
             if not self.sample_type.startswith('code'):
                 b64_matches = set()
                 # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
-                for b64_match in re.findall('([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
-                                            '(?:&#[x1][A0];){0,1}[\r]?[\n]?){2,})', file_data):
+                for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
+                                            b'(?:&#[x1][A0];){0,1}[\r]?[\n]?){2,})', file_data):
                     b64_string = b64_match.replace('\n', '').replace('\r', '').replace(' ', '').replace('&#xA;', '')\
                         .replace('&#10;', '')
                     if b64_string in b64_matches:
@@ -685,7 +685,7 @@ class FrankenStrings(ServiceBase):
                             with open(xtemp_file, 'wb') as xdata:
                                 xdata.write(smatch)
                             pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
-                                         msg="Extracted xor file during FrakenStrings analysis.")
+                                                        msg="Extracted xor file during FrakenStrings analysis.")
                             if pe_extracted:
                                 xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
                                                                                  "[PE Header Detected. "
@@ -709,7 +709,7 @@ class FrankenStrings(ServiceBase):
 
                 # Go over again, looking for long ASCII-HEX character strings
                 if not self.sample_type.startswith('document/office'):
-                    hex_pat = re.compile('((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
+                    hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
                     for hex_match in re.findall(hex_pat, file_data):
                         hex_string = hex_match.replace('\r', '').replace('\n', '')
                         afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
@@ -748,7 +748,7 @@ class FrankenStrings(ServiceBase):
 
                             # Encoded strings
                             decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins,
-                                                                                       selected_functions)
+                                                                                           selected_functions)
                             candidates = decoding_functions_candidates.get_top_candidate_functions(10)
                             function_index = viv_utils.InstructionFunctionIndex(vw)
                             decoded_strings = self.decode_strings(vw, function_index, candidates)
@@ -808,7 +808,7 @@ class FrankenStrings(ServiceBase):
 
                                         if len(like_ss) > 0:
                                             # Filter scores in like_ss with string compare scores less than 75
-                                            filtered_likess = filter(lambda ls: ls[1] > 74, like_ss)
+                                            filtered_likess = list(filter(lambda ls: ls[1] > 74, like_ss))
                                             if len(filtered_likess) > 0:
                                                 for likestring in filtered_likess:
                                                     for subs in extracted_strings:
@@ -880,7 +880,7 @@ class FrankenStrings(ServiceBase):
                             sub_b64_res.add_line(f'DECODED SHA256: {b64k}')
                             subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
                                                           body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
-                            subb_b64_res.add_line('{}' .format(b64l[2]))
+                            subb_b64_res.add_line(str(b64l[2]))
                             if b64l[2] not in ["[Possible file contents. See extracted files.]",
                                                "[IOCs discovered with other non-printable data. See extracted files.]"]:
                                 b64_ascii_content.append(b64l[2])
@@ -890,7 +890,7 @@ class FrankenStrings(ServiceBase):
                         b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
                         b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
                         try:
-                            with open(b64_file_path, 'wb') as fh:
+                            with open(b64_file_path, 'w') as fh:
                                 fh.write(all_b64)
                             request.add_extracted(b64_file_path, f"all_b64_{b64_all_sha256[:7]}.txt",
                                                   "all misc decoded b64 from sample")
@@ -930,8 +930,7 @@ class FrankenStrings(ServiceBase):
                         unires_index = 0
                         for uk, ui in unicode_al_results.items():
                             unires_index += 1
-                            sub_uni_res = (ResultSection(SCORE.LOW, "Result {}".format(unires_index),
-                                                          parent=unicode_emb_res))
+                            sub_uni_res = (ResultSection(SCORE.LOW, f"Result {unires_index}", parent=unicode_emb_res))
                             sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
                             sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {ui[1]}[........]')
                             sub_uni_res.add_line(f'DECODED SHA256: {uk}')
