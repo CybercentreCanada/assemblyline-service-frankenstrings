@@ -107,4 +107,4 @@ heuristics:
 docker_config:
   image: cccs/assemblyline-service-frankenstrings:latest
   cpu_cores: 1
-  ram_mb: 256
+  ram_mb: 512
