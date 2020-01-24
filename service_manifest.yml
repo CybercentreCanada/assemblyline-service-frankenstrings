@@ -1,0 +1,110 @@
+name: FrankenStrings
+version: 1
+description: Suspicious String Monster.
+
+accepts: .*
+rejects: empty|metadata/.*
+
+stage: CORE
+category: Static Analysis
+
+file_required: true
+timeout: 300
+disable_cache: false
+
+enabled: true
+is_external: false
+licence_count: 0
+
+config:
+  max_size: 3000000
+  max_length: 5000
+  st_max_size: 0
+  bb_max_size: 85000
+  ff_max_size: 85000
+  ff_enc_min_length: 7
+  ff_stack_min_length: 7
+
+heuristics:
+  - heur_id: 1
+    name: Base64_Decoded
+    score: 10
+    filetype: '*'
+    description: Base64-like strings discovered and decoded.
+
+  - heur_id: 2
+    name: XOR_decoded
+    score: 500
+    filetype: '*'
+    description: XOR'd IOC content found and decoded.
+
+  - heur_id: 3
+    name: Embedded_PE
+    score: 100
+    filetype: '*'
+    description: Embedded PE extracted.
+
+  - heur_id: 4
+    name: Unicode_decoded
+    score: 0
+    filetype: '*'
+    description: Unicode-like data found and decoded in non-exectuable file.
+
+  - heur_id: 5
+    name: ASCIIhex_file_decoded
+    score: 50
+    filetype: '*'
+    description: Possible ASCII hex encoded file decoded in non-executable file.
+
+  - heur_id: 6
+    name: ASCIIhex_strings_decoded
+    score: 0
+    filetype: '*'
+    description: ASCII hex-like strings found and decoded in non-executable file.
+      -
+  - heur_id: 7
+    name: ASCIIhex_xor_string
+    score: 500
+    filetype: '*'
+    description: Popssible ASCII hex-like string with additional xor encoding found.
+
+  - heur_id: 8
+    name: flare_encoded_string
+    score: 10
+    filetype: 'executable/'
+    description: Encoded string found and decoded in executable file by Flare-Floss modules.
+
+  - heur_id: 9
+    name: flare_stacked_string
+    score: 0
+    filetype: 'executable/'
+    description: Stacked string found and decoded in executable file by Flare-Floss modules.
+
+  - heur_id: 10
+    name: code_file_deobfuscation
+    score: 10
+    filetype: 'code/'
+    description: Partial code potentially deobfuscated by Crowbar module.
+
+  - heur_id: 11
+    name: IOCs found by Crowbar
+    score: 10
+    filetype: 'code/'
+    description: IOCs discovered by Crowbar module.
+
+#  - heur_id: 2
+#    name:
+#    score: 0
+#    filetype: '*'
+#    description:
+#
+#  - heur_id: 2
+#    name:
+#    score: 0
+#    filetype: '*'
+#    description:
+
+docker_config:
+  image: cccs/assemblyline-service-frankenstrings:latest
+  cpu_cores: 1
+  ram_mb: 512
