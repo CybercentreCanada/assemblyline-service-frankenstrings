@@ -19,7 +19,7 @@ class CrowBar(object):
                  'text',
                  ]
     VALIDCHARS = ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
-    BINCHARS = ''.join([c for c in map(chr, range(0, 256)) if c not in VALIDCHARS])
+    BINCHARS = ''.join(sorted(list(set(map(chr, range(0, 256))) - set(VALIDCHARS))))
 
     def __init__(self):
         self.max_attempts = None

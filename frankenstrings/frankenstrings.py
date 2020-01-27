@@ -9,7 +9,8 @@ from collections import namedtuple
 
 import magic
 import pefile
-from floss import strings
+# FLOSS will become a new service
+#from floss import strings
 
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
@@ -31,11 +32,11 @@ class FrankenStrings(ServiceBase):
     ]
 
     HEXENC_STRINGS = [
-        '\\u',
-        '%u',
-        '\\x',
-        '0x',
-        '&H',  # hex notation in VBA
+        b'\\u',
+        b'%u',
+        b'\\x',
+        b'0x',
+        b'&H',  # hex notation in VBA
     ]
 
     def __init__(self, config=None):
@@ -81,19 +82,19 @@ class FrankenStrings(ServiceBase):
         jn = False
 
         # Flare-FLOSS ascii string extract
-        for ast in strings.extract_ascii_strings(data, n=ml):
-            if check_length:
-                if len(ast.s) < st_max_length:
-                    strs.add(ast.s)
-            else:
-                strs.add(ast.s)
+        #for ast in strings.extract_ascii_strings(data, n=ml):
+        #    if check_length:
+        #        if len(ast.s) < st_max_length:
+        #            strs.add(ast.s)
+        #    else:
+        #        strs.add(ast.s)
         # Flare-FLOSS unicode string extract
-        for ust in strings.extract_unicode_strings(data, n=ml):
-            if check_length:
-                if len(ust.s) < st_max_length:
-                    strs.add(ust.s)
-            else:
-                strs.add(ust.s)
+        #for ust in strings.extract_unicode_strings(data, n=ml):
+        #    if check_length:
+        #        if len(ust.s) < st_max_length:
+        #            strs.add(ust.s)
+        #    else:
+        #        strs.add(ust.s)
 
         if check_length:
             if len(strs) > strs_max_size:
@@ -581,13 +582,14 @@ class FrankenStrings(ServiceBase):
             ff_stack_min_length = self.config.get('ff_stack_min_length', 7)
 
         # Begin analysis
-        if (request.task.size or 0) < max_size and not self.sample_type.startswith("archive/"):
+        # if (request.task.size or 0) < max_size and not self.sample_type.startswith("archive/"): No task.size
+        if not self.sample_type.startswith("archive/"):
             # Generate section in results set
-            from floss import decoding_manager
-            from floss import identification_manager as im, stackstrings
+            # from floss import decoding_manager
+            # from floss import identification_manager as im, stackstrings
             from fuzzywuzzy import process
             from tabulate import tabulate
-            import viv_utils
+            # import viv_utils      vivisect is also python2 only
 
             b64_al_results = []
             encoded_al_results = []
@@ -627,8 +629,8 @@ class FrankenStrings(ServiceBase):
 
             # Embedded executable -- all sample types
             # PE Strings
-            pat_exedos = r'(?s)This program cannot be run in DOS mode'
-            pat_exeheader = r'(?s)MZ.{32,1024}PE\000\000.+'
+            pat_exedos = rb'(?s)This program cannot be run in DOS mode'
+            pat_exeheader = rb'(?s)MZ.{32,1024}PE\000\000.+'
 
             for pos_exe in re.findall(pat_exeheader, file_data[1:]):
                 if re.search(pat_exedos, pos_exe):
@@ -661,43 +663,47 @@ class FrankenStrings(ServiceBase):
                             b64_al_results.append(b64result)
 
                 # UTF-16 strings
-                for ust in strings.extract_unicode_strings(file_data, n=self.st_min_length):
-                    for b64_match in re.findall('([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
-                        b64_string = b64_match.decode('utf-8').replace('\n', '').replace('\r', '').replace(' ', '')
-                        uniq_char = ''.join(set(b64_string))
-                        if len(uniq_char) > 6:
-                            b64result = self.b64(request, b64_string, patterns, res)
-                            if len(b64result) > 0:
-                                b64_al_results.append(b64result)
+                #for ust in strings.extract_unicode_strings(file_data, n=self.st_min_length):
+                #    for b64_match in re.findall('([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
+                #        b64_string = b64_match.decode('utf-8').replace('\n', '').replace('\r', '').replace(' ', '')
+                #        uniq_char = ''.join(set(b64_string))
+                #        if len(uniq_char) > 6:
+                #            b64result = self.b64(request, b64_string, patterns, res)
+                #            if len(b64result) > 0:
+                #                b64_al_results.append(b64result)
 
                 # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
-                if (request.task.size or 0) < bb_max_size:
-                    if request.deep_scan:
-                        xresult = bbcrack(file_data, level=2)
-                    else:
-                        xresult = bbcrack(file_data, level=1)
+                # if (request.task.size or 0) < bb_max_size: task.size doesn't exist
 
-                    xindex = 0
-                    for transform, regex, offset, score, smatch in xresult:
-                        if regex == 'EXE_HEAD':
-                            xindex += 1
-                            xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
-                            with open(xtemp_file, 'wb') as xdata:
-                                xdata.write(smatch)
-                            pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
-                                                        msg="Extracted xor file during FrakenStrings analysis.")
-                            if pe_extracted:
-                                xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
-                                                                                 "[PE Header Detected. "
-                                                                                 "See Extracted files]"))
-                        else:
-                            xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
+                # bbcrack fails with "TypeError: cannot use a bytes pattern on a string-like object" regardless
+                # of whether file_data is passed in as a string or as bytes.
+                # if True:
+                #   if request.deep_scan:
+                #        xresult = bbcrack(file_data.decode('ascii'), level=2)
+                #    else:
+                #        xresult = bbcrack(file_data.decode('ascii'), level=1)
+                #
+                #    xindex = 0
+                #    for transform, regex, offset, score, smatch in xresult:
+                #        if regex == 'EXE_HEAD':
+                #            xindex += 1
+                #            xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
+                #            with open(xtemp_file, 'wb') as xdata:
+                #                xdata.write(smatch)
+                #            pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
+                #                                        msg="Extracted xor file during FrakenStrings analysis.")
+                #            if pe_extracted:
+                #                xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
+                #                                                                 "[PE Header Detected. "
+                #                                                                 "See Extracted files]"))
+                #        else:
+                #            xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
 
             # Other possible encoded strings -- all sample types but code and executables
             if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
                 # Unicode/Hex Strings
                 for hes in self.HEXENC_STRINGS:
-                    hes_regex = re.compile(re.escape(hes) + '[A-Fa-f0-9]{2}')
+                    hes_regex = re.compile(re.escape(hes) + b'[A-Fa-f0-9]{2}')
                     if re.search(hes_regex, file_data) is not None:
                         uhash, unires = self.decode_encoded_udata(request, hes, file_data)
                         if len(uhash) > 0:
@@ -730,8 +736,8 @@ class FrankenStrings(ServiceBase):
                                     asciihex_dict[ask].append(asi)
 
             # Encoded/Stacked strings -- Windows executable sample types
-            if (request.task.size or 0) < ff_max_size and self.sample_type.startswith("executable/windows/"):
-
+            # if (request.task.size or 0) < ff_max_size and self.sample_type.startswith("executable/windows/"):
+            if self.sample_type.startswith("executable/windows/"):
                 m = magic.Magic()
                 file_magic = m.from_buffer(file_data)
 
