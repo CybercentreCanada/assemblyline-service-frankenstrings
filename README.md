@@ -1,4 +1,14 @@
-# FrankenStrings Static Service
+# FrankenStrings v4 Static Service
+
+#### Service Details
+
+This service does the following:
+
+1. File Extraction:
+    * file types except code:
+        - Ascii-Hex extraction
+
+## v3 Licences and Capabilites
 
 #### Licences
 
