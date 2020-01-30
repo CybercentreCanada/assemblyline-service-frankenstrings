@@ -9,15 +9,14 @@ from collections import namedtuple
 
 import magic
 import pefile
-# FLOSS will become a new service
-#from floss import strings
 
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
-from assemblyline_v4_service.common.utils import alarm_clock
+# from assemblyline_v4_service.common.utils import alarm_clock
+from frankenstrings.misc_tools import strings
 from frankenstrings.misc_tools.crowbar import CrowBar
 
 
@@ -51,6 +50,7 @@ class FrankenStrings(ServiceBase):
 
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
+    # This currently does nothing without FlareFloss as it finds no strings at all
     def ioc_to_tag(self, data, patterns, res, taglist=False, check_length=False, strs_max_size=0,
                    st_max_length=300, savetoset=False):
         """Searches data for patterns and adds as AL tag to result output.
@@ -82,19 +82,19 @@ class FrankenStrings(ServiceBase):
         jn = False
 
         # Flare-FLOSS ascii string extract
-        #for ast in strings.extract_ascii_strings(data, n=ml):
-        #    if check_length:
-        #        if len(ast.s) < st_max_length:
-        #            strs.add(ast.s)
-        #    else:
-        #        strs.add(ast.s)
+        for ast in strings.extract_ascii_strings(data, n=ml):
+            if check_length:
+                if len(ast.s) < st_max_length:
+                    strs.add(ast.s)
+            else:
+                strs.add(ast.s)
         # Flare-FLOSS unicode string extract
-        #for ust in strings.extract_unicode_strings(data, n=ml):
-        #    if check_length:
-        #        if len(ust.s) < st_max_length:
-        #            strs.add(ust.s)
-        #    else:
-        #        strs.add(ust.s)
+        for ust in strings.extract_unicode_strings(data, n=ml):
+            if check_length:
+                if len(ust.s) < st_max_length:
+                    strs.add(ust.s)
+            else:
+                strs.add(ust.s)
 
         if check_length:
             if len(strs) > strs_max_size:
@@ -130,10 +130,10 @@ class FrankenStrings(ServiceBase):
                                 if savetoset:
                                     self.before.add(v)
                                 if ty == 'network.static.domain':
-                                    if not is_valid_domain(v):
+                                    if not is_valid_domain(v.decode('utf-8')):
                                         continue
                                 if ty == 'network.email.address':
-                                    if not is_valid_email(v):
+                                    if not is_valid_email(v.decode('utf-8')):
                                         continue
                                 if len(v) < 1001:
                                     res.add_tag(ty, v)
@@ -452,97 +452,99 @@ class FrankenStrings(ServiceBase):
                     return False
 
     # Flare Floss Methods:
-    @staticmethod
-    def sanitize_string_for_printing(s):
-        """
-        Copyright FireEye Labs
-        Extracted code from FireEye Flare-Floss source code found here:
-        http://github.com/fireeye/flare-floss
-        Return sanitized string for printing.
-        :param s: input string
-        :return: sanitized string
-        """
-        try:
-            sanitized_string = s.encode('unicode_escape')
-            sanitized_string = sanitized_string.replace('\\\\', '\\')  # print single backslashes
-            sanitized_string = "".join(c for c in sanitized_string if c in string.printable)
-            return sanitized_string
-        except:
-            return
+    # None of these are never called outside of the stackstring region
+    #
+    #@staticmethod
+    #def sanitize_string_for_printing(s):
+    #    """
+    #    Copyright FireEye Labs
+    #    Extracted code from FireEye Flare-Floss source code found here:
+    #    http://github.com/fireeye/flare-floss
+    #    Return sanitized string for printing.
+    #    :param s: input string
+    #    :return: sanitized string
+    #    """
+    #    try:
+    #        sanitized_string = s.encode('unicode_escape')
+    #        sanitized_string = sanitized_string.replace('\\\\', '\\')  # print single backslashes
+    #        sanitized_string = "".join(c for c in sanitized_string if c in string.printable)
+    #        return sanitized_string
+    #    except:
+    #        return
 
-    @staticmethod
-    def filter_unique_decoded(decoded_strings):
-        """
-        Copyright FireEye Labs
-        Extracted code from FireEye Flare-Floss source code found here:
-        http://github.com/fireeye/flare-floss
-        """
-        try:
-            unique_values = set()
-            originals = []
-            for decoded in decoded_strings:
-                hashable = (decoded.va, decoded.s, decoded.decoded_at_va, decoded.fva)
-                if hashable not in unique_values:
-                    unique_values.add(hashable)
-                    originals.append(decoded)
-            return originals
-        except:
-            return
-        
-    @staticmethod
-    def decode_strings(vw, function_index, decoding_functions_candidates):
-        """
-        Copyright FireEye Labs
-        Extracted code from FireEye Flare-Floss source code found here:
-        http://github.com/fireeye/flare-floss
-        FLOSS string decoding algorithm
-        :param vw: vivisect workspace
-        :param function_index: function data
-        :param decoding_functions_candidates: identification manager
-        :return: list of decoded strings ([DecodedString])
-        """
-        decoded_strings = []
+    #@staticmethod
+    #def filter_unique_decoded(decoded_strings):
+    #    """
+    #    Copyright FireEye Labs
+    #    Extracted code from FireEye Flare-Floss source code found here:
+    #    http://github.com/fireeye/flare-floss
+    #    """
+    #    try:
+    #        unique_values = set()
+    #        originals = []
+    #        for decoded in decoded_strings:
+    #            hashable = (decoded.va, decoded.s, decoded.decoded_at_va, decoded.fva)
+    #            if hashable not in unique_values:
+    #                unique_values.add(hashable)
+    #                originals.append(decoded)
+    #        return originals
+    #    except:
+    #        return
 
-        try:
-            with alarm_clock(60):
-                from floss import string_decoder
-                for fva, _ in decoding_functions_candidates:
-                    for ctx in string_decoder.extract_decoding_contexts(vw, fva):
-                        for delta in string_decoder.emulate_decoding_routine(vw, function_index, fva, ctx):
-                            for delta_bytes in string_decoder.extract_delta_bytes(delta, ctx.decoded_at_va, fva):
-                                for decoded_string in string_decoder.extract_strings(delta_bytes):
-                                    decoded_strings.append(decoded_string)
-        except:
-            pass
-        finally:
-            return decoded_strings or None
+    #@staticmethod
+    #def decode_strings(vw, function_index, decoding_functions_candidates):
+    #    """
+    #    Copyright FireEye Labs
+    #    Extracted code from FireEye Flare-Floss source code found here:
+    #    http://github.com/fireeye/flare-floss
+    #    FLOSS string decoding algorithm
+    #    :param vw: vivisect workspace
+    #    :param function_index: function data
+    #    :param decoding_functions_candidates: identification manager
+    #    :return: list of decoded strings ([DecodedString])
+    #    """
+    #    decoded_strings = []
+    #
+    #    try:
+    #        with alarm_clock(60):
+    #            from floss import string_decoder
+    #            for fva, _ in decoding_functions_candidates:
+    #                for ctx in string_decoder.extract_decoding_contexts(vw, fva):
+    #                    for delta in string_decoder.emulate_decoding_routine(vw, function_index, fva, ctx):
+    #                        for delta_bytes in string_decoder.extract_delta_bytes(delta, ctx.decoded_at_va, fva):
+    #                            for decoded_string in string_decoder.extract_strings(delta_bytes):
+    #                                decoded_strings.append(decoded_string)
+    #    except:
+    #        pass
+    #    finally:
+    #        return decoded_strings or None
 
-    @staticmethod
-    def get_all_plugins():
-        """
-        Copyright FireEye Labs
-        Extracted code from FireEye Flare-Floss source code found here:
-        http://github.com/fireeye/flare-floss
-        Return all plugins to be run.
-        """
-        try:
-            from floss.interfaces import DecodingRoutineIdentifier
-            from floss.plugins import arithmetic_plugin, function_meta_data_plugin, library_function_plugin
-            ps = DecodingRoutineIdentifier.implementors()
-            if len(ps) == 0:
-                ps.append(function_meta_data_plugin.FunctionCrossReferencesToPlugin())
-                ps.append(function_meta_data_plugin.FunctionArgumentCountPlugin())
-                ps.append(function_meta_data_plugin.FunctionIsThunkPlugin())
-                ps.append(function_meta_data_plugin.FunctionBlockCountPlugin())
-                ps.append(function_meta_data_plugin.FunctionInstructionCountPlugin())
-                ps.append(function_meta_data_plugin.FunctionSizePlugin())
-                ps.append(function_meta_data_plugin.FunctionRecursivePlugin())
-                ps.append(library_function_plugin.FunctionIsLibraryPlugin())
-                ps.append(arithmetic_plugin.XORPlugin())
-                ps.append(arithmetic_plugin.ShiftPlugin())
-            return ps
-        except:
-            return
+    #@staticmethod
+    #def get_all_plugins():
+    #    """
+    #    Copyright FireEye Labs
+    #    Extracted code from FireEye Flare-Floss source code found here:
+    #    http://github.com/fireeye/flare-floss
+    #    Return all plugins to be run.
+    #    """
+    #    try:
+    #        from floss.interfaces import DecodingRoutineIdentifier
+    #        from floss.plugins import arithmetic_plugin, function_meta_data_plugin, library_function_plugin
+    #        ps = DecodingRoutineIdentifier.implementors()
+    #        if len(ps) == 0:
+    #            ps.append(function_meta_data_plugin.FunctionCrossReferencesToPlugin())
+    #            ps.append(function_meta_data_plugin.FunctionArgumentCountPlugin())
+    #            ps.append(function_meta_data_plugin.FunctionIsThunkPlugin())
+    #            ps.append(function_meta_data_plugin.FunctionBlockCountPlugin())
+    #            ps.append(function_meta_data_plugin.FunctionInstructionCountPlugin())
+    #            ps.append(function_meta_data_plugin.FunctionSizePlugin())
+    #            ps.append(function_meta_data_plugin.FunctionRecursivePlugin())
+    #            ps.append(library_function_plugin.FunctionIsLibraryPlugin())
+    #            ps.append(arithmetic_plugin.XORPlugin())
+    #            ps.append(arithmetic_plugin.ShiftPlugin())
+    #        return ps
+    #    except:
+    #        return
 
 # --- Execute ----------------------------------------------------------------------------------------------------------
 
@@ -568,33 +570,34 @@ class FrankenStrings(ServiceBase):
             # BBcrack maximum size of submitted file to run module:
             bb_max_size = 200000
             # Flare Floss  maximum size of submitted file to run encoded/stacked string modules:
-            ff_max_size = 200000
+            # ff_max_size = 200000
             # Flare Floss minimum string size for encoded/stacked string modules:
-            ff_enc_min_length = 7
-            ff_stack_min_length = 7
+            #ff_enc_min_length = 7
+            #ff_stack_min_length = 7
         else:
             max_size = self.config.get('max_size', 3000000)
             max_length = self.config.get('max_length', 5000)
             st_max_size = self.config.get('st_max_size', 0)
             bb_max_size = self.config.get('bb_max_size', 85000)
-            ff_max_size = self.config.get('ff_max_size', 85000)
-            ff_enc_min_length = self.config.get('ff_enc_min_length', 7)
-            ff_stack_min_length = self.config.get('ff_stack_min_length', 7)
+            #ff_max_size = self.config.get('ff_max_size', 85000)
+            #ff_enc_min_length = self.config.get('ff_enc_min_length', 7)
+            #ff_stack_min_length = self.config.get('ff_stack_min_length', 7)
 
         # Begin analysis
         # if (request.task.size or 0) < max_size and not self.sample_type.startswith("archive/"): No task.size
+        # This if statement just skips everything if its an archive and probably should be flattened
         if not self.sample_type.startswith("archive/"):
             # Generate section in results set
             # from floss import decoding_manager
             # from floss import identification_manager as im, stackstrings
-            from fuzzywuzzy import process
-            from tabulate import tabulate
+            # from fuzzywuzzy import process
+            # from tabulate import tabulate
             # import viv_utils      vivisect is also python2 only
 
             b64_al_results = []
-            encoded_al_results = []
-            encoded_al_tags = set()
-            stacked_al_results = []
+            #encoded_al_results = []
+            #encoded_al_tags = set()
+            #stacked_al_results = []
             xresult = []
             xor_al_results = []
             unicode_al_results = {}
@@ -624,6 +627,7 @@ class FrankenStrings(ServiceBase):
             else:
                 chkl = True
                 svse = False
+            # This never tags anything because of the lack of FlareFloss
             file_plainstr_iocs = self.ioc_to_tag(file_data, patterns, res, taglist=True, check_length=chkl,
                                                  strs_max_size=st_max_size, st_max_length=max_length, savetoset=svse)
 
@@ -651,8 +655,8 @@ class FrankenStrings(ServiceBase):
                 # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
                 for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
                                             b'(?:&#[x1][A0];){0,1}[\r]?[\n]?){2,})', file_data):
-                    b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'').replace(b'&#xA;', b'')\
-                        .replace(b'&#10;', b'')
+                    b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')\
+                        .replace(b'&#xA;', b'').replace(b'&#10;', b'')
                     if b64_string in b64_matches:
                         continue
                     b64_matches.add(b64_string)
@@ -663,14 +667,14 @@ class FrankenStrings(ServiceBase):
                             b64_al_results.append(b64result)
 
                 # UTF-16 strings
-                #for ust in strings.extract_unicode_strings(file_data, n=self.st_min_length):
-                #    for b64_match in re.findall('([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
-                #        b64_string = b64_match.decode('utf-8').replace('\n', '').replace('\r', '').replace(' ', '')
-                #        uniq_char = ''.join(set(b64_string))
-                #        if len(uniq_char) > 6:
-                #            b64result = self.b64(request, b64_string, patterns, res)
-                #            if len(b64result) > 0:
-                #                b64_al_results.append(b64result)
+                for ust in strings.extract_unicode_strings(file_data, n=self.st_min_length):
+                    for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
+                        b64_string = b64_match.decode('utf-8').replace('\n', '').replace('\r', '').replace(' ', '')
+                        uniq_char = ''.join(set(b64_string))
+                        if len(uniq_char) > 6:
+                            b64result = self.b64(request, b64_string, patterns, res)
+                            if len(b64result) > 0:
+                                b64_al_results.append(b64result)
 
                 # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
                 # if (request.task.size or 0) < bb_max_size: task.size doesn't exist
@@ -859,11 +863,11 @@ class FrankenStrings(ServiceBase):
             if len(file_plainstr_iocs) > 0 \
                     or len(b64_al_results) > 0 \
                     or len(xor_al_results) > 0 \
-                    or len(encoded_al_results) > 0 \
-                    or len(stacked_al_results) > 0 \
                     or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0\
                     or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict)\
                     or cb_code_res:
+                    # or len(stacked_al_results) > 0 \
+                    # or len(encoded_al_results) > 0 \
 
                 # Report ASCII String Results
                 if len(file_plainstr_iocs) > 0:
@@ -999,41 +1003,41 @@ class FrankenStrings(ServiceBase):
                                 res.add_tag(k, ii[0])
 
                 # Store Encoded String Results
-                if len(encoded_al_results) > 0:
-                    encoded_res = (ResultSection("FLARE FLOSS Decoded Strings:",
-                                                 body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                 heuristic=Heuristic(8), parent=res))
-                    encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
-                    # Create AL tag for each unique decoded string
-                    for st in encoded_al_tags:
-                        res.add_tag('file.string.decoded', st[0:75])
-                        # Create tags for strings matching indicators of interest
-                        if len(st) >= self.st_min_length:
-                            hits = self.ioc_to_tag(st, patterns, res, st_max_length=1000, taglist=True)
-                            if len(hits) > 0:
-                                encoded_res.score = 500
-                                encoded_res.add_line("Suspicious string(s) found in decoded data.")
+                #if len(encoded_al_results) > 0:
+                #    encoded_res = (ResultSection("FLARE FLOSS Decoded Strings:",
+                #                                 body_format=BODY_FORMAT.MEMORY_DUMP,
+                #                                 heuristic=Heuristic(8), parent=res))
+                #    encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
+                #    # Create AL tag for each unique decoded string
+                #    for st in encoded_al_tags:
+                #        res.add_tag('file.string.decoded', st[0:75])
+                #        # Create tags for strings matching indicators of interest
+                #        if len(st) >= self.st_min_length:
+                #            hits = self.ioc_to_tag(st, patterns, res, st_max_length=1000, taglist=True)
+                #            if len(hits) > 0:
+                #                encoded_res.score = 500
+                #                encoded_res.add_line("Suspicious string(s) found in decoded data.")
 
                 # Report Stacked String Results
-                if len(stacked_al_results) > 0:
-                    # No score on these as there are many FPs
-                    stacked_res = (ResultSection("FLARE FLOSS Stacked Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                 heuristic=Heuristic(9), parent=res))
-                    for s in sorted(stacked_al_results):
-                        groupname = re.sub(r'^[0-9]+:::', '', min(s.stringl, key=len))
-                        group_res = (ResultSection(f"Group:'{groupname}' Strings:{len(s.stringl)}",
-                                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=stacked_res))
-                        group_res.add_line("String List:\n{}\nFunction:Offset List:\n{}"
-                                           .format(re.sub(r'(^\[|\]$)', '', str(s.stringl)),
-                                                   re.sub(r'(^\[|\]$)', '', str(s.funoffl))))
-                        # Create tags for strings matching indicators of interest
-                        for st in s.stringl:
-                            extract_st = re.sub(r'^[0-9]+:::', '', st)
-                            if len(extract_st) >= self.st_min_length:
-                                hits = self.ioc_to_tag(extract_st, patterns, res, st_max_length=1000, taglist=True)
-                                if len(hits) > 0:
-                                    group_res.score = 500
-                                    group_res.add_line("Suspicious string(s) found in decoded data.")
+                #if len(stacked_al_results) > 0:
+                #    # No score on these as there are many FPs
+                #    stacked_res = (ResultSection("FLARE FLOSS Stacked Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
+                #                                 heuristic=Heuristic(9), parent=res))
+                #    for s in sorted(stacked_al_results):
+                #        groupname = re.sub(r'^[0-9]+:::', '', min(s.stringl, key=len))
+                #        group_res = (ResultSection(f"Group:'{groupname}' Strings:{len(s.stringl)}",
+                #                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=stacked_res))
+                #        group_res.add_line("String List:\n{}\nFunction:Offset List:\n{}"
+                #                           .format(re.sub(r'(^\[|\]$)', '', str(s.stringl)),
+                #                                   re.sub(r'(^\[|\]$)', '', str(s.funoffl))))
+                #        # Create tags for strings matching indicators of interest
+                #        for st in s.stringl:
+                #            extract_st = re.sub(r'^[0-9]+:::', '', st)
+                #            if len(extract_st) >= self.st_min_length:
+                #                hits = self.ioc_to_tag(extract_st, patterns, res, st_max_length=1000, taglist=True)
+                #                if len(hits) > 0:
+                #                    group_res.score = 500
+                #                    group_res.add_line("Suspicious string(s) found in decoded data.")
 
                 # Report Crowbar de-obfuscate results and add deob code to result
                 if cb_code_res:
