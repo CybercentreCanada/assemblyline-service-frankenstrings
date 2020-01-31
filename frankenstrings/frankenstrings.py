@@ -681,27 +681,27 @@ class FrankenStrings(ServiceBase):
 
                 # bbcrack fails with "TypeError: cannot use a bytes pattern on a string-like object" regardless
                 # of whether file_data is passed in as a string or as bytes.
-                # if True:
-                #   if request.deep_scan:
-                #        xresult = bbcrack(file_data.decode('ascii'), level=2)
-                #    else:
-                #        xresult = bbcrack(file_data.decode('ascii'), level=1)
-                #
-                #    xindex = 0
-                #    for transform, regex, offset, score, smatch in xresult:
-                #        if regex == 'EXE_HEAD':
-                #            xindex += 1
-                #            xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
-                #            with open(xtemp_file, 'wb') as xdata:
-                #                xdata.write(smatch)
-                #            pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
-                #                                        msg="Extracted xor file during FrakenStrings analysis.")
-                #            if pe_extracted:
-                #                xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
-                #                                                                 "[PE Header Detected. "
-                #                                                                 "See Extracted files]"))
-                #        else:
-                #            xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
+                if True:
+                    if request.deep_scan:
+                        xresult = bbcrack(file_data, level=2)
+                    else:
+                        xresult = bbcrack(file_data, level=1)
+
+                    xindex = 0
+                    for transform, regex, offset, score, smatch in xresult:
+                        if regex == 'EXE_HEAD':
+                            xindex += 1
+                            xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
+                            with open(xtemp_file, 'wb') as xdata:
+                                xdata.write(smatch)
+                            pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
+                                                        msg="Extracted xor file during FrakenStrings analysis.")
+                            if pe_extracted:
+                                xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
+                                                                                 "[PE Header Detected. "
+                                                                                 "See Extracted files]"))
+                        else:
+                            xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
 
             # Other possible encoded strings -- all sample types but code and executables
             if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
