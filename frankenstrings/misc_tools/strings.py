@@ -18,7 +18,7 @@ String = namedtuple("String", ["s", "offset"])
 
 def buf_filled_with(buf, character):
     dupe_chunk = character * SLICE_SIZE
-    for offset in xrange(0, len(buf), SLICE_SIZE):
+    for offset in range(0, len(buf), SLICE_SIZE):
         new_chunk = buf[offset: offset + SLICE_SIZE]
         if dupe_chunk[:len(new_chunk)] != new_chunk:
             return False
@@ -29,10 +29,10 @@ def extract_ascii_strings(buf, n=4):
     '''
     Extract ASCII strings from the given binary data.
     :param buf: A bytestring.
-    :type buf: str
+    :type buf: bytes
     :param n: The minimum length of strings to extract.
     :type n: int
-    :rtype: Sequence[String]
+    :rtype: Sequence[bytes]
     '''
 
     if not buf:
@@ -55,10 +55,10 @@ def extract_unicode_strings(buf, n=4):
     '''
     Extract naive UTF-16 strings from the given binary data.
     :param buf: A bytestring.
-    :type buf: str
+    :type buf: bytes
     :param n: The minimum length of strings to extract.
     :type n: int
-    :rtype: Sequence[String]
+    :rtype: Sequence[bytes]
     '''
 
     if not buf:
@@ -86,10 +86,10 @@ def main():
         b = f.read()
 
     for s in extract_ascii_strings(b):
-        print('0x{:x}: {:s}'.format(s.offset, s.s))
+        print('0x{:x}: {:s}'.format(s.offset, s.s.decode('utf-8')))
 
     for s in extract_unicode_strings(b):
-        print('0x{:x}: {:s}'.format(s.offset, s.s))
+        print('0x{:x}: {:s}'.format(s.offset, s.s.decode('utf-8')))
 
 
 if __name__ == '__main__':

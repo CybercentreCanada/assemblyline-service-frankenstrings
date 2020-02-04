@@ -68,17 +68,17 @@ heuristics:
     filetype: '*'
     description: Popssible ASCII hex-like string with additional xor encoding found.
 
-  - heur_id: 8
-    name: flare_encoded_string
-    score: 10
-    filetype: 'executable/'
-    description: Encoded string found and decoded in executable file by Flare-Floss modules.
+#  - heur_id: 8
+#    name: flare_encoded_string
+#    score: 10
+#    filetype: 'executable/'
+#    description: Encoded string found and decoded in executable file by Flare-Floss modules.
 
-  - heur_id: 9
-    name: flare_stacked_string
-    score: 0
-    filetype: 'executable/'
-    description: Stacked string found and decoded in executable file by Flare-Floss modules.
+#  - heur_id: 9
+#    name: flare_stacked_string
+#    score: 0
+#    filetype: 'executable/'
+#    description: Stacked string found and decoded in executable file by Flare-Floss modules.
 
   - heur_id: 10
     name: code_file_deobfuscation

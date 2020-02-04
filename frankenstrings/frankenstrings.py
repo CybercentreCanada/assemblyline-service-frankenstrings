@@ -3,9 +3,9 @@ import hashlib
 import mmap
 import os
 import re
-import string
+# import string
 import unicodedata
-from collections import namedtuple
+# from collections import namedtuple
 
 import magic
 import pefile
@@ -107,38 +107,39 @@ class FrankenStrings(ServiceBase):
                     for ty, val in st_value.items():
                         if taglist and ty not in tags:
                             tags[ty] = set()
-                        if val == "":
-                            asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                        # This section deals with unicode type which no longer exists
+                        # if val == b"":
+                        #     asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                        #    # For crowbar plugin
+                        #    if savetoset:
+                        #        self.before.add(asc_asc)
+                        #    # Ensure AL will accept domain tags:
+                        #    if ty == 'network.static.domain':
+                        #        if not is_valid_domain(asc_asc):
+                        #            continue
+                        #    if ty == 'network.email.address':
+                        #        if not is_valid_email(asc_asc):
+                        #            continue
+                        #    # 1000 is the maximum allowed size of an AL tag
+                        #    if len(asc_asc) < 1001:
+                        #        res.add_tag(ty, asc_asc)
+                        #        if taglist:
+                        #            tags[ty].add(asc_asc)
+                        #else:
+                        for v in val:
                             # For crowbar plugin
                             if savetoset:
-                                self.before.add(asc_asc)
-                            # Ensure AL will accept domain tags:
+                                self.before.add(v)
                             if ty == 'network.static.domain':
-                                if not is_valid_domain(asc_asc):
+                                if not is_valid_domain(v.decode('utf-8')):
                                     continue
                             if ty == 'network.email.address':
-                                if not is_valid_email(asc_asc):
+                                if not is_valid_email(v.decode('utf-8')):
                                     continue
-                            # 1000 is the maximum allowed size of an AL tag
-                            if len(asc_asc) < 1001:
-                                res.add_tag(ty, asc_asc)
+                            if len(v) < 1001:
+                                res.add_tag(ty, v)
                                 if taglist:
-                                    tags[ty].add(asc_asc)
-                        else:
-                            for v in val:
-                                # For crowbar plugin
-                                if savetoset:
-                                    self.before.add(v)
-                                if ty == 'network.static.domain':
-                                    if not is_valid_domain(v.decode('utf-8')):
-                                        continue
-                                if ty == 'network.email.address':
-                                    if not is_valid_email(v.decode('utf-8')):
-                                        continue
-                                if len(v) < 1001:
-                                    res.add_tag(ty, v)
-                                    if taglist:
-                                        tags[ty].add(v)
+                                    tags[ty].add(v)
         if taglist:
             return tags
         else:
@@ -155,23 +156,23 @@ class FrankenStrings(ServiceBase):
         Returns:
             Decoded data.
         """
-        decoded = ''
+        decoded = b''
 
         if size == 2:
-            while data != '':
+            while data != b'':
                 decoded += binascii.a2b_hex(data[2:4])
                 data = data[4:]
         if size == 4:
-            while data != '':
+            while data != b'':
                 decoded += binascii.a2b_hex(data[4:6]) + binascii.a2b_hex(data[2:4])
                 data = data[6:]
         if size == 8:
-            while data != '':
+            while data != b'':
                 decoded += binascii.a2b_hex(data[8:10]) + binascii.a2b_hex(data[6:8]) + \
                            binascii.a2b_hex(data[4:6]) + binascii.a2b_hex(data[2:4])
                 data = data[10:]
         if size == 16:
-            while data != '':
+            while data != b'':
                 decoded += binascii.a2b_hex(data[16:18]) + binascii.a2b_hex(data[14:16]) + \
                            binascii.a2b_hex(data[12:14]) + binascii.a2b_hex(data[10:12]) + \
                            binascii.a2b_hex(data[8:10]) + binascii.a2b_hex(data[6:8]) + \
@@ -194,7 +195,7 @@ class FrankenStrings(ServiceBase):
                 If no string lonfer than 50 bytes, returns empty string.
         """
         maxstr = len(max(lisdata, key=len))
-        newstr = ""
+        newstr = b""
 
         if all(len(i) == maxstr for i in lisdata):
             for i in lisdata:
@@ -221,10 +222,10 @@ class FrankenStrings(ServiceBase):
         shalist = []
         decoded_res = []
 
-        qword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{16})+')
-        dword = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{8})+')
-        word = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{4})+')
-        by = re.compile(r'(?:'+re.escape(encoding)+'[A-Fa-f0-9]{2})+')
+        qword = re.compile(rb'(?:'+re.escape(encoding)+b'[A-Fa-f0-9]{16})+')
+        dword = re.compile(rb'(?:'+re.escape(encoding)+b'[A-Fa-f0-9]{8})+')
+        word = re.compile(rb'(?:'+re.escape(encoding)+b'[A-Fa-f0-9]{4})+')
+        by = re.compile(rb'(?:'+re.escape(encoding)+b'[A-Fa-f0-9]{2})+')
 
         qbu = re.findall(qword, data)
         if len(qbu) > 0:
@@ -250,18 +251,18 @@ class FrankenStrings(ServiceBase):
         filtered_list = filter(lambda x: len(x[0]) > 30, decoded_list)
 
         for decoded in filtered_list:
-            uniq_char = ''.join(set(decoded[0]))
+            uniq_char = set(decoded[0])
             if len(decoded[0]) >= 500:
                 if len(uniq_char) > 20:
                     sha256hash = hashlib.sha256(decoded[0]).hexdigest()
                     shalist.append(sha256hash)
                     udata_file_name = f"{sha256hash[0:10]}_enchex_{encoding}_decoded"
                     udata_file_path = os.path.join(self.working_directory, udata_file_name)
-                    request.add_extracted(udata_file_path, udata_file_name,
-                                          "Extracted unicode file during FrankenStrings analysis")
-                    with open(udata_file_path, 'w') as unibu_file:
+                    with open(udata_file_path, 'wb') as unibu_file:
                         unibu_file.write(decoded[0])
                         self.log.debug(f"Submitted dropped file for analysis: {udata_file_path}")
+                    request.add_extracted(udata_file_path, udata_file_name,
+                                          "Extracted unicode file during FrankenStrings analysis")
             else:
                 if len(uniq_char) > 6:
                     decoded_res.append((hashlib.sha256(decoded[0]).hexdigest(), len(decoded), decoded[1], decoded[0]))
@@ -296,12 +297,11 @@ class FrankenStrings(ServiceBase):
                         if (ft in ftype and 'octet-stream' not in ftype) or ft in mag_ftype:
                             b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
                             b64_file_path = os.path.join(self.working_directory, b64_file_name)
-                            request.add_extracted(b64_file_path, b64_file_name,
-                                                  "Extracted b64 file during FrankenStrings analysis")
                             with open(b64_file_path, 'wb') as b64_file:
                                 b64_file.write(base64data)
                                 self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
-
+                            request.add_extracted(b64_file_path, b64_file_name,
+                                                  "Extracted b64 file during FrankenStrings analysis")
                             results[sha256hash] = [len(b64_string), b64_string[0:50],
                                                    "[Possible file contents. See extracted files.]", ""]
                             return results
@@ -309,7 +309,7 @@ class FrankenStrings(ServiceBase):
                 # See if any IOCs in decoded data
                 pat = self.ioc_to_tag(base64data, patterns, res, taglist=True)
                 # Filter printable characters then put in results
-                asc_b64 = "".join(i for i in base64data if 31 < ord(i) < 127)
+                asc_b64 = bytes(i for i in base64data if 31 < i < 127)
                 if len(asc_b64) > 0:
                     # If patterns exists, report. If not, report only if string looks interesting
                     if len(pat) > 0:
@@ -318,19 +318,18 @@ class FrankenStrings(ServiceBase):
                     elif not self.sample_type.startswith('document/office') \
                             and not self.sample_type.startswith('document/pdf'):
                         # If data has length greater than 50, and unique character to length ratio is high
-                        uniq_char = ''.join(set(asc_b64))
-                        if len(uniq_char) > 12 and len(re.sub("[^A-Za-z0-9]+", "", asc_b64)) > 50:
+                        uniq_char = set(asc_b64)
+                        if len(uniq_char) > 12 and len(re.sub(b"[^A-Za-z0-9]+", b"", asc_b64)) > 50:
                             results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
                 # If not all printable characters but IOCs discovered, extract to file
                 elif len(pat) > 0:
                     b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
                     b64_file_path = os.path.join(self.working_directory, b64_file_name)
-                    request.add_extracted(b64_file_path, b64_file_name,
-                                          "Extracted b64 file during FrankenStrings analysis")
                     with open(b64_file_path, 'wb') as b64_file:
                         b64_file.write(base64data)
                         self.log.debug(f"Submitted dropped file for analysis: {b64_file_path}")
-
+                    request.add_extracted(b64_file_path, b64_file_name,
+                                          "Extracted b64 file during FrankenStrings analysis")
                     results[sha256hash] = [len(b64_string), b64_string[0:50],
                                            "[IOCs discovered with other non-printable data. "
                                            "See extracted files.]", ""]
@@ -584,472 +583,470 @@ class FrankenStrings(ServiceBase):
             #ff_stack_min_length = self.config.get('ff_stack_min_length', 7)
 
         # Begin analysis
-        # if (request.task.size or 0) < max_size and not self.sample_type.startswith("archive/"): No task.size
-        # This if statement just skips everything if its an archive and probably should be flattened
-        if not self.sample_type.startswith("archive/"):
-            # Generate section in results set
-            # from floss import decoding_manager
-            # from floss import identification_manager as im, stackstrings
-            # from fuzzywuzzy import process
-            # from tabulate import tabulate
-            # import viv_utils      vivisect is also python2 only
+        if (len(request.file_contents) or 0) >= max_size or self.sample_type.startswith("archive/"):
+            # No analysis is done if the file is an archive or too large
+            return
 
-            b64_al_results = []
-            #encoded_al_results = []
-            #encoded_al_tags = set()
-            #stacked_al_results = []
-            xresult = []
-            xor_al_results = []
-            unicode_al_results = {}
-            unicode_al_dropped_results = []
-            asciihex_file_found = False
-            asciihex_dict = {}
-            asciihex_bb_dict = {}
-            embedded_pe = False
-            cb_code_res = None
-            cb_decoded_data = None
-            cb_filex = None
+        # Generate section in results set
+        # from floss import decoding_manager
+        # from floss import identification_manager as im, stackstrings
+        # from fuzzywuzzy import process
+        # from tabulate import tabulate
+        # import viv_utils      vivisect is also python2 only
+        b64_al_results = []
+        #encoded_al_results = []
+        #encoded_al_tags = set()
+        #stacked_al_results = []
+        xresult = []
+        xor_al_results = []
+        unicode_al_results = {}
+        unicode_al_dropped_results = []
+        asciihex_file_found = False
+        asciihex_dict = {}
+        asciihex_bb_dict = {}
+        embedded_pe = False
+        cb_code_res = None
+        cb_decoded_data = None
+        cb_filex = None
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
-            # Static strings -- all sample types
-            alfile = request.file_path
-            res = (ResultSection("FrankenStrings Detected Strings of Interest:",
-                                 body_format=BODY_FORMAT.MEMORY_DUMP))
+        # Static strings -- all sample types
+        #alfile = request.file_path
+        res = (ResultSection("FrankenStrings Detected Strings of Interest:",
+                             body_format=BODY_FORMAT.MEMORY_DUMP))
 
-            with open(alfile, "rb") as f:
-                file_data = f.read()
+        #with open(alfile, "rb") as f:
+        #    file_data = f.read()
 
-            # Find ASCII & Unicode IOC Strings
-            # Find all patterns if the file is identified as code (for crowbar plugin)
-            if self.sample_type.startswith('code'):
-                chkl = False
-                svse = True
-            else:
-                chkl = True
-                svse = False
-            # This never tags anything because of the lack of FlareFloss
-            file_plainstr_iocs = self.ioc_to_tag(file_data, patterns, res, taglist=True, check_length=chkl,
-                                                 strs_max_size=st_max_size, st_max_length=max_length, savetoset=svse)
+        file_data = request.file_contents
 
-            # Embedded executable -- all sample types
-            # PE Strings
-            pat_exedos = rb'(?s)This program cannot be run in DOS mode'
-            pat_exeheader = rb'(?s)MZ.{32,1024}PE\000\000.+'
+        # Find ASCII & Unicode IOC Strings
+        # Find all patterns if the file is identified as code (for crowbar plugin)
+        if self.sample_type.startswith('code'):
+            chkl = False
+            svse = True
+        else:
+            chkl = True
+            svse = False
 
-            for pos_exe in re.findall(pat_exeheader, file_data[1:]):
-                if re.search(pat_exedos, pos_exe):
-                    pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
-                    temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
+        file_plainstr_iocs = self.ioc_to_tag(file_data, patterns, res, taglist=True, check_length=chkl,
+                                             strs_max_size=st_max_size, st_max_length=max_length, savetoset=svse)
 
-                    with open(temp_file, 'wb') as pedata:
-                        pedata.write(pos_exe)
+        # Embedded executable -- all sample types
+        # PE Strings
+        pat_exedos = rb'(?s)This program cannot be run in DOS mode'
+        pat_exeheader = rb'(?s)MZ.{32,1024}PE\000\000.+'
 
-                    embedded_pe = self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
-                                               msg="PE header strings discovered in sample",
-                                               fail_on_except=True)
+        for pos_exe in re.findall(pat_exeheader, file_data[1:]):
+            if re.search(pat_exedos, pos_exe):
+                pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
+                temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
 
-            # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
-            # Find Base64 encoded strings and files of interest
-            if not self.sample_type.startswith('code'):
-                b64_matches = set()
-                # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
-                for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
-                                            b'(?:&#[x1][A0];){0,1}[\r]?[\n]?){2,})', file_data):
-                    b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')\
-                        .replace(b'&#xA;', b'').replace(b'&#10;', b'')
-                    if b64_string in b64_matches:
-                        continue
-                    b64_matches.add(b64_string)
+                with open(temp_file, 'wb') as pedata:
+                    pedata.write(pos_exe)
+
+                embedded_pe = self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
+                                           msg="PE header strings discovered in sample",
+                                           fail_on_except=True)
+
+        # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
+        # Find Base64 encoded strings and files of interest
+        if not self.sample_type.startswith('code'):
+            b64_matches = set()
+            # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
+            for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
+                                        b'(?:&#[x1][A0];){0,1}[\r]?[\n]?){2,})', file_data):
+                b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')\
+                    .replace(b'&#xA;', b'').replace(b'&#10;', b'')
+                if b64_string in b64_matches:
+                    continue
+                b64_matches.add(b64_string)
+                uniq_char = set(b64_string)
+                if len(uniq_char) > 6:
+                    b64result = self.b64(request, b64_string, patterns, res)
+                    if len(b64result) > 0:
+                        b64_al_results.append(b64result)
+
+            # UTF-16 strings
+            for ust in strings.extract_unicode_strings(file_data, n=self.st_min_length):
+                for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
+                    b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')
                     uniq_char = set(b64_string)
                     if len(uniq_char) > 6:
                         b64result = self.b64(request, b64_string, patterns, res)
                         if len(b64result) > 0:
                             b64_al_results.append(b64result)
 
-                # UTF-16 strings
-                for ust in strings.extract_unicode_strings(file_data, n=self.st_min_length):
-                    for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
-                        b64_string = b64_match.decode('utf-8').replace('\n', '').replace('\r', '').replace(' ', '')
-                        uniq_char = ''.join(set(b64_string))
-                        if len(uniq_char) > 6:
-                            b64result = self.b64(request, b64_string, patterns, res)
-                            if len(b64result) > 0:
-                                b64_al_results.append(b64result)
-
-                # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
-                # if (request.task.size or 0) < bb_max_size: task.size doesn't exist
-
-                # bbcrack fails with "TypeError: cannot use a bytes pattern on a string-like object" regardless
-                # of whether file_data is passed in as a string or as bytes.
-                if True:
-                    if request.deep_scan:
-                        xresult = bbcrack(file_data, level=2)
-                    else:
-                        xresult = bbcrack(file_data, level=1)
-
-                    xindex = 0
-                    for transform, regex, offset, score, smatch in xresult:
-                        if regex == 'EXE_HEAD':
-                            xindex += 1
-                            xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
-                            with open(xtemp_file, 'wb') as xdata:
-                                xdata.write(smatch)
-                            pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
-                                                        msg="Extracted xor file during FrakenStrings analysis.")
-                            if pe_extracted:
-                                xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
-                                                                                 "[PE Header Detected. "
-                                                                                 "See Extracted files]"))
-                        else:
-                            xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
-
-            # Other possible encoded strings -- all sample types but code and executables
-            if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
-                # Unicode/Hex Strings
-                for hes in self.HEXENC_STRINGS:
-                    hes_regex = re.compile(re.escape(hes) + b'[A-Fa-f0-9]{2}')
-                    if re.search(hes_regex, file_data) is not None:
-                        uhash, unires = self.decode_encoded_udata(request, hes, file_data)
-                        if len(uhash) > 0:
-                            for usha in uhash:
-                                unicode_al_dropped_results.append('{0}_{1}' .format(usha, hes))
-                        if len(unires) > 0:
-                            for i in unires:
-                                unicode_al_results[i[0]] = [i[1], i[2], i[3]]
-
-                # Go over again, looking for long ASCII-HEX character strings
-                if not self.sample_type.startswith('document/office'):
-                    hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
-                    for hex_match in re.findall(hex_pat, file_data):
-                        hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
-                        afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
-                                                                             patterns, res)
-                        if afile_found:
-                            asciihex_file_found = True
-                        if asciihex_results != "":
-                            for ask, asi in asciihex_results.items():
-                                if ask.startswith('BB_'):
-                                    # Add any xor'd content to its own result set
-                                    ask = ask.split('_', 1)[1]
-                                    if ask not in asciihex_bb_dict:
-                                        asciihex_bb_dict[ask] = []
-                                    asciihex_bb_dict[ask].append(asi)
-                                else:
-                                    if ask not in asciihex_dict:
-                                        asciihex_dict[ask] = []
-                                    asciihex_dict[ask].append(asi)
-
-            # Encoded/Stacked strings -- Windows executable sample types
-            # if (request.task.size or 0) < ff_max_size and self.sample_type.startswith("executable/windows/"):
-            if self.sample_type.startswith("executable/windows/"):
-                m = magic.Magic()
-                file_magic = m.from_buffer(file_data)
-
-                if not file_magic.endswith("compressed"):
-                    pass
-                    """ This whole block is skipped since viv_utils doesn't exist
-                    try:
-                        vw = viv_utils.getWorkspace(alfile, should_save=False)
-                    except:
-                        vw = False
-
-                    if vw:
-                        try:
-                            selected_functions = set(vw.getFunctions())
-                            selected_plugins = self.get_all_plugins()
-
-                            # Encoded strings
-                            decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins,
-                                                                                           selected_functions)
-                            candidates = decoding_functions_candidates.get_top_candidate_functions(10)
-                            function_index = viv_utils.InstructionFunctionIndex(vw)
-                            decoded_strings = self.decode_strings(vw, function_index, candidates)
-                            decoded_strings = self.filter_unique_decoded(decoded_strings)
-
-                            long_strings = filter(lambda l_ds: len(l_ds.s) >= ff_enc_min_length, decoded_strings)
-
-                            for ds in long_strings:
-                                s = self.sanitize_string_for_printing(ds.s)
-                                if ds.characteristics["location_type"] == decoding_manager.LocationType.STACK:
-                                    offset_string = "[STACK]"
-                                elif ds.characteristics["location_type"] == decoding_manager.LocationType.HEAP:
-                                    offset_string = "[HEAP]"
-                                else:
-                                    offset_string = hex(ds.va or 0)
-                                encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
-                                encoded_al_tags.add(s)
-
-                            # Stacked Strings
-                            # s.s = stacked string
-                            # s.fva = Function
-                            # s.frame_offset = Frame Offset
-                            stack_strings = list(set(stackstrings.extract_stackstrings(vw, selected_functions)))
-                            # Final stacked result list
-                            if len(stack_strings) > 0:
-                                # Filter min string length
-                                extracted_strings = \
-                                    list(filter(lambda l_s: len(l_s.s) >= ff_stack_min_length, stack_strings))
-
-                                # Set up list to ensure stacked strings are not compared twice
-                                picked = set()
-                                # Create namedtuple for groups of like-stacked strings
-                                al_tuples = namedtuple('Group', 'stringl funoffl')
-
-                                # Create set of stacked strings for fuzzywuzzy to compare
-                                choices = set()
-                                for s in extracted_strings:
-                                    choices.add(s.s)
-
-                                # Begin Comparison
-                                for s in extracted_strings:
-                                    if s.s in picked:
-                                        pass
-                                    else:
-                                        # Add stacked string to used-value list (picked)
-                                        picked.add(s.s)
-                                        # Create lists for 'strings' and 'function:frame offset' results
-                                        sstrings = []
-                                        funoffs = []
-                                        # Append initial stacked string tuple values to lists
-                                        indexnum = 1
-                                        sstrings.append(f'{indexnum}:::{s.s.encode()}')
-                                        funoffs.append(f'{indexnum}:::{hex(s.fva)}:{hex(s.frame_offset)}')
-                                        # Use fuzzywuzzy process module to compare initial stacked string to remaining
-                                        # stack string values
-                                        like_ss = process.extract(s.s, choices, limit=50)
-
-                                        if len(like_ss) > 0:
-                                            # Filter scores in like_ss with string compare scores less than 75
-                                            filtered_likess = list(filter(lambda ls: ls[1] > 74, like_ss))
-                                            if len(filtered_likess) > 0:
-                                                for likestring in filtered_likess:
-                                                    for subs in extracted_strings:
-                                                        if subs == s or subs.s != likestring[0]:
-                                                            pass
-                                                        else:
-                                                            indexnum += 1
-                                                            # Add all similar strings to picked list and remove from
-                                                            # future comparison list (choices)
-                                                            picked.add(subs.s)
-                                                            if subs.s in choices:
-                                                                choices.remove(subs.s)
-                                                            # For all similar stacked strings add values to lists
-                                                            sstrings.append(f'{indexnum}:::{subs.s.encode()}')
-                                                            funoffs.append(f'{indexnum}:::{hex(subs.fva)}:'
-                                                                           f'{hex(subs.frame_offset)}')
-
-                                        # Remove initial stacked string from comparison list (choices)
-                                        if s.s in choices:
-                                            choices.remove(s.s)
-                                        # Create namedtuple to add to final results
-                                        fuzresults = al_tuples(stringl=sstrings, funoffl=funoffs)
-                                        # Add namedtuple to final result list
-                                        stacked_al_results.append(fuzresults)
-                        except Exception:
-                            pass
-                    """
-            # Static decoding of code files
-            if self.sample_type.startswith('code'):
-                cb = CrowBar()
+            # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
+            if (len(request.file_contents) or 0) < bb_max_size:
                 if request.deep_scan:
-                    max_attempts = 100
+                    xresult = bbcrack(file_data, level=2)
                 else:
-                    max_attempts = 5
-                cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.before, patterns,
-                                                                       self.working_directory)
+                    xresult = bbcrack(file_data, level=1)
+
+                xindex = 0
+                for transform, regex, offset, score, smatch in xresult:
+                    if regex == 'EXE_HEAD':
+                        xindex += 1
+                        xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
+                        with open(xtemp_file, 'wb') as xdata:
+                            xdata.write(smatch)
+                        pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
+                                                    msg="Extracted xor file during FrakenStrings analysis.")
+                        if pe_extracted:
+                            xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
+                                                                             "[PE Header Detected. "
+                                                                             "See Extracted files]"))
+                    else:
+                        xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
+
+        # Other possible encoded strings -- all sample types but code and executables
+        if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
+            # Unicode/Hex Strings
+            for hes in self.HEXENC_STRINGS:
+                hes_regex = re.compile(re.escape(hes) + b'[A-Fa-f0-9]{2}')
+                if re.search(hes_regex, file_data) is not None:
+                    uhash, unires = self.decode_encoded_udata(request, hes, file_data)
+                    if len(uhash) > 0:
+                        for usha in uhash:
+                            unicode_al_dropped_results.append('{0}_{1}' .format(usha, hes))
+                    if len(unires) > 0:
+                        for i in unires:
+                            unicode_al_results[i[0]] = [i[1], i[2], i[3]]
+
+            # Go over again, looking for long ASCII-HEX character strings
+            if not self.sample_type.startswith('document/office'):
+                hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
+                for hex_match in re.findall(hex_pat, file_data):
+                    hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
+                    afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
+                                                                         patterns, res)
+                    if afile_found:
+                        asciihex_file_found = True
+                    if asciihex_results != b"":
+                        for ask, asi in asciihex_results.items():
+                            if ask.startswith('BB_'):
+                                # Add any xor'd content to its own result set
+                                ask = ask.split('_', 1)[1]
+                                if ask not in asciihex_bb_dict:
+                                    asciihex_bb_dict[ask] = []
+                                asciihex_bb_dict[ask].append(asi)
+                            else:
+                                if ask not in asciihex_dict:
+                                    asciihex_dict[ask] = []
+                                asciihex_dict[ask].append(asi)
+
+        # Encoded/Stacked strings -- Windows executable sample types
+        """ This block will be made into a seperate flareFLOSS service
+        if (len(request.file_contents) or 0) < ff_max_size and self.sample_type.startswith("executable/windows/"):
+            m = magic.Magic()
+            file_magic = m.from_buffer(file_data)
+
+            if not file_magic.endswith("compressed"):
+                try:
+                    vw = viv_utils.getWorkspace(alfile, should_save=False)
+                except:
+                    vw = False
+
+                if vw:
+                    try:
+                        selected_functions = set(vw.getFunctions())
+                        selected_plugins = self.get_all_plugins()
+
+                        # Encoded strings
+                        decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins,
+                                                                                       selected_functions)
+                        candidates = decoding_functions_candidates.get_top_candidate_functions(10)
+                        function_index = viv_utils.InstructionFunctionIndex(vw)
+                        decoded_strings = self.decode_strings(vw, function_index, candidates)
+                        decoded_strings = self.filter_unique_decoded(decoded_strings)
+
+                        long_strings = filter(lambda l_ds: len(l_ds.s) >= ff_enc_min_length, decoded_strings)
+
+                        for ds in long_strings:
+                            s = self.sanitize_string_for_printing(ds.s)
+                            if ds.characteristics["location_type"] == decoding_manager.LocationType.STACK:
+                                offset_string = "[STACK]"
+                            elif ds.characteristics["location_type"] == decoding_manager.LocationType.HEAP:
+                                offset_string = "[HEAP]"
+                            else:
+                                offset_string = hex(ds.va or 0)
+                            encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
+                            encoded_al_tags.add(s)
+
+                        # Stacked Strings
+                        # s.s = stacked string
+                        # s.fva = Function
+                        # s.frame_offset = Frame Offset
+                        stack_strings = list(set(stackstrings.extract_stackstrings(vw, selected_functions)))
+                        # Final stacked result list
+                        if len(stack_strings) > 0:
+                            # Filter min string length
+                            extracted_strings = \
+                                list(filter(lambda l_s: len(l_s.s) >= ff_stack_min_length, stack_strings))
+
+                            # Set up list to ensure stacked strings are not compared twice
+                            picked = set()
+                            # Create namedtuple for groups of like-stacked strings
+                            al_tuples = namedtuple('Group', 'stringl funoffl')
+
+                            # Create set of stacked strings for fuzzywuzzy to compare
+                            choices = set()
+                            for s in extracted_strings:
+                                choices.add(s.s)
+
+                            # Begin Comparison
+                            for s in extracted_strings:
+                                if s.s in picked:
+                                    pass
+                                else:
+                                    # Add stacked string to used-value list (picked)
+                                    picked.add(s.s)
+                                    # Create lists for 'strings' and 'function:frame offset' results
+                                    sstrings = []
+                                    funoffs = []
+                                    # Append initial stacked string tuple values to lists
+                                    indexnum = 1
+                                    sstrings.append(f'{indexnum}:::{s.s.encode()}')
+                                    funoffs.append(f'{indexnum}:::{hex(s.fva)}:{hex(s.frame_offset)}')
+                                    # Use fuzzywuzzy process module to compare initial stacked string to remaining
+                                    # stack string values
+                                    like_ss = process.extract(s.s, choices, limit=50)
+
+                                    if len(like_ss) > 0:
+                                        # Filter scores in like_ss with string compare scores less than 75
+                                        filtered_likess = list(filter(lambda ls: ls[1] > 74, like_ss))
+                                        if len(filtered_likess) > 0:
+                                            for likestring in filtered_likess:
+                                                for subs in extracted_strings:
+                                                    if subs == s or subs.s != likestring[0]:
+                                                        pass
+                                                    else:
+                                                        indexnum += 1
+                                                        # Add all similar strings to picked list and remove from
+                                                        # future comparison list (choices)
+                                                        picked.add(subs.s)
+                                                        if subs.s in choices:
+                                                            choices.remove(subs.s)
+                                                        # For all similar stacked strings add values to lists
+                                                        sstrings.append(f'{indexnum}:::{subs.s.encode()}')
+                                                        funoffs.append(f'{indexnum}:::{hex(subs.fva)}:'
+                                                                       f'{hex(subs.frame_offset)}')
+
+                                    # Remove initial stacked string from comparison list (choices)
+                                    if s.s in choices:
+                                        choices.remove(s.s)
+                                    # Create namedtuple to add to final results
+                                    fuzresults = al_tuples(stringl=sstrings, funoffl=funoffs)
+                                    # Add namedtuple to final result list
+                                    stacked_al_results.append(fuzresults)
+                    except Exception:
+                        pass
+        """
+
+        # Static decoding of code files
+        if self.sample_type.startswith('code'):
+            cb = CrowBar()
+            if request.deep_scan:
+                max_attempts = 100
+            else:
+                max_attempts = 5
+            cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.before, patterns,
+                                                                   self.working_directory)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
-            if len(file_plainstr_iocs) > 0 \
-                    or len(b64_al_results) > 0 \
-                    or len(xor_al_results) > 0 \
-                    or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0\
-                    or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict)\
-                    or cb_code_res:
-                    # or len(stacked_al_results) > 0 \
-                    # or len(encoded_al_results) > 0 \
+        if len(file_plainstr_iocs) > 0 \
+                or len(b64_al_results) > 0 \
+                or len(xor_al_results) > 0 \
+                or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0\
+                or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict)\
+                or cb_code_res:
+                # or len(stacked_al_results) > 0 \
+                # or len(encoded_al_results) > 0 \
 
-                # Report ASCII String Results
-                if len(file_plainstr_iocs) > 0:
-                    ascii_res = (ResultSection("FLARE FLOSS Plain IOC Strings:",
-                                               body_format=BODY_FORMAT.MEMORY_DUMP,
-                                               parent=res))
-                    for k, l in sorted(file_plainstr_iocs.items()):
-                        for i in sorted(l):
-                            ascii_res.add_line(f"Found {k.replace('_', ' ')} string: {i}")
+            # Report ASCII String Results
+            if len(file_plainstr_iocs) > 0:
+                ascii_res = (ResultSection("FLARE FLOSS Plain IOC Strings:",
+                                           body_format=BODY_FORMAT.MEMORY_DUMP,
+                                           parent=res))
+                for k, l in sorted(file_plainstr_iocs.items()):
+                    for i in sorted(l):
+                        ascii_res.add_line(f"Found {k.replace('_', ' ')} string: {i.decode('utf-8')}")
 
-                # Report B64 Results
-                if len(b64_al_results) > 0:
-                    b64_ascii_content = []
-                    b64_res = (ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=res))
-                    b64index = 0
-                    for b64dict in b64_al_results:
-                        for b64k, b64l in b64dict.items():
-                            b64index += 1
-                            sub_b64_res = (ResultSection(f"Result {b64index}", parent=b64_res))
-                            sub_b64_res.add_line(f'BASE64 TEXT SIZE: {b64l[0]}')
-                            sub_b64_res.add_line(f'BASE64 SAMPLE TEXT: {b64l[1]}[........]')
-                            sub_b64_res.add_line(f'DECODED SHA256: {b64k}')
-                            subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
-                                                          body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
-                            subb_b64_res.add_line(str(b64l[2]))
-                            if b64l[2] not in ["[Possible file contents. See extracted files.]",
-                                               "[IOCs discovered with other non-printable data. See extracted files.]"]:
-                                b64_ascii_content.append(b64l[2])
-                    # Write all non-extracted decoded b64 content to file
-                    if len(b64_ascii_content) > 0:
-                        all_b64 = "\n".join(b64_ascii_content)
-                        b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
-                        b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
-                        try:
-                            with open(b64_file_path, 'w') as fh:
-                                fh.write(all_b64)
-                            request.add_extracted(b64_file_path, f"all_b64_{b64_all_sha256[:7]}.txt",
-                                                  "all misc decoded b64 from sample")
-                        except Exception as e:
-                            self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
+            # Report B64 Results
+            if len(b64_al_results) > 0:
+                b64_ascii_content = []
+                b64_res = (ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=res))
+                b64index = 0
+                for b64dict in b64_al_results:
+                    for b64k, b64l in b64dict.items():
+                        b64index += 1
+                        sub_b64_res = (ResultSection(f"Result {b64index}", parent=b64_res))
+                        sub_b64_res.add_line(f'BASE64 TEXT SIZE: {b64l[0]}')
+                        sub_b64_res.add_line(f'BASE64 SAMPLE TEXT: {b64l[1].decode("utf-8")}[........]')
+                        sub_b64_res.add_line(f'DECODED SHA256: {b64k}')
+                        subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
+                                                      body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
+                        subb_b64_res.add_line(str(b64l[2]))
+                        if b64l[2] not in ["[Possible file contents. See extracted files.]",
+                                           "[IOCs discovered with other non-printable data. See extracted files.]"]:
+                            b64_ascii_content.append(b64l[2])
+                # Write all non-extracted decoded b64 content to file
+                if len(b64_ascii_content) > 0:
+                    all_b64 = b"\n".join(b64_ascii_content)
+                    b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
+                    b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
+                    try:
+                        with open(b64_file_path, 'wb') as fh:
+                            fh.write(all_b64)
+                        request.add_extracted(b64_file_path, f"all_b64_{b64_all_sha256[:7]}.txt",
+                                              "all misc decoded b64 from sample")
+                    except Exception as e:
+                        self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
 
-                # Report XOR embedded results
-                # Result Graph:
-                if len(xor_al_results) > 0:
-                    x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
-                                           heuristic=Heuristic(2), parent=res))
-                    xformat_string = '%-20s %-7s %-7s %-50s'
-                    xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
-                    x_res.add_line(xformat_string % xcolumn_names)
-                    x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
-                    for xst in xor_al_results:
-                        x_res.add_line(xst)
-                # Result Tags:
-                for transform, regex, offset, score, smatch in xresult:
-                    if not regex.startswith("EXE_"):
-                        res.add_tag(regex, smatch)
-                        res.add_tag(regex, smatch)
+            # Report XOR embedded results
+            # Result Graph:
+            if len(xor_al_results) > 0:
+                x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
+                                       heuristic=Heuristic(2), parent=res))
+                xformat_string = '%-20s %-7s %-7s %-50s'
+                xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
+                x_res.add_line(xformat_string % xcolumn_names)
+                x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
+                for xst in xor_al_results:
+                    x_res.add_line(xst)
+            # Result Tags:
+            for transform, regex, offset, score, smatch in xresult:
+                if not regex.startswith("EXE_"):
+                    res.add_tag(regex, smatch)
+                    res.add_tag(regex, smatch)
 
-                # Report Embedded PE
-                if embedded_pe:
-                    res.add_subsection(ResultSection("Embedded PE header discovered in sample. "
-                                                     "See extracted files.", heuristic=Heuristic(3)))
+            # Report Embedded PE
+            if embedded_pe:
+                res.add_subsection(ResultSection("Embedded PE header discovered in sample. "
+                                                 "See extracted files.", heuristic=Heuristic(3)))
 
-                # Report Unicode Encoded Data:
-                if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
-                    unicode_emb_res = (ResultSection("Found Unicode-Like Strings in Non-Executable:",
-                                                     body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                     heuristic=Heuristic(4),
-                                                     parent=res))
+            # Report Unicode Encoded Data:
+            if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
+                unicode_emb_res = (ResultSection("Found Unicode-Like Strings in Non-Executable:",
+                                                 body_format=BODY_FORMAT.MEMORY_DUMP,
+                                                 heuristic=Heuristic(4),
+                                                 parent=res))
 
-                    if len(unicode_al_results) > 0:
-                        unires_index = 0
-                        for uk, ui in unicode_al_results.items():
-                            unires_index += 1
-                            sub_uni_res = (ResultSection(SCORE.LOW, f"Result {unires_index}", parent=unicode_emb_res))
-                            sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
-                            sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {ui[1]}[........]')
-                            sub_uni_res.add_line(f'DECODED SHA256: {uk}')
-                            subb_uni_res = (ResultSection("DECODED ASCII DUMP:",
-                                                          body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                          parent=sub_uni_res))
-                            subb_uni_res.add_line('{}'.format(ui[2]))
-                            # Look for IOCs of interest
-                            hits = self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000, taglist=True)
-                            if len(hits) > 0:
-                                sub_uni_res.score += 490
-                                subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
-
-                    if len(unicode_al_dropped_results) > 0:
-                        for ures in unicode_al_dropped_results:
-                            uhas = ures.split('_')[0]
-                            uenc = ures.split('_')[1]
-                            unicode_emb_res.score += 50
-                            unicode_emb_res.add_line(f"Extracted over 50 bytes of possible embedded unicode with "
-                                                     f"{uenc} encoding. SHA256: {uhas}. See extracted files.")
-                # Report Ascii Hex Encoded Data:
-                if asciihex_file_found:
-                    asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
+                if len(unicode_al_results) > 0:
+                    unires_index = 0
+                    for uk, ui in unicode_al_results.items():
+                        unires_index += 1
+                        sub_uni_res = (ResultSection(SCORE.LOW, f"Result {unires_index}", parent=unicode_emb_res))
+                        sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
+                        sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {ui[1].decode("utf-8")}[........]')
+                        sub_uni_res.add_line(f'DECODED SHA256: {uk}')
+                        subb_uni_res = (ResultSection("DECODED ASCII DUMP:",
                                                       body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                      heuristic=Heuristic(5),
-                                                      parent=res))
-                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
+                                                      parent=sub_uni_res))
+                        subb_uni_res.add_line('{}'.format(ui[2].decode('utf-8')))
+                        # Look for IOCs of interest
+                        hits = self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000, taglist=True)
+                        if len(hits) > 0:
+                            sub_uni_res.score += 490
+                            subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
 
-                if len(asciihex_dict) > 0:
-                    result.report_heuristic(FrankenStrings.AL_FRANKENSTRINGS_006)
-                    if request.file_type.startswith("document"):
-                        ascore = SCORE.LOW
-                    else:
-                        ascore = SCORE.VHIGH
-                    asciihex_res = (ResultSection(ascore, "ASCII HEX DECODED IOC Strings:",
+                if len(unicode_al_dropped_results) > 0:
+                    for ures in unicode_al_dropped_results:
+                        uhas = ures.split('_')[0]
+                        uenc = ures.split('_')[1]
+                        unicode_emb_res.score += 50
+                        unicode_emb_res.add_line(f"Extracted over 50 bytes of possible embedded unicode with "
+                                                 f"{uenc} encoding. SHA256: {uhas}. See extracted files.")
+            # Report Ascii Hex Encoded Data:
+            if asciihex_file_found:
+                asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
                                                   body_format=BODY_FORMAT.MEMORY_DUMP,
+                                                  heuristic=Heuristic(5),
                                                   parent=res))
-                    for k, l in sorted(asciihex_dict.items()):
-                        for i in l:
-                            for ii in i:
-                                asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {ii}")
+                asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
-                if len(asciihex_bb_dict) > 0:
-                    asciihex_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
-                                                  heuristic=Heuristic(7), parent=res))
-                    xindex = 0
-                    for k, l in sorted(asciihex_bb_dict.items()):
-                        for i in l:
-                            for kk, ii in i.items():
-                                xindex += 1
-                                asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_res))
-                                asx_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string, masked with "
-                                                 f"transform {ii[1]}:")
-                                asx_res.add_line("Decoded XOR string:")
-                                asx_res.add_line(ii[0])
-                                asx_res.add_line("Original ASCII HEX String:")
-                                asx_res.add_line(kk)
-                                res.add_tag(k, ii[0])
+            if len(asciihex_dict) > 0:
+                # Need to split into two heuristics
+                #if request.file_type.startswith("document"):
+                #    ascore = SCORE.LOW
+                #else:
+                #    ascore = SCORE.VHIGH
+                asciihex_res = (ResultSection("ASCII HEX DECODED IOC Strings:",
+                                              body_format=BODY_FORMAT.MEMORY_DUMP,
+                                              heuristic=Heuristic(6),
+                                              parent=res))
+                for k, l in sorted(asciihex_dict.items()):
+                    for i in l:
+                        for ii in i:
+                            asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {ii}")
 
-                # Store Encoded String Results
-                #if len(encoded_al_results) > 0:
-                #    encoded_res = (ResultSection("FLARE FLOSS Decoded Strings:",
-                #                                 body_format=BODY_FORMAT.MEMORY_DUMP,
-                #                                 heuristic=Heuristic(8), parent=res))
-                #    encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
-                #    # Create AL tag for each unique decoded string
-                #    for st in encoded_al_tags:
-                #        res.add_tag('file.string.decoded', st[0:75])
-                #        # Create tags for strings matching indicators of interest
-                #        if len(st) >= self.st_min_length:
-                #            hits = self.ioc_to_tag(st, patterns, res, st_max_length=1000, taglist=True)
-                #            if len(hits) > 0:
-                #                encoded_res.score = 500
-                #                encoded_res.add_line("Suspicious string(s) found in decoded data.")
+            if len(asciihex_bb_dict) > 0:
+                asciihex_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
+                                              heuristic=Heuristic(7), parent=res))
+                xindex = 0
+                for k, l in sorted(asciihex_bb_dict.items()):
+                    for i in l:
+                        for kk, ii in i.items():
+                            xindex += 1
+                            asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_res))
+                            asx_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string, masked with "
+                                             f"transform {ii[1]}:")
+                            asx_res.add_line("Decoded XOR string:")
+                            asx_res.add_line(ii[0])
+                            asx_res.add_line("Original ASCII HEX String:")
+                            asx_res.add_line(kk)
+                            res.add_tag(k, ii[0])
 
-                # Report Stacked String Results
-                #if len(stacked_al_results) > 0:
-                #    # No score on these as there are many FPs
-                #    stacked_res = (ResultSection("FLARE FLOSS Stacked Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
-                #                                 heuristic=Heuristic(9), parent=res))
-                #    for s in sorted(stacked_al_results):
-                #        groupname = re.sub(r'^[0-9]+:::', '', min(s.stringl, key=len))
-                #        group_res = (ResultSection(f"Group:'{groupname}' Strings:{len(s.stringl)}",
-                #                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=stacked_res))
-                #        group_res.add_line("String List:\n{}\nFunction:Offset List:\n{}"
-                #                           .format(re.sub(r'(^\[|\]$)', '', str(s.stringl)),
-                #                                   re.sub(r'(^\[|\]$)', '', str(s.funoffl))))
-                #        # Create tags for strings matching indicators of interest
-                #        for st in s.stringl:
-                #            extract_st = re.sub(r'^[0-9]+:::', '', st)
-                #            if len(extract_st) >= self.st_min_length:
-                #                hits = self.ioc_to_tag(extract_st, patterns, res, st_max_length=1000, taglist=True)
-                #                if len(hits) > 0:
-                #                    group_res.score = 500
-                #                    group_res.add_line("Suspicious string(s) found in decoded data.")
+            # Store Encoded String Results
+            #if len(encoded_al_results) > 0:
+            #    encoded_res = (ResultSection("FLARE FLOSS Decoded Strings:",
+            #                                 body_format=BODY_FORMAT.MEMORY_DUMP,
+            #                                 heuristic=Heuristic(8), parent=res))
+            #    encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
+            #    # Create AL tag for each unique decoded string
+            #    for st in encoded_al_tags:
+            #        res.add_tag('file.string.decoded', st[0:75])
+            #        # Create tags for strings matching indicators of interest
+            #        if len(st) >= self.st_min_length:
+            #            hits = self.ioc_to_tag(st, patterns, res, st_max_length=1000, taglist=True)
+            #            if len(hits) > 0:
+            #                encoded_res.score = 500
+            #                encoded_res.add_line("Suspicious string(s) found in decoded data.")
 
-                # Report Crowbar de-obfuscate results and add deob code to result
-                if cb_code_res:
-                    res.add_subsection(cb_code_res)
-                    decodefn = f"{request.md5}_decoded"
-                    decodefp = os.path.join(self.working_directory, decodefn)
-                    request.add_extracted(decodefp, decodefn, "Debofuscated sample")
-                    with open(decodefp, 'wb') as dcf:
-                        dcf.write(cb_decoded_data)
-                        self.log.debug(f"Submitted dropped file for analysis: {decodefp}")
-                    for f in cb_filex:
-                        request.add_extracted(f, os.path.basename(f),
-                                              "Debofuscated file of interest extracted from sample")
+            # Report Stacked String Results
+            #if len(stacked_al_results) > 0:
+            #    # No score on these as there are many FPs
+            #    stacked_res = (ResultSection("FLARE FLOSS Stacked Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
+            #                                 heuristic=Heuristic(9), parent=res))
+            #    for s in sorted(stacked_al_results):
+            #        groupname = re.sub(r'^[0-9]+:::', '', min(s.stringl, key=len))
+            #        group_res = (ResultSection(f"Group:'{groupname}' Strings:{len(s.stringl)}",
+            #                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=stacked_res))
+            #        group_res.add_line("String List:\n{}\nFunction:Offset List:\n{}"
+            #                           .format(re.sub(r'(^\[|\]$)', '', str(s.stringl)),
+            #                                   re.sub(r'(^\[|\]$)', '', str(s.funoffl))))
+            #        # Create tags for strings matching indicators of interest
+            #        for st in s.stringl:
+            #            extract_st = re.sub(r'^[0-9]+:::', '', st)
+            #            if len(extract_st) >= self.st_min_length:
+            #                hits = self.ioc_to_tag(extract_st, patterns, res, st_max_length=1000, taglist=True)
+            #                if len(hits) > 0:
+            #                    group_res.score = 500
+            #                    group_res.add_line("Suspicious string(s) found in decoded data.")
 
-                result.add_section(res)
+            # Report Crowbar de-obfuscate results and add deob code to result
+            if cb_code_res:
+                res.add_subsection(cb_code_res)
+                decodefn = f"{request.md5}_decoded"
+                decodefp = os.path.join(self.working_directory, decodefn)
+                with open(decodefp, 'wb') as dcf:
+                    dcf.write(cb_decoded_data)
+                    self.log.debug(f"Submitted dropped file for analysis: {decodefp}")
+                request.add_extracted(decodefp, decodefn, "Debofuscated sample")
+                for f in cb_filex:
+                    request.add_extracted(f, os.path.basename(f),
+                                          "Debofuscated file of interest extracted from sample")
+
+            result.add_section(res)
