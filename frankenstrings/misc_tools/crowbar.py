@@ -18,8 +18,8 @@ class CrowBar(object):
                  'Microsoft',
                  'text',
                  ]
-    VALIDCHARS = ' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
-    BINCHARS = ''.join(sorted(list(set(map(chr, range(0, 256))) - set(VALIDCHARS))))
+    VALIDCHARS = b' 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+    BINCHARS = bytes(list(set(range(0, 256)) - set(VALIDCHARS)))
 
     def __init__(self):
         self.max_attempts = None
@@ -34,14 +34,14 @@ class CrowBar(object):
 
     @staticmethod
     def add1b(s, k):
-        return ''.join([chr((ord(c) + k) & 0xff) for c in s])
+        return bytes([(c + k) & 0xff for c in s])
 
     def charcode(self, text):
         output = None
         arrayofints = list(filter(lambda n: n < 256,
-                             map(int, re.findall('(\d+)', str(re.findall('\D{1,2}\d{2,3}', text))))))
+                             map(int, re.findall('(\d+)', str(re.findall(b'\D{1,2}\d{2,3}', text))))))
         if len(arrayofints) > 20:
-            s1 = ''.join(map(chr, arrayofints))
+            s1 = bytes(arrayofints)
             if self.printable_ratio(s1) > .75 and (float(len(s1)) / float(len(text))) > .10:
                 # if the output is mostly readable and big enough
                 output = s1
@@ -51,35 +51,35 @@ class CrowBar(object):
     def charcode_hex(self, text):
         output = None
         s1 = text
-        enc_str = ['\\u', '%u', '\\x', '0x']
+        enc_str = [b'\\u', b'%u', b'\\x', b'0x']
 
         for encoding in enc_str:
-            char_len = [(16, re.compile(r'(?:' + re.escape(encoding) + '[A-Fa-f0-9]{16})+')),
-                        (8, re.compile(r'(?:' + re.escape(encoding) + '[A-Fa-f0-9]{8})+')),
-                        (4, re.compile(r'(?:' + re.escape(encoding) + '[A-Fa-f0-9]{4})+')),
-                        (2, re.compile(r'(?:' + re.escape(encoding) + '[A-Fa-f0-9]{2})+'))]
+            char_len = [(16, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{16})+')),
+                        (8, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{8})+')),
+                        (4, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{4})+')),
+                        (2, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{2})+'))]
 
             for r in char_len:
                 hexchars = set(re.findall(r[1], text))
 
                 for hc in hexchars:
                     data = hc
-                    decoded = ''
+                    decoded = b''
                     if r[0] == 2:
-                        while data != '':
+                        while data != b'':
                             decoded += binascii.a2b_hex(data[2:4])
                             data = data[4:]
                     if r[0] == 4:
-                        while data != '':
+                        while data != b'':
                             decoded += binascii.a2b_hex(data[4:6]) + binascii.a2b_hex(data[2:4])
                             data = data[6:]
                     if r[0] == 8:
-                        while data != '':
+                        while data != b'':
                             decoded += binascii.a2b_hex(data[8:10]) + binascii.a2b_hex(data[6:8]) + \
                                        binascii.a2b_hex(data[4:6]) + binascii.a2b_hex(data[2:4])
                             data = data[10:]
                     if r[0] == 16:
-                        while data != '':
+                        while data != b'':
                             decoded += binascii.a2b_hex(data[16:18]) + binascii.a2b_hex(data[14:16]) + \
                                        binascii.a2b_hex(data[12:14]) + binascii.a2b_hex(data[10:12]) + \
                                        binascii.a2b_hex(data[8:10]) + binascii.a2b_hex(data[6:8]) + \
@@ -87,7 +87,7 @@ class CrowBar(object):
                             data = data[18:]
 
                     # Remove trailing NULL bytes
-                    final_dec = re.sub('[\x00]*$', '', decoded)
+                    final_dec = re.sub(b'[\x00]*$', b'', decoded)
                     s1 = s1.replace(hc, final_dec)
 
         if s1 != text:
@@ -98,9 +98,9 @@ class CrowBar(object):
     @staticmethod
     def chr_decode(text):
         output = text
-        for fullc, c in re.findall(r'(chr[bw]?\(([0-9]{1,3})\))', output, re.I):
+        for fullc, c in re.findall(rb'(chr[bw]?\(([0-9]{1,3})\))', output, re.I):
             try:
-               output = re.sub(re.escape(fullc), '"{}"' .format(chr(int(c))), output)
+                output = re.sub(re.escape(fullc), '"{}"'.format(chr(int(c))).encode('utf-8'), output)
             except:
                 continue
         if output == text:
@@ -110,41 +110,41 @@ class CrowBar(object):
     @staticmethod
     def string_replace(text):
         output = None
-        if 'replace(' in text.lower():
+        if b'replace(' in text.lower():
             # Process string with replace functions calls
             # Such as "SaokzueofpigxoFile".replace(/ofpigx/g, "T").replace(/okzu/g, "v")
             s1 = text
             # Find all occurrences of string replace (JS)
             for strreplace in [o[0] for o in
-                               re.findall('(["\'][^"\']+["\']((\.replace\([^)]+\))+))', s1, flags=re.I)]:
+                               re.findall(b'(["\'][^"\']+["\']((\.replace\([^)]+\))+))', s1, flags=re.I)]:
                 s2 = strreplace
                 # Extract all substitutions
-                for str1, str2 in re.findall('\.replace\([/\'"]([^,]+)[/\'\"]g?\s*,\s*[\'\"]([^)]*)[\'\"]\)',
+                for str1, str2 in re.findall(b'\.replace\([/\'"]([^,]+)[/\'\"]g?\s*,\s*[\'\"]([^)]*)[\'\"]\)',
                                              s2, flags=re.I):
                     # Execute the substitution
                     s2 = s2.replace(str1, str2)
                 # Remove the replace calls from the layer (prevent accidental substitutions in the next step)
-                s2 = s2[:s2.lower().index('.replace(')]
+                s2 = s2[:s2.lower().index(b'.replace(')]
                 s1 = s1.replace(strreplace, s2)
 
             # Process global string replace
-            replacements = [q for q in re.findall('replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]', s1)]
+            replacements = [q for q in re.findall(b'replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]', s1)]
             for str1, str2 in replacements:
                 s1 = s1.replace(str1, str2)
             # Process VB string replace
-            replacements = [q for q in re.findall('Replace\(\s*["\']?([^,"\']*)["\']?\s*,\s*["\']?([^,"\']*)["\']?\s*,\s*["\']?([^,"\']*)["\']?', s1)]
+            replacements = [q for q in re.findall(b'Replace\(\s*["\']?([^,"\']*)["\']?\s*,\s*["\']?([^,"\']*)["\']?\s*,\s*["\']?([^,"\']*)["\']?', s1)]
             for str1, str2, str3 in replacements:
                 s1 = s1.replace(str1, str1.replace(str2, str3))
-            output = re.sub('\.replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]\)', '', s1)
+            output = re.sub(b'\.replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]\)', b'', s1)
         return output
 
     def b64decode_str(self, text):
         output = None
-        b64str = re.findall('((?:[A-Za-z0-9+/]{3,}={0,2}(?:&#[x1][A0];){0,1}[\r]?[\n]?){6,})', text)
+        b64str = re.findall(b'((?:[A-Za-z0-9+/]{3,}={0,2}(?:&#[x1][A0];){0,1}[\r]?[\n]?){6,})', text)
         s1 = text
         for bmatch in b64str:
-            s = bmatch.replace('\n', '').replace('\r', '').replace(' ', '').replace('&#xA;', '').replace('&#10;', '')
-            uniq_char = ''.join(set(s))
+            s = bmatch.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'').replace(b'&#xA;', b'').replace(b'&#10;', b'')
+            uniq_char = set(s)
             if len(uniq_char) > 6:
                 if len(s) >= 16 and len(s) % 4 == 0:
                     try:
@@ -159,7 +159,7 @@ class CrowBar(object):
                     if sha256hash not in self.hashes:
                         if len(d) > 500:
                             for ft in self.FILETYPES:
-                                if (ft in ftype and not 'octet-stream' in ftype) or ft in mag_ftype:
+                                if (ft in ftype and 'octet-stream' not in ftype) or ft in mag_ftype:
                                     b64_file_name = f"{sha256hash[0:10]}_cb_b64_decoded"
                                     b64_file_path = os.path.join(self.wd, b64_file_name)
                                     with open(b64_file_path, 'wb') as b64_file:
@@ -167,8 +167,8 @@ class CrowBar(object):
                                     self.files_extracted.add(b64_file_path)
                                     self.hashes.add(sha256hash)
                                     break
-                        uniq_char = ''.join(set(d))
-                        if len(uniq_char) > 6 and all(31 < ord(c) < 127 for c in d) and len(re.sub("\s", "", d)) > 14:
+                        uniq_char = set(d)
+                        if len(uniq_char) > 6 and all(31 < c < 127 for c in d) and len(re.sub(b"\s", b"", d)) > 14:
                             s1 = s1.replace(bmatch, d)
 
         if s1 != text:
@@ -179,13 +179,13 @@ class CrowBar(object):
     def vars_of_fake_arrays(text):
 
         output = None
-        replacements = re.findall('var\s+([^\s=]+)\s*=\s*\[([^\]]+)\]\[(\d+)\]', text)
+        replacements = re.findall(rb'var\s+([^\s=]+)\s*=\s*\[([^\]]+)\]\[(\d+)\]', text)
         if len(replacements) > 0:
             #    ,- Make sure we do not process these again
-            s1 = re.sub(r'var\s+([^=]+)\s*=', r'XXX \1 =', text)
+            s1 = re.sub(rb'var\s+([^=]+)\s*=', rb'XXX \1 =', text)
             for varname, array, pos in replacements:
                 try:
-                    value = re.split('\s*,\s*', array)[int(pos)]
+                    value = re.split(rb'\s*,\s*', array)[int(pos)]
                 except IndexError:
                     # print '[' + array + '][' + pos + ']'
                     break
@@ -198,15 +198,15 @@ class CrowBar(object):
     def array_of_strings(text):
         try:
             output = None
-            replacements = re.findall('var\s+([^\s=]+)\s*=\s*\[([^\]]+)\]\s*;', text)
+            replacements = re.findall(b'var\s+([^\s=]+)\s*=\s*\[([^\]]+)\]\s*;', text)
             if len(replacements) > 0:
                 #    ,- Make sure we do not process these again
                 s1 = text
                 for varname, values in replacements:
-                    occurences = [int(x) for x in re.findall(varname + '\s*\[(\d+)\]', s1)]
+                    occurences = [int(x) for x in re.findall(varname + b'\s*\[(\d+)\]', s1)]
                     for i in occurences:
                         try:
-                            s1 = re.sub(varname + '\s*\[(%d)\]' % i, values.split(',')[i], s1)
+                            s1 = re.sub(varname + b'\s*\[(%d)\]' % i, values.split(b',')[i], s1)
                         except IndexError:
                             # print '[' + array + '][' + pos + ']'
                             break
@@ -220,7 +220,7 @@ class CrowBar(object):
     def concat_strings(text):
         output = None
         # Line continuation character in VB -- '_'
-        s1 = re.sub('[\'"][\s\n_]*?[+&][\s\n_]*[\'"]', '', text)
+        s1 = re.sub(b'[\'"][\s\n_]*?[+&][\s\n_]*[\'"]', b'', text)
         if s1 != text:
             output = s1
 
@@ -231,9 +231,9 @@ class CrowBar(object):
         output = None
         s1 = text
         # VBA format StrReverse("[text]")
-        replacements = re.findall(r'(StrReverse\("(.+?(?="\))))', s1)
+        replacements = re.findall(rb'(StrReverse\("(.+?(?="\))))', s1)
         for full, st in replacements:
-            reversed_st = full.replace(st, st[::-1]).replace("StrReverse(", "")[:-1]
+            reversed_st = full.replace(st, st[::-1]).replace(b"StrReverse(", b"")[:-1]
             s1 = s1.replace(full, reversed_st)
         if s1 != text:
             output = s1
@@ -242,11 +242,11 @@ class CrowBar(object):
     @staticmethod
     def powershell_vars(text):
         output = None
-        replacements_string = re.findall(r'(\$(?:\w+|{[^\}]+\}))\s*=[^=]\s*[\"\']([^\"\']+)[\"\']', text)
-        replacements_func = re.findall(r'(\$(?:\w+|{[^\}]+\}))\s*=\s*([^=\"\'\s\$]{3,50})[\s]', text)
+        replacements_string = re.findall(rb'(\$(?:\w+|{[^\}]+\}))\s*=[^=]\s*[\"\']([^\"\']+)[\"\']', text)
+        replacements_func = re.findall(rb'(\$(?:\w+|{[^\}]+\}))\s*=\s*([^=\"\'\s\$]{3,50})[\s]', text)
         if len(replacements_string) > 0 or len(replacements_func) > 0:
             #    ,- Make sure we do not process these again
-            s1 = re.sub(r'\$((?:\w+|{[^\}]+\}))\s*=', r'\$--\1 =', text)
+            s1 = re.sub(rb'\$((?:\w+|{[^\}]+\}))\s*=', rb'\$--\1 =', text)
             for varname, string in replacements_string:
                 s1 = s1.replace(varname, string)
             for varname, string in replacements_func:
@@ -259,8 +259,8 @@ class CrowBar(object):
     @staticmethod
     def powershell_carets(text):
         output = text
-        for full in re.findall(r'"(?:[^"]+[A-Za-z0-9]+\^[A-Za-z0-9]+[^"]+)+"', text):
-            output = output.replace(full, full.replace("^", ""))
+        for full in re.findall(rb'"(?:[^"]+[A-Za-z0-9]+\^[A-Za-z0-9]+[^"]+)+"', text):
+            output = output.replace(full, full.replace(b"^", b""))
         if output == text:
             output = None
         return output
@@ -270,49 +270,49 @@ class CrowBar(object):
             output = text
             # prevent false var replacements like YG="86"
             # Replace regular variables
-            replacements = re.findall(r'^\s*((?:Const[\s]*)?(\w+)\s*='
-                                      r'\s*((?:["][^"]+["]|[\'][^\']+[\']|[0-9]*)))[\s\r]*$',
+            replacements = re.findall(rb'^\s*((?:Const[\s]*)?(\w+)\s*='
+                                      rb'\s*((?:["][^"]+["]|[\'][^\']+[\']|[0-9]*)))[\s\r]*$',
                                       output, re.MULTILINE | re.DOTALL)
             if len(replacements) > 0:
                 for full, varname, value in replacements:
-                    if len(re.findall(r'\b' + varname + r'\b', output)) == 1:
+                    if len(re.findall(rb'\b' + varname + rb'\b', output)) == 1:
                         # If there is only one instance of these, it's probably noise.
-                        output = output.replace(full, '<crowbar:mswordmacro_unused_variable_assignment>')
+                        output = output.replace(full, b'<crowbar:mswordmacro_unused_variable_assignment>')
                     else:
-                        final_val = value.replace('"', "")
+                        final_val = value.replace(b'"', b"")
                         # Stacked strings
                         # b = "he"
                         # b = b & "llo "
                         # b = b & "world!"
-                        stacked = re.findall(r'^\s*(({0})\s*='
-                                             r'\s*({1})\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$'
-                                             .format(varname, varname), output, re.MULTILINE | re.DOTALL)
+                        stacked = re.findall(rb'^\s*((' + varname + rb')\s*=\s*('
+                                             + varname + rb')\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
+                                             output, re.MULTILINE | re.DOTALL)
                         if len(stacked) > 0:
                             for sfull, varname, varname_b, val in stacked:
-                                final_val += val.replace('"', "")
-                                output = output.replace(sfull, '<crowbar:mswordmacro_var_assignment>')
-                        output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
+                                final_val += val.replace(b'"', b"")
+                                output = output.replace(sfull, b'<crowbar:mswordmacro_var_assignment>')
+                        output = output.replace(full, b'<crowbar:mswordmacro_var_assignment>')
                         # If more than a of the variable name left, the assumption is that this did not
                         # work according to plan, so just replace a few for now.
-                        output = re.sub(r'(\b' + re.escape(varname) +
-                                        r'(?!\s*(?:=|[+&]\s*{}))\b)'.format(re.escape(varname)),
-                                        '"{}"' .format(final_val),
+                        output = re.sub(rb'(\b' + re.escape(varname) +
+                                        rb'(?!\s*(?:=|[+&]\s*' + re.escape(varname) + rb'))\b)',
+                                        b'"' + final_val + '"',
                                         output, count=5)
 
             # Remaining stacked strings
-            replacements = re.findall(r'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
+            replacements = re.findall(rb'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
                                       output, re.MULTILINE | re.DOTALL)
             vars = set([x[1] for x in replacements])
             for v in vars:
-                final_val = ""
+                final_val = b""
                 for full, varname, varname_b, value in replacements:
                     if varname != v:
                         continue
-                    final_val += value.replace('"', "")
-                    output = output.replace(full, '<crowbar:mswordmacro_var_assignment>')
-                output = re.sub(r'(\b' + v +
-                                r'(?!\s*(?:=|[+&]\s*{}))\b)'.format(v),
-                                '"{}"' .format(final_val),
+                    final_val += value.replace(b'"', b"")
+                    output = output.replace(full, b'<crowbar:mswordmacro_var_assignment>')
+                output = re.sub(rb'(\b' + v +
+                                rb'(?!\s*(?:=|[+&]\s*' + v + rb'))\b)',
+                                b'"' + final_val + b'"',
                                 output, count=5)
 
             if output == text:
@@ -324,19 +324,19 @@ class CrowBar(object):
 
     def simple_xor_function(self, text):
         output = None
-        xorstrings = re.findall('(\w+\("((?:[0-9A-Fa-f][0-9A-Fa-f])+)"\s*,\s*"([^"]+)"\))', text)
+        xorstrings = re.findall(rb'(\w+\("((?:[0-9A-Fa-f][0-9A-Fa-f])+)"\s*,\s*"([^"]+)"\))', text)
         option_a = []
         option_b = []
         s1 = text
         for f, x, k in xorstrings:
-            res = self.xor_with_key(x.decode("hex"), k)
+            res = self.xor_with_key(binascii.a2b_hex(x), k)
             if self.printable_ratio(res) == 1:
                 option_a.append((f, x, k, res))
                 # print 'A:',f,x,k, res
             else:
                 option_a.append((f, x, k, None))
             # try by shifting the key by 1
-            res = self.xor_with_key(x.decode("hex"), k[1:] + k[0])
+            res = self.xor_with_key(binascii.a2b_hex(x), k[1:] + k[0])
             if self.printable_ratio(res) == 1:
                 option_b.append((f, x, k, res))
                 # print 'B:',f,x,k, res
@@ -351,7 +351,7 @@ class CrowBar(object):
 
         for f, x, k, r in xorstrings:
             if r is not None:
-                s1 = s1.replace(f, '"' + r + '"')
+                s1 = s1.replace(f, b'"' + r + b'"')
 
         if text != s1:
             output = s1
@@ -359,18 +359,16 @@ class CrowBar(object):
 
     @staticmethod
     def xor_with_key(s, k):
-        return ''.join([chr(ord(a) ^ ord(b))
-                        for a, b in zip(s, (len(s) / len(k) + 1) * k)])
+        return bytes([a ^ b for a, b in zip(s, (len(s) // len(k) + 1) * k)])
 
     @staticmethod
     def zp_xor_with_key(s, k):
-        return ''.join([a if a == '\0' or a == b else chr(ord(a) ^ ord(b))
-                        for a, b in zip(s, (len(s) / len(k) + 1) * k)])
+        return bytes([a if a == 0 or a == b else a ^ b for a, b in zip(s, (len(s) // len(k) + 1) * k)])
 
     @staticmethod
     def clean_up_final_layer(text):
-        output = re.sub(r'<crowbar:[^>]+>', '', text)
-        output = re.sub(r'\n\s*\n', '', output)
+        output = re.sub(rb'<crowbar:[^>]+>', b'', text)
+        output = re.sub(rb'\n\s*\n', b'', output)
         return output
 
     # --- Main Module --------------------------------------------------------------------------------------------------
@@ -455,12 +453,12 @@ class CrowBar(object):
                 after = set()
                 pat_values = patterns.ioc_match(clean, bogon_ip=True, just_network=False)
                 for k, val in pat_values.items():
-                    if val == "":
-                        asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                        after.add(asc_asc)
-                    else:
-                        for v in val:
-                            after.add(v)
+                    #if val == "":
+                    #    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                    #    after.add(asc_asc)
+                    #else:
+                    for v in val:
+                        after.add(v)
                 diff_tags = after - before
                 # Add additional checks to see if the file should be extracted.
                 if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0 or len(self.files_extracted) > 0:
@@ -479,16 +477,16 @@ class CrowBar(object):
                                                   body_format=BODY_FORMAT.MEMORY_DUMP, heuristic=Heuristic(11),
                                                   parent=al_res))
                             for ty, val in pat_values.items():
-                                if val == "":
-                                    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                    if asc_asc in diff_tags:
-                                        dres.add_line(f"{ty.replace('_', ' ')} string: {asc_asc}")
-                                        al_res.add_tag(ty, asc_asc)
-                                else:
-                                    for v in val:
-                                        if v in diff_tags:
-                                            dres.add_line(f"{ty.replace('_', ' ')} string: {v}")
-                                            al_res.add_tag(ty, v)
+                                #if val == "":
+                                #    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                                #    if asc_asc in diff_tags:
+                                #        dres.add_line(f"{ty.replace('_', ' ')} string: {asc_asc}")
+                                #        al_res.add_tag(ty, asc_asc)
+                                #else:
+                                for v in val:
+                                    if v in diff_tags:
+                                        dres.add_line(f"{ty.replace('_', ' ')} string: {v}")
+                                        al_res.add_tag(ty, v)
 
                         # Display final layer
                         lres = (ResultSection("Final layer:", body_format=BODY_FORMAT.MEMORY_DUMP, parent=al_res))

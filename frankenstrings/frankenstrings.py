@@ -108,7 +108,7 @@ class FrankenStrings(ServiceBase):
                         if taglist and ty not in tags:
                             tags[ty] = set()
                         # This section deals with unicode type which no longer exists
-                        # if val == b"":
+                        # if val == "":
                         #     asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
                         #    # For crowbar plugin
                         #    if savetoset:
@@ -872,7 +872,7 @@ class FrankenStrings(ServiceBase):
                                            parent=res))
                 for k, l in sorted(file_plainstr_iocs.items()):
                     for i in sorted(l):
-                        ascii_res.add_line(f"Found {k.replace('_', ' ')} string: {i.decode('utf-8')}")
+                        ascii_res.add_line(f"Found {k.replace('_', ' ')} string: {i}")
 
             # Report B64 Results
             if len(b64_al_results) > 0:
