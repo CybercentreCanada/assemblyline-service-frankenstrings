@@ -968,14 +968,13 @@ class FrankenStrings(ServiceBase):
                 asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
             if len(asciihex_dict) > 0:
-                # Need to split into two heuristics
-                #if request.file_type.startswith("document"):
-                #    ascore = SCORE.LOW
-                #else:
-                #    ascore = SCORE.VHIGH
+                # Different scores are used depending on whether the file is a document
+                heuristic = Heuristic(6)
+                if request.file_type.startswith("document"):
+                    heuristic = Heuristic(8)
                 asciihex_res = (ResultSection("ASCII HEX DECODED IOC Strings:",
                                               body_format=BODY_FORMAT.MEMORY_DUMP,
-                                              heuristic=Heuristic(6),
+                                              heuristic=heuristic,
                                               parent=res))
                 for k, l in sorted(asciihex_dict.items()):
                     for i in l:

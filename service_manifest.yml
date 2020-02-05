@@ -58,15 +58,21 @@ heuristics:
 
   - heur_id: 6
     name: ASCIIhex_strings_decoded
-    score: 0
+    score: 500
     filetype: '*'
-    description: ASCII hex-like strings found and decoded in non-executable file.
+    description: ASCII hex-like strings found and decoded in a non-document, non-executable file.
       -
   - heur_id: 7
     name: ASCIIhex_xor_string
     score: 500
     filetype: '*'
     description: Popssible ASCII hex-like string with additional xor encoding found.
+
+  - heur_id: 8
+    name: ASCIIhex_strings_decoded_doc
+    score: 10
+    filetype: 'document/'
+    description: ASCII hex-like strings found and decoded in a document file
 
 #  - heur_id: 8
 #    name: flare_encoded_string
