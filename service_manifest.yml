@@ -21,9 +21,6 @@ config:
   max_length: 5000
   st_max_size: 0
   bb_max_size: 85000
-  ff_max_size: 85000
-  ff_enc_min_length: 7
-  ff_stack_min_length: 7
 
 heuristics:
   - heur_id: 1
@@ -46,9 +43,21 @@ heuristics:
 
   - heur_id: 4
     name: Unicode_decoded
-    score: 0
+    score: 10
     filetype: '*'
     description: Unicode-like data found and decoded in non-exectuable file.
+
+  - heur_id: 12
+    name: Unicode_file_extracted
+    score: 50
+    filetype: '*'
+    description: Long section of unicode-like data found and extracted in non-executable file.
+
+  - heur_id: 9
+    name: IOC_unicode_decoded
+    score: 500
+    filetype: '*'
+    description: IOC(s) found in unicode encoded data in non-exectuable file.
 
   - heur_id: 5
     name: ASCIIhex_file_decoded
@@ -74,18 +83,6 @@ heuristics:
     filetype: 'document/'
     description: ASCII hex-like strings found and decoded in a document file
 
-#  - heur_id: 8
-#    name: flare_encoded_string
-#    score: 10
-#    filetype: 'executable/'
-#    description: Encoded string found and decoded in executable file by Flare-Floss modules.
-
-#  - heur_id: 9
-#    name: flare_stacked_string
-#    score: 0
-#    filetype: 'executable/'
-#    description: Stacked string found and decoded in executable file by Flare-Floss modules.
-
   - heur_id: 10
     name: code_file_deobfuscation
     score: 10
@@ -97,18 +94,6 @@ heuristics:
     score: 10
     filetype: 'code/'
     description: IOCs discovered by Crowbar module.
-
-#  - heur_id: 2
-#    name:
-#    score: 0
-#    filetype: '*'
-#    description:
-#
-#  - heur_id: 2
-#    name:
-#    score: 0
-#    filetype: '*'
-#    description:
 
 docker_config:
   image: cccs/assemblyline-service-frankenstrings:latest

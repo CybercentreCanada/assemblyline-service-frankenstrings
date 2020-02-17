@@ -3,9 +3,6 @@ import hashlib
 import mmap
 import os
 import re
-# import string
-import unicodedata
-# from collections import namedtuple
 
 import magic
 import pefile
@@ -15,7 +12,6 @@ from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
-# from assemblyline_v4_service.common.utils import alarm_clock
 from frankenstrings.misc_tools import strings
 from frankenstrings.misc_tools.crowbar import CrowBar
 
@@ -50,7 +46,6 @@ class FrankenStrings(ServiceBase):
 
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
-    # This currently does nothing without FlareFloss as it finds no strings at all
     def ioc_to_tag(self, data, patterns, res, taglist=False, check_length=False, strs_max_size=0,
                    st_max_length=300, savetoset=False):
         """Searches data for patterns and adds as AL tag to result output.
@@ -107,25 +102,6 @@ class FrankenStrings(ServiceBase):
                     for ty, val in st_value.items():
                         if taglist and ty not in tags:
                             tags[ty] = set()
-                        # This section deals with unicode type which no longer exists
-                        # if val == "":
-                        #     asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                        #    # For crowbar plugin
-                        #    if savetoset:
-                        #        self.before.add(asc_asc)
-                        #    # Ensure AL will accept domain tags:
-                        #    if ty == 'network.static.domain':
-                        #        if not is_valid_domain(asc_asc):
-                        #            continue
-                        #    if ty == 'network.email.address':
-                        #        if not is_valid_email(asc_asc):
-                        #            continue
-                        #    # 1000 is the maximum allowed size of an AL tag
-                        #    if len(asc_asc) < 1001:
-                        #        res.add_tag(ty, asc_asc)
-                        #        if taglist:
-                        #            tags[ty].add(asc_asc)
-                        #else:
                         for v in val:
                             # For crowbar plugin
                             if savetoset:
@@ -416,7 +392,6 @@ class FrankenStrings(ServiceBase):
             try:
                 peinfo = pefile.PE(data=pedata)
                 lsize = 0
-                #pefile.PE()
                 for section in peinfo.sections:
                     size = section.PointerToRawData + section.SizeOfRawData
                     if size > lsize:
@@ -450,101 +425,6 @@ class FrankenStrings(ServiceBase):
                 else:
                     return False
 
-    # Flare Floss Methods:
-    # None of these are never called outside of the stackstring region
-    #
-    #@staticmethod
-    #def sanitize_string_for_printing(s):
-    #    """
-    #    Copyright FireEye Labs
-    #    Extracted code from FireEye Flare-Floss source code found here:
-    #    http://github.com/fireeye/flare-floss
-    #    Return sanitized string for printing.
-    #    :param s: input string
-    #    :return: sanitized string
-    #    """
-    #    try:
-    #        sanitized_string = s.encode('unicode_escape')
-    #        sanitized_string = sanitized_string.replace('\\\\', '\\')  # print single backslashes
-    #        sanitized_string = "".join(c for c in sanitized_string if c in string.printable)
-    #        return sanitized_string
-    #    except:
-    #        return
-
-    #@staticmethod
-    #def filter_unique_decoded(decoded_strings):
-    #    """
-    #    Copyright FireEye Labs
-    #    Extracted code from FireEye Flare-Floss source code found here:
-    #    http://github.com/fireeye/flare-floss
-    #    """
-    #    try:
-    #        unique_values = set()
-    #        originals = []
-    #        for decoded in decoded_strings:
-    #            hashable = (decoded.va, decoded.s, decoded.decoded_at_va, decoded.fva)
-    #            if hashable not in unique_values:
-    #                unique_values.add(hashable)
-    #                originals.append(decoded)
-    #        return originals
-    #    except:
-    #        return
-
-    #@staticmethod
-    #def decode_strings(vw, function_index, decoding_functions_candidates):
-    #    """
-    #    Copyright FireEye Labs
-    #    Extracted code from FireEye Flare-Floss source code found here:
-    #    http://github.com/fireeye/flare-floss
-    #    FLOSS string decoding algorithm
-    #    :param vw: vivisect workspace
-    #    :param function_index: function data
-    #    :param decoding_functions_candidates: identification manager
-    #    :return: list of decoded strings ([DecodedString])
-    #    """
-    #    decoded_strings = []
-    #
-    #    try:
-    #        with alarm_clock(60):
-    #            from floss import string_decoder
-    #            for fva, _ in decoding_functions_candidates:
-    #                for ctx in string_decoder.extract_decoding_contexts(vw, fva):
-    #                    for delta in string_decoder.emulate_decoding_routine(vw, function_index, fva, ctx):
-    #                        for delta_bytes in string_decoder.extract_delta_bytes(delta, ctx.decoded_at_va, fva):
-    #                            for decoded_string in string_decoder.extract_strings(delta_bytes):
-    #                                decoded_strings.append(decoded_string)
-    #    except:
-    #        pass
-    #    finally:
-    #        return decoded_strings or None
-
-    #@staticmethod
-    #def get_all_plugins():
-    #    """
-    #    Copyright FireEye Labs
-    #    Extracted code from FireEye Flare-Floss source code found here:
-    #    http://github.com/fireeye/flare-floss
-    #    Return all plugins to be run.
-    #    """
-    #    try:
-    #        from floss.interfaces import DecodingRoutineIdentifier
-    #        from floss.plugins import arithmetic_plugin, function_meta_data_plugin, library_function_plugin
-    #        ps = DecodingRoutineIdentifier.implementors()
-    #        if len(ps) == 0:
-    #            ps.append(function_meta_data_plugin.FunctionCrossReferencesToPlugin())
-    #            ps.append(function_meta_data_plugin.FunctionArgumentCountPlugin())
-    #            ps.append(function_meta_data_plugin.FunctionIsThunkPlugin())
-    #            ps.append(function_meta_data_plugin.FunctionBlockCountPlugin())
-    #            ps.append(function_meta_data_plugin.FunctionInstructionCountPlugin())
-    #            ps.append(function_meta_data_plugin.FunctionSizePlugin())
-    #            ps.append(function_meta_data_plugin.FunctionRecursivePlugin())
-    #            ps.append(library_function_plugin.FunctionIsLibraryPlugin())
-    #            ps.append(arithmetic_plugin.XORPlugin())
-    #            ps.append(arithmetic_plugin.ShiftPlugin())
-    #        return ps
-    #    except:
-    #        return
-
 # --- Execute ----------------------------------------------------------------------------------------------------------
 
     def execute(self, request):
@@ -568,19 +448,11 @@ class FrankenStrings(ServiceBase):
             st_max_size = 1000000
             # BBcrack maximum size of submitted file to run module:
             bb_max_size = 200000
-            # Flare Floss  maximum size of submitted file to run encoded/stacked string modules:
-            # ff_max_size = 200000
-            # Flare Floss minimum string size for encoded/stacked string modules:
-            #ff_enc_min_length = 7
-            #ff_stack_min_length = 7
         else:
             max_size = self.config.get('max_size', 3000000)
             max_length = self.config.get('max_length', 5000)
             st_max_size = self.config.get('st_max_size', 0)
             bb_max_size = self.config.get('bb_max_size', 85000)
-            #ff_max_size = self.config.get('ff_max_size', 85000)
-            #ff_enc_min_length = self.config.get('ff_enc_min_length', 7)
-            #ff_stack_min_length = self.config.get('ff_stack_min_length', 7)
 
         # Begin analysis
         if (len(request.file_contents) or 0) >= max_size or self.sample_type.startswith("archive/"):
@@ -588,15 +460,7 @@ class FrankenStrings(ServiceBase):
             return
 
         # Generate section in results set
-        # from floss import decoding_manager
-        # from floss import identification_manager as im, stackstrings
-        # from fuzzywuzzy import process
-        # from tabulate import tabulate
-        # import viv_utils      vivisect is also python2 only
         b64_al_results = []
-        #encoded_al_results = []
-        #encoded_al_tags = set()
-        #stacked_al_results = []
         xresult = []
         xor_al_results = []
         unicode_al_results = {}
@@ -611,12 +475,8 @@ class FrankenStrings(ServiceBase):
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
         # Static strings -- all sample types
-        #alfile = request.file_path
         res = (ResultSection("FrankenStrings Detected Strings of Interest:",
                              body_format=BODY_FORMAT.MEMORY_DUMP))
-
-        #with open(alfile, "rb") as f:
-        #    file_data = f.read()
 
         file_data = request.file_contents
 
@@ -736,114 +596,6 @@ class FrankenStrings(ServiceBase):
                                     asciihex_dict[ask] = []
                                 asciihex_dict[ask].append(asi)
 
-        # Encoded/Stacked strings -- Windows executable sample types
-        """ This block will be made into a seperate flareFLOSS service
-        if (len(request.file_contents) or 0) < ff_max_size and self.sample_type.startswith("executable/windows/"):
-            m = magic.Magic()
-            file_magic = m.from_buffer(file_data)
-
-            if not file_magic.endswith("compressed"):
-                try:
-                    vw = viv_utils.getWorkspace(alfile, should_save=False)
-                except:
-                    vw = False
-
-                if vw:
-                    try:
-                        selected_functions = set(vw.getFunctions())
-                        selected_plugins = self.get_all_plugins()
-
-                        # Encoded strings
-                        decoding_functions_candidates = im.identify_decoding_functions(vw, selected_plugins,
-                                                                                       selected_functions)
-                        candidates = decoding_functions_candidates.get_top_candidate_functions(10)
-                        function_index = viv_utils.InstructionFunctionIndex(vw)
-                        decoded_strings = self.decode_strings(vw, function_index, candidates)
-                        decoded_strings = self.filter_unique_decoded(decoded_strings)
-
-                        long_strings = filter(lambda l_ds: len(l_ds.s) >= ff_enc_min_length, decoded_strings)
-
-                        for ds in long_strings:
-                            s = self.sanitize_string_for_printing(ds.s)
-                            if ds.characteristics["location_type"] == decoding_manager.LocationType.STACK:
-                                offset_string = "[STACK]"
-                            elif ds.characteristics["location_type"] == decoding_manager.LocationType.HEAP:
-                                offset_string = "[HEAP]"
-                            else:
-                                offset_string = hex(ds.va or 0)
-                            encoded_al_results.append((offset_string, hex(ds.decoded_at_va), s))
-                            encoded_al_tags.add(s)
-
-                        # Stacked Strings
-                        # s.s = stacked string
-                        # s.fva = Function
-                        # s.frame_offset = Frame Offset
-                        stack_strings = list(set(stackstrings.extract_stackstrings(vw, selected_functions)))
-                        # Final stacked result list
-                        if len(stack_strings) > 0:
-                            # Filter min string length
-                            extracted_strings = \
-                                list(filter(lambda l_s: len(l_s.s) >= ff_stack_min_length, stack_strings))
-
-                            # Set up list to ensure stacked strings are not compared twice
-                            picked = set()
-                            # Create namedtuple for groups of like-stacked strings
-                            al_tuples = namedtuple('Group', 'stringl funoffl')
-
-                            # Create set of stacked strings for fuzzywuzzy to compare
-                            choices = set()
-                            for s in extracted_strings:
-                                choices.add(s.s)
-
-                            # Begin Comparison
-                            for s in extracted_strings:
-                                if s.s in picked:
-                                    pass
-                                else:
-                                    # Add stacked string to used-value list (picked)
-                                    picked.add(s.s)
-                                    # Create lists for 'strings' and 'function:frame offset' results
-                                    sstrings = []
-                                    funoffs = []
-                                    # Append initial stacked string tuple values to lists
-                                    indexnum = 1
-                                    sstrings.append(f'{indexnum}:::{s.s.encode()}')
-                                    funoffs.append(f'{indexnum}:::{hex(s.fva)}:{hex(s.frame_offset)}')
-                                    # Use fuzzywuzzy process module to compare initial stacked string to remaining
-                                    # stack string values
-                                    like_ss = process.extract(s.s, choices, limit=50)
-
-                                    if len(like_ss) > 0:
-                                        # Filter scores in like_ss with string compare scores less than 75
-                                        filtered_likess = list(filter(lambda ls: ls[1] > 74, like_ss))
-                                        if len(filtered_likess) > 0:
-                                            for likestring in filtered_likess:
-                                                for subs in extracted_strings:
-                                                    if subs == s or subs.s != likestring[0]:
-                                                        pass
-                                                    else:
-                                                        indexnum += 1
-                                                        # Add all similar strings to picked list and remove from
-                                                        # future comparison list (choices)
-                                                        picked.add(subs.s)
-                                                        if subs.s in choices:
-                                                            choices.remove(subs.s)
-                                                        # For all similar stacked strings add values to lists
-                                                        sstrings.append(f'{indexnum}:::{subs.s.encode()}')
-                                                        funoffs.append(f'{indexnum}:::{hex(subs.fva)}:'
-                                                                       f'{hex(subs.frame_offset)}')
-
-                                    # Remove initial stacked string from comparison list (choices)
-                                    if s.s in choices:
-                                        choices.remove(s.s)
-                                    # Create namedtuple to add to final results
-                                    fuzresults = al_tuples(stringl=sstrings, funoffl=funoffs)
-                                    # Add namedtuple to final result list
-                                    stacked_al_results.append(fuzresults)
-                    except Exception:
-                        pass
-        """
-
         # Static decoding of code files
         if self.sample_type.startswith('code'):
             cb = CrowBar()
@@ -859,11 +611,9 @@ class FrankenStrings(ServiceBase):
         if len(file_plainstr_iocs) > 0 \
                 or len(b64_al_results) > 0 \
                 or len(xor_al_results) > 0 \
-                or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0\
+                or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0 \
                 or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict)\
                 or cb_code_res:
-                # or len(stacked_al_results) > 0 \
-                # or len(encoded_al_results) > 0 \
 
             # Report ASCII String Results
             if len(file_plainstr_iocs) > 0:
@@ -931,14 +681,14 @@ class FrankenStrings(ServiceBase):
             if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
                 unicode_emb_res = (ResultSection("Found Unicode-Like Strings in Non-Executable:",
                                                  body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                 heuristic=Heuristic(4),
                                                  parent=res))
 
                 if len(unicode_al_results) > 0:
                     unires_index = 0
                     for uk, ui in unicode_al_results.items():
                         unires_index += 1
-                        sub_uni_res = (ResultSection(SCORE.LOW, f"Result {unires_index}", parent=unicode_emb_res))
+                        sub_uni_res = (ResultSection(f"Result {unires_index}", heuristic=Heuristic(4),
+                                                     parent=unicode_emb_res))
                         sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
                         sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {ui[1].decode("utf-8")}[........]')
                         sub_uni_res.add_line(f'DECODED SHA256: {uk}')
@@ -949,14 +699,16 @@ class FrankenStrings(ServiceBase):
                         # Look for IOCs of interest
                         hits = self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000, taglist=True)
                         if len(hits) > 0:
-                            sub_uni_res.score += 490
+                            sub_uni_res.set_heuristic(9)
                             subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
+                        else:
+                            sub_uni_res.set_heuristic(4)
 
                 if len(unicode_al_dropped_results) > 0:
                     for ures in unicode_al_dropped_results:
                         uhas = ures.split('_')[0]
                         uenc = ures.split('_')[1]
-                        unicode_emb_res.score += 50
+                        unicode_emb_res.set_heuristic(12)
                         unicode_emb_res.add_line(f"Extracted over 50 bytes of possible embedded unicode with "
                                                  f"{uenc} encoding. SHA256: {uhas}. See extracted files.")
             # Report Ascii Hex Encoded Data:
@@ -997,43 +749,6 @@ class FrankenStrings(ServiceBase):
                             asx_res.add_line("Original ASCII HEX String:")
                             asx_res.add_line(kk)
                             res.add_tag(k, ii[0])
-
-            # Store Encoded String Results
-            #if len(encoded_al_results) > 0:
-            #    encoded_res = (ResultSection("FLARE FLOSS Decoded Strings:",
-            #                                 body_format=BODY_FORMAT.MEMORY_DUMP,
-            #                                 heuristic=Heuristic(8), parent=res))
-            #    encoded_res.add_line(tabulate(encoded_al_results, headers=["Offset", "Called At", "String"]))
-            #    # Create AL tag for each unique decoded string
-            #    for st in encoded_al_tags:
-            #        res.add_tag('file.string.decoded', st[0:75])
-            #        # Create tags for strings matching indicators of interest
-            #        if len(st) >= self.st_min_length:
-            #            hits = self.ioc_to_tag(st, patterns, res, st_max_length=1000, taglist=True)
-            #            if len(hits) > 0:
-            #                encoded_res.score = 500
-            #                encoded_res.add_line("Suspicious string(s) found in decoded data.")
-
-            # Report Stacked String Results
-            #if len(stacked_al_results) > 0:
-            #    # No score on these as there are many FPs
-            #    stacked_res = (ResultSection("FLARE FLOSS Stacked Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
-            #                                 heuristic=Heuristic(9), parent=res))
-            #    for s in sorted(stacked_al_results):
-            #        groupname = re.sub(r'^[0-9]+:::', '', min(s.stringl, key=len))
-            #        group_res = (ResultSection(f"Group:'{groupname}' Strings:{len(s.stringl)}",
-            #                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=stacked_res))
-            #        group_res.add_line("String List:\n{}\nFunction:Offset List:\n{}"
-            #                           .format(re.sub(r'(^\[|\]$)', '', str(s.stringl)),
-            #                                   re.sub(r'(^\[|\]$)', '', str(s.funoffl))))
-            #        # Create tags for strings matching indicators of interest
-            #        for st in s.stringl:
-            #            extract_st = re.sub(r'^[0-9]+:::', '', st)
-            #            if len(extract_st) >= self.st_min_length:
-            #                hits = self.ioc_to_tag(extract_st, patterns, res, st_max_length=1000, taglist=True)
-            #                if len(hits) > 0:
-            #                    group_res.score = 500
-            #                    group_res.add_line("Suspicious string(s) found in decoded data.")
 
             # Report Crowbar de-obfuscate results and add deob code to result
             if cb_code_res:
