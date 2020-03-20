@@ -2,15 +2,15 @@ FROM cccs/assemblyline-v4-service-base:latest
 
 ENV SERVICE_PATH frankenstrings.frankenstrings.FrankenStrings
 
+USER root
+
 RUN apt-get update && apt-get install -y \
-  libyaml-dev \
-  python-levenshtein
+  libyaml-dev
 
 RUN pip install \
-  utils
-
-RUN pip install https://github.com/williballenthin/vivisect/zipball/master
-RUN pip install https://github.com/fireeye/flare-floss/zipball/master
+  utils\
+  pefile\
+  python-magic
 
 # Switch to assemblyline user
 USER assemblyline

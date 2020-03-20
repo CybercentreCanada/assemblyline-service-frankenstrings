@@ -1,6 +1,7 @@
 # Copyright (C) 2017 FireEye, Inc. All Rights Reserved.
 #    Extracted code from FireEye Flare-Floss source code found here
 #    http://github.com/fireeye/flare-floss
+
 # Ported to python 3
 
 import re

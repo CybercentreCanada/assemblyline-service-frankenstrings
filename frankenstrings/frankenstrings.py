@@ -12,8 +12,18 @@ from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
-from frankenstrings.misc_tools import strings
+from frankenstrings.flarefloss import strings
 from frankenstrings.misc_tools.crowbar import CrowBar
+
+
+def string_rep(b):
+    """Helper method for returning bytes as a string literal without the b'' of string interpolation"""
+    if type(b) is str:
+        return b
+    if type(b) is bytes:
+        return repr(b)[2:-1]
+    else:
+        return
 
 
 class FrankenStrings(ServiceBase):
@@ -408,10 +418,11 @@ class FrankenStrings(ServiceBase):
             if pe_extract:
                 pe_file_name = f"{hashlib.sha256(pe_extract).hexdigest()[0:10]}_{fn}"
                 pe_file_path = os.path.join(self.working_directory, pe_file_name)
-                request.add_extracted(pe_file_path, pe_file_name, msg)
                 with open(pe_file_path, 'wb') as exe_file:
                     exe_file.write(pe_extract)
                     self.log.debug(f"Submitted dropped file for analysis: {pe_file_path}")
+                request.add_extracted(pe_file_path, pe_file_name, msg)
+
         finally:
             try:
                 mm.close()
@@ -558,7 +569,8 @@ class FrankenStrings(ServiceBase):
                                                                              "[PE Header Detected. "
                                                                              "See Extracted files]"))
                     else:
-                        xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score, smatch))
+                        xor_al_results.append('%-20s %-7s %-7s %-50s'
+                                              % (str(transform), offset, score, string_rep(smatch)))
 
         # Other possible encoded strings -- all sample types but code and executables
         if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
@@ -622,7 +634,7 @@ class FrankenStrings(ServiceBase):
                                            parent=res))
                 for k, l in sorted(file_plainstr_iocs.items()):
                     for i in sorted(l):
-                        ascii_res.add_line(f"Found {k.replace('_', ' ')} string: {i}")
+                        ascii_res.add_line(f"Found {k.replace('_', ' ')} string: {string_rep(i)}")
 
             # Report B64 Results
             if len(b64_al_results) > 0:
@@ -634,11 +646,11 @@ class FrankenStrings(ServiceBase):
                         b64index += 1
                         sub_b64_res = (ResultSection(f"Result {b64index}", parent=b64_res))
                         sub_b64_res.add_line(f'BASE64 TEXT SIZE: {b64l[0]}')
-                        sub_b64_res.add_line(f'BASE64 SAMPLE TEXT: {b64l[1].decode("utf-8")}[........]')
+                        sub_b64_res.add_line(f'BASE64 SAMPLE TEXT: {string_rep(b64l[1])}[........]')
                         sub_b64_res.add_line(f'DECODED SHA256: {b64k}')
                         subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
                                                       body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
-                        subb_b64_res.add_line(str(b64l[2]))
+                        subb_b64_res.add_line(string_rep(b64l[2]))
                         if b64l[2] not in ["[Possible file contents. See extracted files.]",
                                            "[IOCs discovered with other non-printable data. See extracted files.]"]:
                             b64_ascii_content.append(b64l[2])
@@ -690,12 +702,12 @@ class FrankenStrings(ServiceBase):
                         sub_uni_res = (ResultSection(f"Result {unires_index}", heuristic=Heuristic(4),
                                                      parent=unicode_emb_res))
                         sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
-                        sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {ui[1].decode("utf-8")}[........]')
+                        sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {string_rep(ui[1])}[........]')
                         sub_uni_res.add_line(f'DECODED SHA256: {uk}')
                         subb_uni_res = (ResultSection("DECODED ASCII DUMP:",
                                                       body_format=BODY_FORMAT.MEMORY_DUMP,
                                                       parent=sub_uni_res))
-                        subb_uni_res.add_line('{}'.format(ui[2].decode('utf-8')))
+                        subb_uni_res.add_line('{}'.format(string_rep(ui[2])))
                         # Look for IOCs of interest
                         hits = self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000, taglist=True)
                         if len(hits) > 0:

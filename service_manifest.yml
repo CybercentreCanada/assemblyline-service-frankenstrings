@@ -49,7 +49,7 @@ heuristics:
 
   - heur_id: 12
     name: Unicode_file_extracted
-    score: 50
+    score: 100
     filetype: '*'
     description: Long section of unicode-like data found and extracted in non-executable file.
 
@@ -96,6 +96,6 @@ heuristics:
     description: IOCs discovered by Crowbar module.
 
 docker_config:
-  image: cccs/assemblyline-service-frankenstrings:latest
+  image: testing/assemblyline-service-frankenstrings:latest
   cpu_cores: 1
   ram_mb: 512
