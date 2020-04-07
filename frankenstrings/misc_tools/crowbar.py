@@ -465,7 +465,6 @@ class CrowBar(object):
                     al_res = (ResultSection("CrowBar Plugin Detected Possible Obfuscated Script:"))
                     mres = (ResultSection("The following CrowBar modules made deofuscation attempts:",
                                           parent=al_res, heuristic=Heuristic(11)))
-                    mres.score = final_score
                     lcount = Counter([x[0] for x in layers_list])
                     for l, c in lcount.items():
                         mres.add_line(f"{l}, {c} time(s).")
