@@ -47,53 +47,59 @@ heuristics:
     filetype: '*'
     description: Unicode-like data found and decoded in non-exectuable file.
 
-  - heur_id: 12
+  - heur_id: 5
     name: Unicode_file_extracted
     score: 100
     filetype: '*'
     description: Long section of unicode-like data found and extracted in non-executable file.
 
-  - heur_id: 9
+  - heur_id: 6
     name: IOC_unicode_decoded
     score: 500
     filetype: '*'
     description: IOC(s) found in unicode encoded data in non-exectuable file.
 
-  - heur_id: 5
+  - heur_id: 7
     name: ASCIIhex_file_decoded
     score: 50
     filetype: '*'
     description: Possible ASCII hex encoded file decoded in non-executable file.
 
-  - heur_id: 6
+  - heur_id: 8
     name: ASCIIhex_strings_decoded
     score: 500
     filetype: '*'
     description: ASCII hex-like strings found and decoded in a non-document, non-executable file.
       -
-  - heur_id: 7
+  - heur_id: 9
     name: ASCIIhex_xor_string
     score: 500
     filetype: '*'
     description: Popssible ASCII hex-like string with additional xor encoding found.
 
-  - heur_id: 8
+  - heur_id: 10
     name: ASCIIhex_strings_decoded_doc
     score: 10
     filetype: 'document/'
     description: ASCII hex-like strings found and decoded in a document file
 
-  - heur_id: 10
+  - heur_id: 11
     name: code_file_deobfuscation
-    score: 10
+    score: 50
     filetype: 'code/'
     description: Partial code potentially deobfuscated by Crowbar module.
 
-  - heur_id: 11
+  - heur_id: 12
     name: IOCs found by Crowbar
     score: 10
     filetype: 'code/'
     description: IOCs discovered by Crowbar module.
+
+  - heur_id: 13
+    name: Crobar extracted file
+    score: 10
+    filetype: 'code/'
+    description: Deobfuscated code of interest extracted
 
 docker_config:
   image: testing/assemblyline-service-frankenstrings:latest

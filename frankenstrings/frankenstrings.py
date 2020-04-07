@@ -713,7 +713,7 @@ class FrankenStrings(ServiceBase):
                         # Look for IOCs of interest
                         hits = self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000, taglist=True)
                         if len(hits) > 0:
-                            sub_uni_res.set_heuristic(9)
+                            sub_uni_res.set_heuristic(6)
                             subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
                         else:
                             sub_uni_res.set_heuristic(4)
@@ -722,22 +722,22 @@ class FrankenStrings(ServiceBase):
                     for ures in unicode_al_dropped_results:
                         uhas = ures.split('_')[0]
                         uenc = ures.split('_')[1]
-                        unicode_emb_res.set_heuristic(12)
+                        unicode_emb_res.set_heuristic(5)
                         unicode_emb_res.add_line(f"Extracted over 50 bytes of possible embedded unicode with "
                                                  f"{uenc} encoding. SHA256: {uhas}. See extracted files.")
             # Report Ascii Hex Encoded Data:
             if asciihex_file_found:
                 asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
                                                   body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                  heuristic=Heuristic(5),
+                                                  heuristic=Heuristic(7),
                                                   parent=res))
                 asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
             if len(asciihex_dict) > 0:
                 # Different scores are used depending on whether the file is a document
-                heuristic = Heuristic(6)
+                heuristic = Heuristic(8)
                 if request.file_type.startswith("document"):
-                    heuristic = Heuristic(8)
+                    heuristic = Heuristic(10)
                 asciihex_res = (ResultSection("ASCII HEX DECODED IOC Strings:",
                                               body_format=BODY_FORMAT.MEMORY_DUMP,
                                               heuristic=heuristic,
@@ -749,7 +749,7 @@ class FrankenStrings(ServiceBase):
 
             if len(asciihex_bb_dict) > 0:
                 asciihex_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
-                                              heuristic=Heuristic(7), parent=res))
+                                              heuristic=Heuristic(9), parent=res))
                 xindex = 0
                 for k, l in sorted(asciihex_bb_dict.items()):
                     for i in l:
