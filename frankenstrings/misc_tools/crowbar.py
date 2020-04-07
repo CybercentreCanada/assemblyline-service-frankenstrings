@@ -464,7 +464,7 @@ class CrowBar(object):
                 if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0 or len(self.files_extracted) > 0:
                     al_res = (ResultSection("CrowBar Plugin Detected Possible Obfuscated Script:"))
                     mres = (ResultSection("The following CrowBar modules made deofuscation attempts:",
-                                          parent=al_res))
+                                          parent=al_res, heuristic=Heuristic(11)))
                     mres.score = final_score
                     lcount = Counter([x[0] for x in layers_list])
                     for l, c in lcount.items():
@@ -474,7 +474,7 @@ class CrowBar(object):
                         # Display any new IOC tags found
                         if len(pat_values) > 0 and len(diff_tags) > 0:
                             dres = (ResultSection("IOCs discovered by Crowbar module:",
-                                                  body_format=BODY_FORMAT.MEMORY_DUMP, heuristic=Heuristic(11),
+                                                  body_format=BODY_FORMAT.MEMORY_DUMP, heuristic=Heuristic(12),
                                                   parent=al_res))
                             for ty, val in pat_values.items():
                                 #if val == "":
@@ -496,7 +496,7 @@ class CrowBar(object):
 
                     if len(self.files_extracted) > 0:
                         al_res.add_subsection(ResultSection("Deobfuscated code of interest extracted in isolation. "
-                                                            "See extracted files.", heuristic=Heuristic(10)))
+                                                            "See extracted files.", heuristic=Heuristic(13)))
                 else:
                     clean = None
                     self.files_extracted = None
