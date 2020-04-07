@@ -75,7 +75,7 @@ heuristics:
     name: ASCIIhex_xor_string
     score: 500
     filetype: '*'
-    description: Popssible ASCII hex-like string with additional xor encoding found.
+    description: Possible ASCII hex-like string with additional xor encoding found.
 
   - heur_id: 10
     name: ASCIIhex_strings_decoded_doc
