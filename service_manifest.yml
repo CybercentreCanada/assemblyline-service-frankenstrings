@@ -102,6 +102,6 @@ heuristics:
     description: Deobfuscated code of interest extracted
 
 docker_config:
-  image: testing/assemblyline-service-frankenstrings:latest
+  image: ${REGISTRY}cccs/assemblyline-service-frankenstrings:latest
   cpu_cores: 1
   ram_mb: 512
