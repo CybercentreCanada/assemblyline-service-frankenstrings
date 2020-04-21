@@ -1,12 +1,13 @@
 import binascii
 import hashlib
+import magic
 import os
 import re
 import unicodedata
+
 from collections import Counter
 
-import magic
-
+from assemblyline.common.str_utils import safe_str
 from assemblyline_v4_service.common.result import ResultSection, BODY_FORMAT, Heuristic
 
 
@@ -39,7 +40,7 @@ class CrowBar(object):
     def charcode(self, text):
         output = None
         arrayofints = list(filter(lambda n: n < 256,
-                             map(int, re.findall('(\d+)', str(re.findall(b'\D{1,2}\d{2,3}', text))))))
+                                  map(int, re.findall(r'(\d+)', str(re.findall(rb'\D{1,2}\d{2,3}', text))))))
         if len(arrayofints) > 20:
             s1 = bytes(arrayofints)
             if self.printable_ratio(s1) > .75 and (float(len(s1)) / float(len(text))) > .10:
@@ -48,7 +49,8 @@ class CrowBar(object):
 
         return output
 
-    def charcode_hex(self, text):
+    @staticmethod
+    def charcode_hex(text):
         output = None
         s1 = text
         enc_str = [b'\\u', b'%u', b'\\x', b'0x']
@@ -99,9 +101,10 @@ class CrowBar(object):
     def chr_decode(text):
         output = text
         for fullc, c in re.findall(rb'(chr[bw]?\(([0-9]{1,3})\))', output, re.I):
+            # noinspection PyBroadException
             try:
                 output = re.sub(re.escape(fullc), '"{}"'.format(chr(int(c))).encode('utf-8'), output)
-            except:
+            except Exception:
                 continue
         if output == text:
             output = None
@@ -116,10 +119,10 @@ class CrowBar(object):
             s1 = text
             # Find all occurrences of string replace (JS)
             for strreplace in [o[0] for o in
-                               re.findall(b'(["\'][^"\']+["\']((\.replace\([^)]+\))+))', s1, flags=re.I)]:
+                               re.findall(rb'(["\'][^"\']+["\']((\.replace\([^)]+\))+))', s1, flags=re.I)]:
                 s2 = strreplace
                 # Extract all substitutions
-                for str1, str2 in re.findall(b'\.replace\([/\'"]([^,]+)[/\'\"]g?\s*,\s*[\'\"]([^)]*)[\'\"]\)',
+                for str1, str2 in re.findall(rb'\.replace\([/\'"]([^,]+)[/\'\"]g?\s*,\s*[\'\"]([^)]*)[\'\"]\)',
                                              s2, flags=re.I):
                     # Execute the substitution
                     s2 = s2.replace(str1, str2)
@@ -128,22 +131,24 @@ class CrowBar(object):
                 s1 = s1.replace(strreplace, s2)
 
             # Process global string replace
-            replacements = [q for q in re.findall(b'replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]', s1)]
+            replacements = [q for q in re.findall(rb'replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]', s1)]
             for str1, str2 in replacements:
                 s1 = s1.replace(str1, str2)
             # Process VB string replace
-            replacements = [q for q in re.findall(b'Replace\(\s*["\']?([^,"\']*)["\']?\s*,\s*["\']?([^,"\']*)["\']?\s*,\s*["\']?([^,"\']*)["\']?', s1)]
+            replacements = [q for q in re.findall(rb'Replace\(\s*["\']?([^,"\']*)["\']?\s*,\s*["\']?'
+                                                  rb'([^,"\']*)["\']?\s*,\s*["\']?([^,"\']*)["\']?', s1)]
             for str1, str2, str3 in replacements:
                 s1 = s1.replace(str1, str1.replace(str2, str3))
-            output = re.sub(b'\.replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]\)', b'', s1)
+            output = re.sub(rb'\.replace\(\s*/([^)]+)/g?, [\'"]([^\'"]*)[\'"]\)', b'', s1)
         return output
 
     def b64decode_str(self, text):
         output = None
-        b64str = re.findall(b'((?:[A-Za-z0-9+/]{3,}={0,2}(?:&#[x1][A0];){0,1}[\r]?[\n]?){6,})', text)
+        b64str = re.findall(b'((?:[A-Za-z0-9+/]{3,}={0,2}(?:&#[x1][A0];)?[\r]?[\n]?){6,})', text)
         s1 = text
         for bmatch in b64str:
-            s = bmatch.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'').replace(b'&#xA;', b'').replace(b'&#10;', b'')
+            s = bmatch.replace(b'\n',
+                               b'').replace(b'\r', b'').replace(b' ', b'').replace(b'&#xA;', b'').replace(b'&#10;', b'')
             uniq_char = set(s)
             if len(uniq_char) > 6:
                 if len(s) >= 16 and len(s) % 4 == 0:
@@ -168,7 +173,7 @@ class CrowBar(object):
                                     self.hashes.add(sha256hash)
                                     break
                         uniq_char = set(d)
-                        if len(uniq_char) > 6 and all(31 < c < 127 for c in d) and len(re.sub(b"\s", b"", d)) > 14:
+                        if len(uniq_char) > 6 and all(31 < c < 127 for c in d) and len(re.sub(rb"\s", b"", d)) > 14:
                             s1 = s1.replace(bmatch, d)
 
         if s1 != text:
@@ -196,23 +201,24 @@ class CrowBar(object):
 
     @staticmethod
     def array_of_strings(text):
+        # noinspection PyBroadException
         try:
             output = None
-            replacements = re.findall(b'var\s+([^\s=]+)\s*=\s*\[([^\]]+)\]\s*;', text)
+            replacements = re.findall(rb'var\s+([^\s=]+)\s*=\s*\[([^\]]+)\]\s*;', text)
             if len(replacements) > 0:
                 #    ,- Make sure we do not process these again
                 s1 = text
                 for varname, values in replacements:
-                    occurences = [int(x) for x in re.findall(varname + b'\s*\[(\d+)\]', s1)]
+                    occurences = [int(x) for x in re.findall(varname + rb'\s*\[(\d+)\]', s1)]
                     for i in occurences:
                         try:
-                            s1 = re.sub(varname + b'\s*\[(%d)\]' % i, values.split(b',')[i], s1)
+                            s1 = re.sub(varname + rb'\s*\[(%d)\]' % i, values.split(b',')[i], s1)
                         except IndexError:
                             # print '[' + array + '][' + pos + ']'
                             break
                 if s1 != text:
                     output = s1
-        except:
+        except Exception:
             output = None
         return output
 
@@ -220,7 +226,7 @@ class CrowBar(object):
     def concat_strings(text):
         output = None
         # Line continuation character in VB -- '_'
-        s1 = re.sub(b'[\'"][\s\n_]*?[+&][\s\n_]*[\'"]', b'', text)
+        s1 = re.sub(rb'[\'"][\s\n_]*?[+&][\s\n_]*[\'"]', b'', text)
         if s1 != text:
             output = s1
 
@@ -243,7 +249,7 @@ class CrowBar(object):
     def powershell_vars(text):
         output = None
         replacements_string = re.findall(rb'(\$(?:\w+|{[^\}]+\}))\s*=[^=]\s*[\"\']([^\"\']+)[\"\']', text)
-        replacements_func = re.findall(rb'(\$(?:\w+|{[^\}]+\}))\s*=\s*([^=\"\'\s\$]{3,50})[\s]', text)
+        replacements_func = re.findall(rb'(\$(?:\w+|{[^\}]+\}))\s*=\s*([^=\"\'\s$]{3,50})[\s]', text)
         if len(replacements_string) > 0 or len(replacements_func) > 0:
             #    ,- Make sure we do not process these again
             s1 = re.sub(rb'\$((?:\w+|{[^\}]+\}))\s*=', rb'\$--\1 =', text)
@@ -265,7 +271,37 @@ class CrowBar(object):
             output = None
         return output
 
-    def mswordmacro_vars(self, text):
+    # noinspection PyBroadException
+    @staticmethod
+    def msoffice_embedded_script_string(text):
+        try:
+            scripts = {}
+            output = text
+            # bad, prevent false var replacements like YG="86"
+            # Replace regular variables
+            replacements = re.findall(rb'^(\s*(\w+)\s*=\s*\w*\s*\+?\s(["\'])(.+)["\']\s*\+\s*vbCrLf\s*$)', output, re.M)
+            if len(replacements) > 0:
+                for full, vn, delim, value in replacements:
+                    scripts.setdefault(vn, [])
+                    scripts[vn].append(value.replace(delim + delim, delim))
+                    output = output.replace(full, b'<crowbar:msoffice_embedded_script_string_var_assignment>')
+
+            for script_var, script_lines in scripts.items():
+                new_script_name = b'new_script__' + script_var
+                output = re.sub(rb'(.+)\b' + script_var + rb'\b', b'\\1' + new_script_name, output)
+                output += b"\n\n\n' ---- script referenced by \"" + new_script_name + b"\" ----\n\n\n"
+                output += b"\n".join(script_lines)
+
+            if output == text:
+                output = None
+
+        except Exception:
+            output = None
+        return output
+
+    @staticmethod
+    def mswordmacro_vars(text):
+        # noinspection PyBroadException
         try:
             output = text
             # prevent false var replacements like YG="86"
@@ -296,14 +332,14 @@ class CrowBar(object):
                         # work according to plan, so just replace a few for now.
                         output = re.sub(rb'(\b' + re.escape(varname) +
                                         rb'(?!\s*(?:=|[+&]\s*' + re.escape(varname) + rb'))\b)',
-                                        b'"' + final_val + '"',
+                                        b'"' + final_val + b'"',
                                         output, count=5)
 
             # Remaining stacked strings
             replacements = re.findall(rb'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
                                       output, re.MULTILINE | re.DOTALL)
-            vars = set([x[1] for x in replacements])
-            for v in vars:
+            replacements_vars = set([x[1] for x in replacements])
+            for v in replacements_vars:
                 final_val = b""
                 for full, varname, varname_b, value in replacements:
                     if varname != v:
@@ -318,7 +354,7 @@ class CrowBar(object):
             if output == text:
                 output = None
 
-        except:
+        except Exception:
             output = None
         return output
 
@@ -367,12 +403,12 @@ class CrowBar(object):
 
     @staticmethod
     def clean_up_final_layer(text):
-        output = re.sub(rb'<crowbar:[^>]+>', b'', text)
-        output = re.sub(rb'\n\s*\n', b'', output)
+        output = re.sub(rb'\r', b'', text)
+        output = re.sub(rb'<crowbar:[^>]+>\n?', b'', output)
         return output
 
     # --- Main Module --------------------------------------------------------------------------------------------------
-    def hammertime(self, max_attempts, raw, before, patterns, wd):
+    def hammertime(self, max_attempts, raw, before, patterns, wd, deep_scan=False):
         """Iterate through different decoding mechanisms in attempt to extract embedded IOCs in file content.
 
         Args:
@@ -406,6 +442,7 @@ class CrowBar(object):
             ('Simple XOR function', self.simple_xor_function),
         ]
         second_pass = [
+            ('MSOffice Embedded script', self.msoffice_embedded_script_string),
             ('MSWord macro vars', self.mswordmacro_vars),
             ('Powershell vars', self.powershell_vars),
         ]
@@ -447,57 +484,60 @@ class CrowBar(object):
             idx += 1
 
         if len(layers_list) > 0:
-            final_score = len(layers_list) * 10
+            num_layers = len(layers_list)
+            heur_id = None
+            if num_layers < 5:
+                heur_id = 11
+            elif num_layers < 10:
+                heur_id = 12
+            elif num_layers < 50:
+                heur_id = 13
+            elif num_layers < 100:
+                heur_id = 14
+            elif num_layers >= 100:
+                heur_id = 15
             clean = self.clean_up_final_layer(layers_list[-1][1])
             if clean != raw:
-                after = set()
                 pat_values = patterns.ioc_match(clean, bogon_ip=True, just_network=False)
+                diff_tags = {}
+
                 for k, val in pat_values.items():
-                    #if val == "":
-                    #    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                    #    after.add(asc_asc)
-                    #else:
-                    for v in val:
-                        after.add(v)
-                diff_tags = after - before
-                # Add additional checks to see if the file should be extracted.
-                if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0 or len(self.files_extracted) > 0:
-                    al_res = (ResultSection("CrowBar Plugin Detected Possible Obfuscated Script:"))
-                    mres = (ResultSection("The following CrowBar modules made deofuscation attempts:",
-                                          parent=al_res, heuristic=Heuristic(11)))
-                    lcount = Counter([x[0] for x in layers_list])
-                    for l, c in lcount.items():
-                        mres.add_line(f"{l}, {c} time(s).")
+                    if val == "":
+                        asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
+                        if asc_asc not in before:
+                            diff_tags.setdefault(k, [])
+                            diff_tags[k].append(asc_asc)
+                    else:
+                        for v in val:
+                            if v not in before:
+                                diff_tags.setdefault(k, [])
+                                diff_tags[k].append(v)
 
-                    if (len(clean) > 1000 and final_score > 500) or len(diff_tags) > 0:
-                        # Display any new IOC tags found
-                        if len(pat_values) > 0 and len(diff_tags) > 0:
-                            dres = (ResultSection("IOCs discovered by Crowbar module:",
-                                                  body_format=BODY_FORMAT.MEMORY_DUMP, heuristic=Heuristic(12),
-                                                  parent=al_res))
-                            for ty, val in pat_values.items():
-                                #if val == "":
-                                #    asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                #    if asc_asc in diff_tags:
-                                #        dres.add_line(f"{ty.replace('_', ' ')} string: {asc_asc}")
-                                #        al_res.add_tag(ty, asc_asc)
-                                #else:
-                                for v in val:
-                                    if v in diff_tags:
-                                        dres.add_line(f"{ty.replace('_', ' ')} string: {v}")
-                                        al_res.add_tag(ty, v)
+                al_res = (ResultSection("CrowBar Plugin Detected Possible Obfuscated Script:"))
+                mres = (ResultSection("The following CrowBar modules made deofuscation attempts:",
+                                      parent=al_res))
+                if heur_id:
+                    mres.set_heuristic(heur_id)
 
-                        # Display final layer
-                        lres = (ResultSection("Final layer:", body_format=BODY_FORMAT.MEMORY_DUMP, parent=al_res))
+                lcount = Counter([x[0] for x in layers_list])
+                for l, c in lcount.items():
+                    mres.add_line(f"{l}, {c} time(s).")
 
-                        lres.add_line("First 500 bytes of file:")
-                        lres.add_line(clean[:500])
+                # Look for all IOCs in final layer
+                if len(diff_tags) > 0:
+                    ioc_new = ResultSection("New IOCs found after de-obfustcation", parent=al_res,
+                                            body_format=BODY_FORMAT.MEMORY_DUMP, heuristic=Heuristic(16))
+                    for ty, val in diff_tags.items():
+                        for v in val:
+                            ioc_new.add_line(f"Found {ty.upper().replace('.', ' ')}: {safe_str(v)}")
+                            ioc_new.add_tag(ty, v)
 
-                    if len(self.files_extracted) > 0:
-                        al_res.add_subsection(ResultSection("Deobfuscated code of interest extracted in isolation. "
-                                                            "See extracted files.", heuristic=Heuristic(13)))
-                else:
-                    clean = None
-                    self.files_extracted = None
+                # Display final layer
+                ResultSection(f"First 500 bytes of the final layer:", body=safe_str(clean[:500]),
+                              body_format=BODY_FORMAT.MEMORY_DUMP, parent=al_res)
+
+                if len(self.files_extracted) > 0:
+                    ResultSection("Deobfuscated code of interest extracted in isolation. See extracted files.",
+                                  heuristic=Heuristic(17), parent=al_res)
 
         return al_res, clean, self.files_extracted
