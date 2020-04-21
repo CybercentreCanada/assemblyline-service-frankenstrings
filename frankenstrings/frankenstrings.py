@@ -1,29 +1,20 @@
 import binascii
 import hashlib
+import magic
 import mmap
 import os
+import pefile
 import re
 
-import magic
-import pefile
-
 from assemblyline.common.net import is_valid_domain, is_valid_email
+from assemblyline.common.str_utils import safe_str
 from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
+
 from frankenstrings.flarefloss import strings
 from frankenstrings.misc_tools.crowbar import CrowBar
-
-
-def string_rep(b):
-    """Helper method for returning bytes as a string literal without the b'' of string interpolation"""
-    if type(b) is str:
-        return b
-    if type(b) is bytes:
-        return repr(b)[2:-1]
-    else:
-        return
 
 
 class FrankenStrings(ServiceBase):
@@ -75,8 +66,7 @@ class FrankenStrings(ServiceBase):
 
         """
 
-        if taglist:
-            tags = {}
+        tags = {}
 
         if check_length:
             ml = self.st_min_length
@@ -270,6 +260,7 @@ class FrankenStrings(ServiceBase):
         """
         results = {}
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
+            # noinspection PyBroadException
             try:
                 base64data = binascii.a2b_base64(b64_string)
                 sha256hash = hashlib.sha256(base64data).hexdigest()
@@ -341,6 +332,7 @@ class FrankenStrings(ServiceBase):
         tags = {}
         if len(data) % 2 != 0:
             data = data[:-1]
+        # noinspection PyBroadException
         try:
             binstr = binascii.unhexlify(data)
         except Exception:
@@ -393,12 +385,14 @@ class FrankenStrings(ServiceBase):
             True if PE extracted.
         """
         pe_extract = None
+        mm = None
         try:
             with open(temp_file, "rb") as f:
                 mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
             pedata = mm[offset:]
 
+            # noinspection PyBroadException
             try:
                 peinfo = pefile.PE(data=pedata)
                 lsize = 0
@@ -424,24 +418,23 @@ class FrankenStrings(ServiceBase):
                 request.add_extracted(pe_file_path, pe_file_name, msg)
 
         finally:
+            # noinspection PyBroadException
             try:
-                mm.close()
-                if pe_extract:
-                    return True
-                else:
-                    return False
-            except:
-                if pe_extract:
-                    return True
-                else:
-                    return False
+                if mm is not None:
+                    mm.close()
+            except Exception:
+                pass
+
+            if pe_extract:
+                return True
+            else:
+                return False
 
 # --- Execute ----------------------------------------------------------------------------------------------------------
 
     def execute(self, request):
         """ Main Module. See README for details."""
-        result = Result()
-        request.result = result
+        request.result = Result()
         patterns = PatternMatch()
         # For crowbar plugin
         self.before = set()
@@ -471,7 +464,6 @@ class FrankenStrings(ServiceBase):
             return
 
         # Generate section in results set
-        b64_al_results = []
         xresult = []
         xor_al_results = []
         unicode_al_results = {}
@@ -485,10 +477,6 @@ class FrankenStrings(ServiceBase):
         cb_filex = None
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
-        # Static strings -- all sample types
-        res = (ResultSection("FrankenStrings Detected Strings of Interest:",
-                             body_format=BODY_FORMAT.MEMORY_DUMP))
-
         file_data = request.file_contents
 
         # Find ASCII & Unicode IOC Strings
@@ -500,8 +488,17 @@ class FrankenStrings(ServiceBase):
             chkl = True
             svse = False
 
-        file_plainstr_iocs = self.ioc_to_tag(file_data, patterns, res, taglist=True, check_length=chkl,
-                                             strs_max_size=st_max_size, st_max_length=max_length, savetoset=svse)
+        ascii_res = (ResultSection("The following IOC were found in plain text in the file:",
+                                   body_format=BODY_FORMAT.MEMORY_DUMP,
+                                   parent=request.result))
+
+        file_plainstr_iocs = self.ioc_to_tag(request.file_contents, patterns, ascii_res, taglist=True,
+                                             check_length=chkl, strs_max_size=st_max_size,
+                                             st_max_length=max_length, savetoset=svse)
+
+        for k, l in sorted(file_plainstr_iocs.items()):
+            for i in sorted(l):
+                ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
 
         # Embedded executable -- all sample types
         # PE Strings
@@ -523,10 +520,11 @@ class FrankenStrings(ServiceBase):
         # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
         # Find Base64 encoded strings and files of interest
         if not self.sample_type.startswith('code'):
+            b64_al_results = []
             b64_matches = set()
             # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
             for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
-                                        b'(?:&#[x1][A0];){0,1}[\r]?[\n]?){2,})', file_data):
+                                        b'(?:&#[x1][A0];)?[\r]?[\n]?){2,})', file_data):
                 b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')\
                     .replace(b'&#xA;', b'').replace(b'&#10;', b'')
                 if b64_string in b64_matches:
@@ -534,7 +532,7 @@ class FrankenStrings(ServiceBase):
                 b64_matches.add(b64_string)
                 uniq_char = set(b64_string)
                 if len(uniq_char) > 6:
-                    b64result = self.b64(request, b64_string, patterns, res)
+                    b64result = self.b64(request, b64_string, patterns, request.result)
                     if len(b64result) > 0:
                         b64_al_results.append(b64result)
 
@@ -544,16 +542,49 @@ class FrankenStrings(ServiceBase):
                     b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')
                     uniq_char = set(b64_string)
                     if len(uniq_char) > 6:
-                        b64result = self.b64(request, b64_string, patterns, res)
+                        b64result = self.b64(request, b64_string, patterns, request.result)
                         if len(b64result) > 0:
                             b64_al_results.append(b64result)
+
+            # Report B64 Results
+            if len(b64_al_results) > 0:
+                b64_ascii_content = []
+                b64_res = (ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=request.result))
+                b64index = 0
+                for b64dict in b64_al_results:
+                    for b64k, b64l in b64dict.items():
+                        b64index += 1
+                        sub_b64_res = (ResultSection(f"Result {b64index}", parent=b64_res))
+                        sub_b64_res.add_line(f'BASE64 TEXT SIZE: {b64l[0]}')
+                        sub_b64_res.add_line(f'BASE64 SAMPLE TEXT: {safe_str(b64l[1])}[........]')
+                        sub_b64_res.add_line(f'DECODED SHA256: {b64k}')
+                        subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
+                                                      body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
+                        subb_b64_res.add_line(safe_str(b64l[2]))
+                        if b64l[2] not in ["[Possible file contents. See extracted files.]",
+                                           "[IOCs discovered with other non-printable data. See extracted files.]"]:
+                            b64_ascii_content.append(b64l[2])
+                # Write all non-extracted decoded b64 content to file
+                if len(b64_ascii_content) > 0:
+                    all_b64 = b"\n".join(b64_ascii_content)
+                    b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
+                    b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
+                    try:
+                        with open(b64_file_path, 'wb') as fh:
+                            fh.write(all_b64)
+                        request.add_extracted(b64_file_path, f"all_b64_{b64_all_sha256[:7]}.txt",
+                                              "all misc decoded b64 from sample")
+                    except Exception as e:
+                        self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
+
+
 
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
             if (len(request.file_contents) or 0) < bb_max_size:
                 if request.deep_scan:
                     # BBcrack level 2 gives an error
-                    #xresult = bbcrack(file_data, level=2)
-                    xresult = bbcrack(file_data, level=1)
+                    # xresult = bbcrack(file_data, level=2)
+                    xresult = bbcrack(file_data, level=2)
                 else:
                     xresult = bbcrack(file_data, level=1)
 
@@ -572,7 +603,7 @@ class FrankenStrings(ServiceBase):
                                                                              "See Extracted files]"))
                     else:
                         xor_al_results.append('%-20s %-7s %-7s %-50s'
-                                              % (str(transform), offset, score, string_rep(smatch)))
+                                              % (str(transform), offset, score, safe_str(smatch)))
 
         # Other possible encoded strings -- all sample types but code and executables
         if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
@@ -594,7 +625,7 @@ class FrankenStrings(ServiceBase):
                 for hex_match in re.findall(hex_pat, file_data):
                     hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
                     afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
-                                                                         patterns, res)
+                                                                         patterns, request.result)
                     if afile_found:
                         asciihex_file_found = True
                     if asciihex_results != b"":
@@ -629,73 +660,36 @@ class FrankenStrings(ServiceBase):
                 or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict)\
                 or cb_code_res:
 
-            # Report ASCII String Results
-            if len(file_plainstr_iocs) > 0:
-                ascii_res = (ResultSection("FLARE FLOSS Plain IOC Strings:",
-                                           body_format=BODY_FORMAT.MEMORY_DUMP,
-                                           parent=res))
-                for k, l in sorted(file_plainstr_iocs.items()):
-                    for i in sorted(l):
-                        ascii_res.add_line(f"Found {k.replace('_', ' ')} string: {string_rep(i)}")
 
-            # Report B64 Results
-            if len(b64_al_results) > 0:
-                b64_ascii_content = []
-                b64_res = (ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=res))
-                b64index = 0
-                for b64dict in b64_al_results:
-                    for b64k, b64l in b64dict.items():
-                        b64index += 1
-                        sub_b64_res = (ResultSection(f"Result {b64index}", parent=b64_res))
-                        sub_b64_res.add_line(f'BASE64 TEXT SIZE: {b64l[0]}')
-                        sub_b64_res.add_line(f'BASE64 SAMPLE TEXT: {string_rep(b64l[1])}[........]')
-                        sub_b64_res.add_line(f'DECODED SHA256: {b64k}')
-                        subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
-                                                      body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
-                        subb_b64_res.add_line(string_rep(b64l[2]))
-                        if b64l[2] not in ["[Possible file contents. See extracted files.]",
-                                           "[IOCs discovered with other non-printable data. See extracted files.]"]:
-                            b64_ascii_content.append(b64l[2])
-                # Write all non-extracted decoded b64 content to file
-                if len(b64_ascii_content) > 0:
-                    all_b64 = b"\n".join(b64_ascii_content)
-                    b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
-                    b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
-                    try:
-                        with open(b64_file_path, 'wb') as fh:
-                            fh.write(all_b64)
-                        request.add_extracted(b64_file_path, f"all_b64_{b64_all_sha256[:7]}.txt",
-                                              "all misc decoded b64 from sample")
-                    except Exception as e:
-                        self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
 
             # Report XOR embedded results
             # Result Graph:
             if len(xor_al_results) > 0:
                 x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
-                                       heuristic=Heuristic(2), parent=res))
+                                       heuristic=Heuristic(2), parent=request.result))
                 xformat_string = '%-20s %-7s %-7s %-50s'
                 xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
                 x_res.add_line(xformat_string % xcolumn_names)
                 x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
                 for xst in xor_al_results:
                     x_res.add_line(xst)
-            # Result Tags:
-            for transform, regex, offset, score, smatch in xresult:
-                if not regex.startswith("EXE_"):
-                    res.add_tag(regex, smatch)
-                    res.add_tag(regex, smatch)
+
+                # Result Tags:
+                for transform, regex, offset, score, smatch in xresult:
+                    if not regex.startswith("EXE_"):
+                        x_res.add_tag(regex, smatch)
+                        x_res.add_tag(regex, smatch)
 
             # Report Embedded PE
             if embedded_pe:
-                res.add_subsection(ResultSection("Embedded PE header discovered in sample. "
-                                                 "See extracted files.", heuristic=Heuristic(3)))
+                ResultSection("Embedded PE header discovered in sample. See extracted files.",
+                              heuristic=Heuristic(3), parent=request.result)
 
             # Report Unicode Encoded Data:
             if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
                 unicode_emb_res = (ResultSection("Found Unicode-Like Strings in Non-Executable:",
                                                  body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                 parent=res))
+                                                 parent=request.result))
 
                 if len(unicode_al_results) > 0:
                     unires_index = 0
@@ -704,14 +698,14 @@ class FrankenStrings(ServiceBase):
                         sub_uni_res = (ResultSection(f"Result {unires_index}", heuristic=Heuristic(4),
                                                      parent=unicode_emb_res))
                         sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
-                        sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {string_rep(ui[1])}[........]')
+                        sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {safe_str(ui[1])}[........]')
                         sub_uni_res.add_line(f'DECODED SHA256: {uk}')
                         subb_uni_res = (ResultSection("DECODED ASCII DUMP:",
                                                       body_format=BODY_FORMAT.MEMORY_DUMP,
                                                       parent=sub_uni_res))
-                        subb_uni_res.add_line('{}'.format(string_rep(ui[2])))
+                        subb_uni_res.add_line('{}'.format(safe_str(ui[2])))
                         # Look for IOCs of interest
-                        hits = self.ioc_to_tag(ui[2], patterns, res, st_max_length=1000, taglist=True)
+                        hits = self.ioc_to_tag(ui[2], patterns, request.result, st_max_length=1000, taglist=True)
                         if len(hits) > 0:
                             sub_uni_res.set_heuristic(6)
                             subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
@@ -730,7 +724,7 @@ class FrankenStrings(ServiceBase):
                 asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
                                                   body_format=BODY_FORMAT.MEMORY_DUMP,
                                                   heuristic=Heuristic(7),
-                                                  parent=res))
+                                                  parent=request.result))
                 asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
 
             if len(asciihex_dict) > 0:
@@ -741,15 +735,15 @@ class FrankenStrings(ServiceBase):
                 asciihex_res = (ResultSection("ASCII HEX DECODED IOC Strings:",
                                               body_format=BODY_FORMAT.MEMORY_DUMP,
                                               heuristic=heuristic,
-                                              parent=res))
+                                              parent=request.result))
                 for k, l in sorted(asciihex_dict.items()):
                     for i in l:
                         for ii in i:
                             asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {ii}")
 
             if len(asciihex_bb_dict) > 0:
-                asciihex_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
-                                              heuristic=Heuristic(9), parent=res))
+                asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
+                                              heuristic=Heuristic(9), parent=request.result))
                 xindex = 0
                 for k, l in sorted(asciihex_bb_dict.items()):
                     for i in l:
@@ -762,11 +756,11 @@ class FrankenStrings(ServiceBase):
                             asx_res.add_line(ii[0])
                             asx_res.add_line("Original ASCII HEX String:")
                             asx_res.add_line(kk)
-                            res.add_tag(k, ii[0])
+                            asciihex_bb_res.add_tag(k, ii[0])
 
             # Report Crowbar de-obfuscate results and add deob code to result
             if cb_code_res:
-                res.add_subsection(cb_code_res)
+                request.result.add_section(cb_code_res)
                 decodefn = f"{request.md5}_decoded"
                 decodefp = os.path.join(self.working_directory, decodefn)
                 with open(decodefp, 'wb') as dcf:
@@ -776,5 +770,3 @@ class FrankenStrings(ServiceBase):
                 for f in cb_filex:
                     request.add_extracted(f, os.path.basename(f),
                                           "Debofuscated file of interest extracted from sample")
-
-            result.add_section(res)
