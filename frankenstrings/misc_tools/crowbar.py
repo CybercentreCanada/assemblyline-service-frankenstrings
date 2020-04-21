@@ -27,6 +27,7 @@ class CrowBar(object):
         self.files_extracted = None
         self.wd = None
         self.hashes = None
+        self.logger = None
 
     # --- Support Modules ----------------------------------------------------------------------------------------------
 
@@ -199,8 +200,7 @@ class CrowBar(object):
                 output = s1
         return output
 
-    @staticmethod
-    def array_of_strings(text):
+    def array_of_strings(self, text):
         # noinspection PyBroadException
         try:
             output = None
@@ -218,7 +218,8 @@ class CrowBar(object):
                             break
                 if s1 != text:
                     output = s1
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Technique array_of_strings failed with error: {str(e)}")
             output = None
         return output
 
@@ -272,8 +273,7 @@ class CrowBar(object):
         return output
 
     # noinspection PyBroadException
-    @staticmethod
-    def msoffice_embedded_script_string(text):
+    def msoffice_embedded_script_string(self, text):
         try:
             scripts = {}
             output = text
@@ -295,12 +295,12 @@ class CrowBar(object):
             if output == text:
                 output = None
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Technique msoffice_embedded_script_string failed with error: {str(e)}")
             output = None
         return output
 
-    @staticmethod
-    def mswordmacro_vars(text):
+    def mswordmacro_vars(self, text):
         # noinspection PyBroadException
         try:
             output = text
@@ -310,6 +310,8 @@ class CrowBar(object):
                                       rb'\s*((?:["][^"]+["]|[\'][^\']+[\']|[0-9]*)))[\s\r]*$',
                                       output, re.MULTILINE | re.DOTALL)
             if len(replacements) > 0:
+                # If one variable is defined more then once take the second definition
+                replacements = [(v[0], k, v[1]) for k, v in {i[1]: (i[0], i[2]) for i in replacements}.items()]
                 for full, varname, value in replacements:
                     if len(re.findall(rb'\b' + varname + rb'\b', output)) == 1:
                         # If there is only one instance of these, it's probably noise.
@@ -320,11 +322,11 @@ class CrowBar(object):
                         # b = "he"
                         # b = b & "llo "
                         # b = b & "world!"
-                        stacked = re.findall(rb'^\s*((' + varname + rb')\s*=\s*('
-                                             + varname + rb')\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
+                        stacked = re.findall(rb'^\s*(' + varname + rb'\s*=\s*'
+                                             + varname + rb'\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
                                              output, re.MULTILINE | re.DOTALL)
                         if len(stacked) > 0:
-                            for sfull, varname, varname_b, val in stacked:
+                            for sfull, val in stacked:
                                 final_val += val.replace(b'"', b"")
                                 output = output.replace(sfull, b'<crowbar:mswordmacro_var_assignment>')
                         output = output.replace(full, b'<crowbar:mswordmacro_var_assignment>')
@@ -332,8 +334,11 @@ class CrowBar(object):
                         # work according to plan, so just replace a few for now.
                         output = re.sub(rb'(\b' + re.escape(varname) +
                                         rb'(?!\s*(?:=|[+&]\s*' + re.escape(varname) + rb'))\b)',
-                                        b'"' + final_val + b'"',
+                                        b'"' + final_val.replace(b"\\", b"\\\\") + b'"',
                                         output, count=5)
+                        # output = re.sub(rb'(.*[^\s].*)\b' + varname + rb'\b',
+                        #                 b'\\1"' + final_val.replace(b"\\", b"\\\\") + b'"',
+                        #                 output)
 
             # Remaining stacked strings
             replacements = re.findall(rb'^\s*((\w+)\s*=\s*(\w+)\s*[+&]\s*((?:["][^"]+["]|[\'][^\']+[\'])))[\s\r]*$',
@@ -348,13 +353,14 @@ class CrowBar(object):
                     output = output.replace(full, b'<crowbar:mswordmacro_var_assignment>')
                 output = re.sub(rb'(\b' + v +
                                 rb'(?!\s*(?:=|[+&]\s*' + v + rb'))\b)',
-                                b'"' + final_val + b'"',
+                                b'"' + final_val.replace(b"\\", b"\\\\") + b'"',
                                 output, count=5)
 
             if output == text:
                 output = None
 
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Technique mswordmacro_vars failed with error: {str(e)}")
             output = None
         return output
 
@@ -408,7 +414,7 @@ class CrowBar(object):
         return output
 
     # --- Main Module --------------------------------------------------------------------------------------------------
-    def hammertime(self, max_attempts, raw, before, patterns, wd, deep_scan=False):
+    def hammertime(self, max_attempts, raw, before, patterns, wd, logger):
         """Iterate through different decoding mechanisms in attempt to extract embedded IOCs in file content.
 
         Args:
@@ -426,14 +432,15 @@ class CrowBar(object):
         self.wd = wd
         self.files_extracted = set()
         self.hashes = set()
+        self.logger = logger
         al_res = None
         clean = None
         layers_list = []
         layer = raw
         techniques = [
+            ('MSOffice Embedded script', self.msoffice_embedded_script_string),
             ('CHR and CHRB decode', self.chr_decode),
             ('String replace', self.string_replace),
-            ('Concat strings', self.concat_strings),
             ('Powershell carets', self.powershell_carets),
             ('Array of strings', self.array_of_strings),
             ('Fake array vars', self.vars_of_fake_arrays),
@@ -442,7 +449,7 @@ class CrowBar(object):
             ('Simple XOR function', self.simple_xor_function),
         ]
         second_pass = [
-            ('MSOffice Embedded script', self.msoffice_embedded_script_string),
+            ('Concat strings', self.concat_strings),
             ('MSWord macro vars', self.mswordmacro_vars),
             ('Powershell vars', self.powershell_vars),
         ]
@@ -526,11 +533,19 @@ class CrowBar(object):
                 # Look for all IOCs in final layer
                 if len(diff_tags) > 0:
                     ioc_new = ResultSection("New IOCs found after de-obfustcation", parent=al_res,
-                                            body_format=BODY_FORMAT.MEMORY_DUMP, heuristic=Heuristic(16))
+                                            body_format=BODY_FORMAT.MEMORY_DUMP)
+                    has_network_heur = False
                     for ty, val in diff_tags.items():
                         for v in val:
+                            if "network" in ty:
+                                has_network_heur = True
                             ioc_new.add_line(f"Found {ty.upper().replace('.', ' ')}: {safe_str(v)}")
                             ioc_new.add_tag(ty, v)
+
+                    if has_network_heur:
+                        ioc_new.set_heuristic(17)
+                    else:
+                        ioc_new.set_heuristic(16)
 
                 # Display final layer
                 ResultSection(f"First 500 bytes of the final layer:", body=safe_str(clean[:500]),
@@ -538,6 +553,6 @@ class CrowBar(object):
 
                 if len(self.files_extracted) > 0:
                     ResultSection("Deobfuscated code of interest extracted in isolation. See extracted files.",
-                                  heuristic=Heuristic(17), parent=al_res)
+                                  heuristic=Heuristic(18), parent=al_res)
 
         return al_res, clean, self.files_extracted

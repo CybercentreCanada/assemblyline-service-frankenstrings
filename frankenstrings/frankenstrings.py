@@ -577,14 +577,12 @@ class FrankenStrings(ServiceBase):
                     except Exception as e:
                         self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
 
-
-
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
             if (len(request.file_contents) or 0) < bb_max_size:
                 if request.deep_scan:
                     # BBcrack level 2 gives an error
                     # xresult = bbcrack(file_data, level=2)
-                    xresult = bbcrack(file_data, level=2)
+                    xresult = bbcrack(file_data, level=1)
                 else:
                     xresult = bbcrack(file_data, level=1)
 
@@ -649,18 +647,15 @@ class FrankenStrings(ServiceBase):
             else:
                 max_attempts = 5
             cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.before, patterns,
-                                                                   self.working_directory)
+                                                                   self.working_directory, self.log)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
         if len(file_plainstr_iocs) > 0 \
-                or len(b64_al_results) > 0 \
                 or len(xor_al_results) > 0 \
                 or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0 \
                 or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict)\
                 or cb_code_res:
-
-
 
             # Report XOR embedded results
             # Result Graph:
@@ -743,13 +738,13 @@ class FrankenStrings(ServiceBase):
 
             if len(asciihex_bb_dict) > 0:
                 asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
-                                              heuristic=Heuristic(9), parent=request.result))
+                                                 heuristic=Heuristic(9), parent=request.result))
                 xindex = 0
                 for k, l in sorted(asciihex_bb_dict.items()):
                     for i in l:
                         for kk, ii in i.items():
                             xindex += 1
-                            asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_res))
+                            asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_bb_res))
                             asx_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string, masked with "
                                              f"transform {ii[1]}:")
                             asx_res.add_line("Decoded XOR string:")

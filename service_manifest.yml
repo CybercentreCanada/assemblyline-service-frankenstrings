@@ -112,8 +112,13 @@ heuristics:
     filetype: (code/.*|unknown)
     heur_id: 16
     name: De-obfuscated IOCs
+    score: 50
+  - description: Network IOCs where found only after de-obfuscation
+    filetype: (code/.*|unknown)
+    heur_id: 17
+    name: De-obfuscated Network IOCs
     score: 500
-  - heur_id: 17
+  - heur_id: 18
     name: Crobar extracted file
     score: 10
     filetype: 'code/'
