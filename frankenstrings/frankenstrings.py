@@ -580,9 +580,7 @@ class FrankenStrings(ServiceBase):
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
             if (len(request.file_contents) or 0) < bb_max_size:
                 if request.deep_scan:
-                    # BBcrack level 2 gives an error
-                    # xresult = bbcrack(file_data, level=2)
-                    xresult = bbcrack(file_data, level=1)
+                    xresult = bbcrack(file_data, level=2)
                 else:
                     xresult = bbcrack(file_data, level=1)
 
