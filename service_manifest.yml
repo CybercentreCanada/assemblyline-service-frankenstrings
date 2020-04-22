@@ -1,6 +1,6 @@
 name: FrankenStrings
 version: 1
-description: Suspicious String Monster.
+description: This service performs file and IOC extractions using pattern matching, simple encoding decoder and script deobfuscators.
 
 accepts: .*
 rejects: empty|metadata/.*

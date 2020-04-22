@@ -1,22 +1,4 @@
-# FrankenStrings v4 Static Service
-
-#### Service Details
-
-This service does the following:
-
-1. File Extraction:
-    * file types except code:
-        - Ascii-Hex extraction
-
-## v3 Licences and Capabilites
-
-#### Licences
-
-FIREEYE FLARE-FLOSS: See flarefloss/LICENSE.txt 
-
-BALBUZARD: BSD 2-Clause Licence, see top of balbuzard code files
-
-#### Service Details
+# FrankenStrings Service
 
 NOTE: This service does not require you to buy any licence and is preinstalled and working after a default installation.
 
@@ -25,76 +7,65 @@ NOTE: This service does not require you to buy any licence and is preinstalled a
 intentionally set at low sizes. Filters can be easily changed in the service configuration,
 based on the amount of traffic/hardware your AL instance is running.**
 
-- MAX_SIZE: Maximum size of submitted file for this service.
-- MAX_LENGTH: String length maximum. Used in basic ASCII and UNICODE modules.
-- ST_MAX_SIZE: String list maximum size. List produced by basic ASCII and
-UNICODE module results, and will determine if patterns.py will only evaluate network IOC patterns.
-- BB_MAX_SIZE: BBcrack maximum size of submitted file to run module.
-- FF_MAX_SIZE: Flare Floss  maximum size of submitted file to run encoded/stacked string modules.
-- FF_ENC_MIN_LENGTH/FF_STACK_MIN_LENGTH: Flare Floss minimum string size for encoded/stacked
-string modules to show in results.
+#### Service Configuration
 
-This service does the following:
+- max_size: Maximum size of submitted file for this service
+- max_length: String length maximum. Used in basic ASCII and UNICODE modules
+- st_max_size: String list maximum size. List produced by basic ASCII and UNICODE module results, and will determine if patterns.py will only evaluate network IOC patterns
+- bb_max_size: BBcrack maximum size of submitted file to run module
+
+#### Service Details
 
 1. String Extraction:
-    * executable/windows files:
-        - FireEye Flare-FLOSS static strings modules (unicode and ascii). Matches IOC's only (see patterns.py)
-        - FireEye Flare-FLOSS decoded strings modules
-        - FireEye Flare-FLOSS stacked strings modules
-    * other file types:
-        - FireEye Flare-FLOSS static strings modules (unicode and ascii). Matches IOC's only (see patterns.py)
-        - [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR transform modules. Matches specific IOCs only
-         (see patterns.py, bbcrack.py) 
-        - Base64Dump.py's string extract
-        
+    * FireEye Flare-FLOSS static strings modules (unicode and ascii). Matches IOC's only (see patterns.py)
+    * Balbuzard's bbcrack level 1 (*level 2 for deep scan*) XOR transform modules. Matches specific IOCs only (see patterns.py, bbcrack.py) 
+    * Base64Dump.py's string extract
         
 2. File Extraction:
     * executable/windows files:
-        - Balbuzard's bbcrack level 1 XOR transform modules. Searches for PE files only
-        - [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR modules. Searches for PE files only
+        - Balbuzard's bbcrack level 1 (*level 2 for deep scan*) XOR transform modules. Searches for PE files only
         - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)       
     * other file types (except code/*):
         - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)
         - Unicode, Hex, Ascii-Hex extraction modules (for possible shellcode)
-        - Balbuzard's bbcrack level 1 XOR transform modules. Searches for PE files only
-        - [DEEP SCAN ONLY] Balbuzard's bbcrack level 1 AND level 2 XOR modules. Searches for PE files only
+        - Balbuzard's bbcrack level 1 (*level 2 for deep scan*) XOR transform modules. Searches for PE files only
 
-3. Code/* File Type Evaluation:
-    * Attempts to de-obfuscate IOC values from code samples by iterating 5x (100x deep scan) through the following
-     modules in crowbar.py:
-        1. VBE Decode
-        2. Concat strings
-        3. MSWord macro vars
-        4. Powershell vars
-        5. String replace
-        6. Powershell carets
-        7. Array of strings
-        8. Fake array vars
-        9. Reverse strings
-        10. B64 Decode
-        11. Simple XOR function
-        12. Charcode
-        13. Charcode hex
+3. Attempts to de-obfuscate IOC values from code samples by iterating 5x (100x deep scan) through the following modules in crowbar.py:
+    - MSOffice Embedded Script
+    - CHR and CHRB Decode
+    - String Replace
+    - Powershell carets
+    - Array of Strings
+    - Fake array vars
+    - Reverse strings
+    - B64 Decode
+    - Simple XOR function
+    - Concat strings
+    - MSWord macro vars
+    - Powershell vars
+    - Charcode hex
+    - Charcode
+    - HTML Scripts Extraction
 
 #### Result Output
 1. Static Strings (ASCII, UNICODE, BASE64):
-    * Strings matching IOC patterns of interest [Result Text and Tag]
-    * Decoded BASE64. Extract content over 200 bytes, otherwise combine all decoded content and extract in single text file.  [Extracted File OR Result Text and Tag]
+    * Tag strings matching IOC patterns of interest
+    * Decoded BASE64. Extract content over 200 bytes, otherwise combine all decoded content and extract in single text file
 2. ASCII Hex Strings:
     * Content extraction of ascii hex data successfully decoded (any data over 500 bytes)
-    [Extracted File]
-    * IOC pattern matching for any successfully decoded data [Result Text and Tag]
-    * URI pattern matching after custom brute force xor module (see bbcrack.py for added module)
-    [Result Text and Tag]
-3. FF Decoded Strings:
-    * All strings [Result Text and Tag]
-    * Strings matching IOC patterns of interest [Tag]
-4. FF Stacked Strings:
-    * All strings, group by likeness (determined by fuzzywuzzy library) [Result Text]
-    * Strings matching IOC patterns of interest [Tag]
-5. BBCrack XOR Strings:
-    * All strings matching IOC patterns of interest [Result Text and Tag]
-    * Decoded XOR'd PE File [Extracted File]
-6. CrowBar Decoded Strings:
-    * All IOC strings discovered [Result Text and Tag]
-    * Decoded B64 content over 500 bytes [Extracted File] 
+    * Tag IOC pattern matching for any successfully decoded data
+    * Tag URI pattern matching after custom brute force xor module (see bbcrack.py for added module)
+3. BBCrack XOR Strings:
+    * Tag all strings matching IOC patterns of interest
+    * Extract decoded XOR'd PE File
+4. CrowBar Decoded Strings:
+    * Tag all IOC strings discovered after running the obfuscation decoders
+    * Extract decoded B64 content over 500 bytes
+    * Extract final decoded layer 
+
+#### Licences
+
+FIREEYE FLARE-FLOSS: See flarefloss/LICENSE.txt 
+
+BALBUZARD: BSD 2-Clause Licence, see top of balbuzard code files
+
