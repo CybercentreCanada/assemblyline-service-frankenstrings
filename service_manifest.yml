@@ -80,7 +80,7 @@ heuristics:
   - heur_id: 10
     name: ASCIIhex_strings_decoded_doc
     score: 10
-    filetype: 'document/'
+    filetype: 'document/.*'
     description: ASCII hex-like strings found and decoded in a document file
 
   - description: Only a few de-obfuscation attemp needed to deobfuscate the file
@@ -88,40 +88,47 @@ heuristics:
     heur_id: 11
     name: Simple obfuscation
     score: 10
+
   - description: The service attempted between 5 and 10 de-obfuscation attemps
-    filetype: (code/.*|unknown)
+    filetype: code/.*
     heur_id: 12
     name: Light obfuscation
     score: 50
+
   - description: The service attempted between 10 and 50 de-obfuscation attemps
-    filetype: (code/.*|unknown)
+    filetype: code/.*
     heur_id: 13
     name: Medium obfuscation
     score: 100
+
   - description: The service attempted between 50 and 100 de-obfuscation attemps
-    filetype: (code/.*|unknown)
+    filetype: code/.*
     heur_id: 14
     name: Very high obfuscation
     score: 500
+
   - description: The service attempted more than a 100 de-obfuscation attemps
-    filetype: (code/.*|unknown)
+    filetype: code/.*
     heur_id: 15
     name: Extreme obfuscation
     score: 1000
+
   - description: IOCs where found only after de-obfuscation
-    filetype: (code/.*|unknown)
+    filetype: code/.*
     heur_id: 16
     name: De-obfuscated IOCs
     score: 50
+
   - description: Network IOCs where found only after de-obfuscation
-    filetype: (code/.*|unknown)
+    filetype: code/.*
     heur_id: 17
     name: De-obfuscated Network IOCs
     score: 500
+
   - heur_id: 18
     name: Crobar extracted file
     score: 10
-    filetype: 'code/'
+    filetype: code/.*
     description: Deobfuscated code of interest extracted
 
 docker_config:
