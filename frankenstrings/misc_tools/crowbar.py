@@ -551,7 +551,7 @@ class CrowBar(object):
                                 diff_tags[k].append(v)
 
                 al_res = (ResultSection("CrowBar Plugin Detected Possible Obfuscated Script:"))
-                mres = (ResultSection("The following CrowBar modules made deofuscation attempts:",
+                mres = (ResultSection("De-obfuscation steps taken by Crowbar:",
                                       parent=al_res))
                 if heur_id:
                     mres.set_heuristic(heur_id)
