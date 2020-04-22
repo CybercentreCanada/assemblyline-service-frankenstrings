@@ -644,7 +644,8 @@ class FrankenStrings(ServiceBase):
                 max_attempts = 100
             else:
                 max_attempts = 5
-            cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.before, patterns,
+            cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.sample_type,
+                                                                   self.before, patterns,
                                                                    self.working_directory, self.log)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
