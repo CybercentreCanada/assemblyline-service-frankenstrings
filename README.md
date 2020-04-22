@@ -19,16 +19,12 @@ based on the amount of traffic/hardware your AL instance is running.**
 1. String Extraction:
     * FireEye Flare-FLOSS static strings modules (unicode and ascii). Matches IOC's only (see patterns.py)
     * Balbuzard's bbcrack level 1 (*level 2 for deep scan*) XOR transform modules. Matches specific IOCs only (see patterns.py, bbcrack.py) 
-    * Base64Dump.py's string extract
+    * Base64 string extract
         
 2. File Extraction:
-    * executable/windows files:
-        - Balbuzard's bbcrack level 1 (*level 2 for deep scan*) XOR transform modules. Searches for PE files only
-        - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)       
-    * other file types (except code/*):
-        - Base64Dump.py's B64 module search for file types of interest (see frankenstrings.py)
-        - Unicode, Hex, Ascii-Hex extraction modules (for possible shellcode)
-        - Balbuzard's bbcrack level 1 (*level 2 for deep scan*) XOR transform modules. Searches for PE files only
+    * Balbuzard's bbcrack level 1 (*level 2 for deep scan*) XOR transform modules. (Searches for PE files only)
+    * Base64 module search for file types of interest (see frankenstrings.py)
+    * Unicode, Hex, Ascii-Hex extraction modules (for possible shellcode)
 
 3. Attempts to de-obfuscate IOC values from code samples by iterating 5x (100x deep scan) through the following modules in crowbar.py:
     - MSOffice Embedded Script

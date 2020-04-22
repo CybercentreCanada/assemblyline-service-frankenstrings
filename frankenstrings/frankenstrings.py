@@ -123,7 +123,7 @@ class FrankenStrings(ServiceBase):
 
     @staticmethod
     def decode_bu(data, size):
-        """ Adjusted 'base64dump.py' by Didier Stevens@https://DidierStevens.com. Convert ascii to hex.
+        """ Convert ascii to hex.
 
         Args:
             data: Ascii string to be converted.
@@ -247,7 +247,7 @@ class FrankenStrings(ServiceBase):
 
     # Base64 Parse
     def b64(self, request, b64_string, patterns, res):
-        """Decode B64 data. Select code taken from bas64dump.py @ https://DidierStevens.com.
+        """Decode B64 data.
 
         Args:
             request: AL request object (for submitting extracted files to AL when needed).
