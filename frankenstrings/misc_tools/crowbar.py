@@ -5,6 +5,7 @@ import os
 import re
 import unicodedata
 
+from bs4 import BeautifulSoup
 from collections import Counter
 
 from assemblyline.common.str_utils import safe_str
@@ -57,10 +58,10 @@ class CrowBar(object):
         enc_str = [b'\\u', b'%u', b'\\x', b'0x']
 
         for encoding in enc_str:
-            char_len = [(16, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{16})+')),
-                        (8, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{8})+')),
-                        (4, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{4})+')),
-                        (2, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{2})+'))]
+            char_len = [(16, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{16}){2,}')),
+                        (8, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{8}){2,}')),
+                        (4, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{4}){2,}')),
+                        (2, re.compile(rb'(?:' + re.escape(encoding) + b'[A-Fa-f0-9]{2}){2,}'))]
 
             for r in char_len:
                 hexchars = set(re.findall(r[1], text))
@@ -173,9 +174,14 @@ class CrowBar(object):
                                     self.files_extracted.add(b64_file_path)
                                     self.hashes.add(sha256hash)
                                     break
-                        uniq_char = set(d)
-                        if len(uniq_char) > 6 and all(31 < c < 127 for c in d) and len(re.sub(rb"\s", b"", d)) > 14:
+
+                        if len(set(d)) > 6 and all(8 < c < 127 for c in d) and len(re.sub(rb"\s", b"", d)) > 14:
                             s1 = s1.replace(bmatch, d)
+                        else:
+                            # Test for ASCII seperated by \x00
+                            p1 = d.replace(b'\x00', b'')
+                            if len(set(p1)) > 6 and all(8 < c < 127 for c in p1) and len(re.sub(rb"\s", b"", p1)) > 14:
+                                s1 = s1.replace(bmatch, p1)
 
         if s1 != text:
             output = s1
@@ -212,7 +218,8 @@ class CrowBar(object):
                     occurences = [int(x) for x in re.findall(varname + rb'\s*\[(\d+)\]', s1)]
                     for i in occurences:
                         try:
-                            s1 = re.sub(varname + rb'\s*\[(%d)\]' % i, values.split(b',')[i], s1)
+                            s1 = re.sub(varname + rb'\s*\[(%d)\]' % i,
+                                        values.split(b',')[i].replace(b'\\', b'\\\\'), s1)
                         except IndexError:
                             # print '[' + array + '][' + pos + ']'
                             break
@@ -413,20 +420,32 @@ class CrowBar(object):
         output = re.sub(rb'<crowbar:[^>]+>\n?', b'', output)
         return output
 
+    # noinspection PyBroadException
+    def extract_htmlscript(self, text):
+        scripts = []
+        try:
+            for s in BeautifulSoup(text, 'lxml').find_all('script'):
+                if s.string is not None:
+                    scripts.append(str(s).encode('utf-8'))
+        except Exception as e:
+            self.logger.warning(f"Failure in extract_htmlscript function: {str(e)}")
+            scripts = None
+        return scripts
+
     # --- Main Module --------------------------------------------------------------------------------------------------
-    def hammertime(self, max_attempts, raw, before, patterns, wd, logger):
-        """Iterate through different decoding mechanisms in attempt to extract embedded IOCs in file content.
+    def hammertime(self, max_attempts, raw, file_type, before, patterns, wd, logger):
+        """
+        Iterate through different decoding mechanisms in attempt to extract embedded IOCs in file content.
 
-        Args:
-            max_attempts: Number of iterations data should undertake.
-            raw: Data to be examined.
-            before: List of IOCs in raw data.
-            patterns: FrankenStrings Patterns() object.
-            wd: Directory where temporary content should be stored.
+        :param max_attempts: Number of iterations data should undertake
+        :param raw: Data to be examined
+        :param file_type: Type of file being scanned
+        :param before: List of IOCs in raw data
+        :param patterns: FrankenStrings Patterns() object
+        :param wd: Directory where temporary content should be stored
+        :param logger: Log handler
 
-        Returns:
-            If new IOCs found: AL result object, final decoded data, list of file names of extracted content.
-            Else: None for all values.
+        :returns AL result object, final decoded data, list of file names of extracted content if IOCs found
         """
         self.max_attempts = max_attempts
         self.wd = wd
@@ -452,15 +471,26 @@ class CrowBar(object):
             ('Concat strings', self.concat_strings),
             ('MSWord macro vars', self.mswordmacro_vars),
             ('Powershell vars', self.powershell_vars),
+            ('Charcode hex', self.charcode_hex)
         ]
         final_pass = [
             ('Charcode', self.charcode),
-            ('Charcode hex', self.charcode_hex)
         ]
+
+        code_extracts = [
+            ('.*html.*', "HTML scripts extraction", self.extract_htmlscript)
+        ]
+
+        for pattern, name, func in code_extracts:
+            if re.match(re.compile(pattern), file_type):
+                extracted_parts = func(raw)
+                layer = b"\n".join(extracted_parts).strip()
+                layers_list.append((name, layer))
+                break
 
         idx = 0
         first_pass_len = len(techniques)
-        layers_count = 0
+        layers_count = len(layers_list)
         while True:
             if idx > self.max_attempts:
                 final_pass.extend(techniques)
