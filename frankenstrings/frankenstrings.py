@@ -14,7 +14,6 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
 
 from frankenstrings.flarefloss import strings
-from frankenstrings.misc_tools.crowbar import CrowBar
 
 
 class FrankenStrings(ServiceBase):
@@ -364,8 +363,10 @@ class FrankenStrings(ServiceBase):
             if len(xresult) > 0:
                 for transform, regex, match in xresult:
                     if regex.startswith('EXE_'):
+                        # noinspection PyTypeChecker
                         tags['file.string.blacklisted'] = {data: [match, transform]}
                     else:
+                        # noinspection PyTypeChecker
                         tags[regex] = {data: [match, transform]}
                     return filefound, tags
         return filefound, tags
@@ -379,6 +380,7 @@ class FrankenStrings(ServiceBase):
             temp_file: Sample file with possible embedded PE.
             offset: Offset of temp_file where PE file begins.
             fn: String appended to extracted PE file name.
+            msg: File extraction message
             fail_on_except: When False, if PEFile fails, extract from offset all the way to the end of the initial file.
 
         Returns:
@@ -472,9 +474,6 @@ class FrankenStrings(ServiceBase):
         asciihex_dict = {}
         asciihex_bb_dict = {}
         embedded_pe = False
-        cb_code_res = None
-        cb_decoded_data = None
-        cb_filex = None
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
         file_data = request.file_contents
@@ -637,24 +636,13 @@ class FrankenStrings(ServiceBase):
                                     asciihex_dict[ask] = []
                                 asciihex_dict[ask].append(asi)
 
-        # Static decoding of code files
-        if self.sample_type.startswith('code'):
-            cb = CrowBar()
-            if request.deep_scan:
-                max_attempts = 100
-            else:
-                max_attempts = 5
-            cb_code_res, cb_decoded_data, cb_filex = cb.hammertime(max_attempts, file_data, self.sample_type,
-                                                                   self.before, patterns,
-                                                                   self.working_directory, self.log)
 
 # --- Store Results ----------------------------------------------------------------------------------------------------
 
         if len(file_plainstr_iocs) > 0 \
                 or len(xor_al_results) > 0 \
                 or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0 \
-                or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict)\
-                or cb_code_res:
+                or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict):
 
             # Report XOR embedded results
             # Result Graph:
@@ -751,16 +739,3 @@ class FrankenStrings(ServiceBase):
                             asx_res.add_line("Original ASCII HEX String:")
                             asx_res.add_line(kk)
                             asciihex_bb_res.add_tag(k, ii[0])
-
-            # Report Crowbar de-obfuscate results and add deob code to result
-            if cb_code_res:
-                request.result.add_section(cb_code_res)
-                decodefn = f"{request.md5}_decoded"
-                decodefp = os.path.join(self.working_directory, decodefn)
-                with open(decodefp, 'wb') as dcf:
-                    dcf.write(cb_decoded_data)
-                    self.log.debug(f"Submitted dropped file for analysis: {decodefp}")
-                request.add_extracted(decodefp, decodefn, "Debofuscated sample")
-                for f in cb_filex:
-                    request.add_extracted(f, os.path.basename(f),
-                                          "Debofuscated file of interest extracted from sample")
