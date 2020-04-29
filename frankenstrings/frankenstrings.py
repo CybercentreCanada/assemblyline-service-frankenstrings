@@ -515,6 +515,10 @@ class FrankenStrings(ServiceBase):
                 embedded_pe = self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
                                            msg="PE header strings discovered in sample",
                                            fail_on_except=True)
+                if embedded_pe:
+                    ResultSection("Embedded PE header discovered in sample. See extracted files.",
+                                  heuristic=Heuristic(3), parent=request.result)
+
 
         # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
         # Find Base64 encoded strings and files of interest
@@ -599,6 +603,26 @@ class FrankenStrings(ServiceBase):
                     else:
                         xor_al_results.append('%-20s %-7s %-7s %-50s'
                                               % (str(transform), offset, score, safe_str(smatch)))
+                
+                # Report XOR embedded results
+                # Result Graph:
+                if len(xor_al_results) > 0:
+                    x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
+                                           heuristic=Heuristic(2), parent=request.result))
+                    xformat_string = '%-20s %-7s %-7s %-50s'
+                    xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
+                    x_res.add_line(xformat_string % xcolumn_names)
+                    x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
+                    for xst in xor_al_results:
+                        x_res.add_line(xst)
+
+                    # Result Tags:
+                    for transform, regex, offset, score, smatch in xresult:
+                        if not regex.startswith("EXE_"):
+                            x_res.add_tag(regex, smatch)
+                            x_res.add_tag(regex, smatch)
+
+
 
         # Other possible encoded strings -- all sample types but code and executables
         if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
@@ -613,59 +637,6 @@ class FrankenStrings(ServiceBase):
                     if len(unires) > 0:
                         for i in unires:
                             unicode_al_results[i[0]] = [i[1], i[2], i[3]]
-
-            # Go over again, looking for long ASCII-HEX character strings
-            if not self.sample_type.startswith('document/office'):
-                hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
-                for hex_match in re.findall(hex_pat, file_data):
-                    hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
-                    afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
-                                                                         patterns, request.result)
-                    if afile_found:
-                        asciihex_file_found = True
-                    if asciihex_results != b"":
-                        for ask, asi in asciihex_results.items():
-                            if ask.startswith('BB_'):
-                                # Add any xor'd content to its own result set
-                                ask = ask.split('_', 1)[1]
-                                if ask not in asciihex_bb_dict:
-                                    asciihex_bb_dict[ask] = []
-                                asciihex_bb_dict[ask].append(asi)
-                            else:
-                                if ask not in asciihex_dict:
-                                    asciihex_dict[ask] = []
-                                asciihex_dict[ask].append(asi)
-
-
-# --- Store Results ----------------------------------------------------------------------------------------------------
-
-        if len(file_plainstr_iocs) > 0 \
-                or len(xor_al_results) > 0 \
-                or len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0 \
-                or asciihex_file_found or len(asciihex_dict) > 0 or len(asciihex_bb_dict):
-
-            # Report XOR embedded results
-            # Result Graph:
-            if len(xor_al_results) > 0:
-                x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
-                                       heuristic=Heuristic(2), parent=request.result))
-                xformat_string = '%-20s %-7s %-7s %-50s'
-                xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
-                x_res.add_line(xformat_string % xcolumn_names)
-                x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
-                for xst in xor_al_results:
-                    x_res.add_line(xst)
-
-                # Result Tags:
-                for transform, regex, offset, score, smatch in xresult:
-                    if not regex.startswith("EXE_"):
-                        x_res.add_tag(regex, smatch)
-                        x_res.add_tag(regex, smatch)
-
-            # Report Embedded PE
-            if embedded_pe:
-                ResultSection("Embedded PE header discovered in sample. See extracted files.",
-                              heuristic=Heuristic(3), parent=request.result)
 
             # Report Unicode Encoded Data:
             if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
@@ -701,41 +672,66 @@ class FrankenStrings(ServiceBase):
                         unicode_emb_res.set_heuristic(5)
                         unicode_emb_res.add_line(f"Extracted over 50 bytes of possible embedded unicode with "
                                                  f"{uenc} encoding. SHA256: {uhas}. See extracted files.")
-            # Report Ascii Hex Encoded Data:
-            if asciihex_file_found:
-                asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
+
+
+            # Go over again, looking for long ASCII-HEX character strings
+            if not self.sample_type.startswith('document/office'):
+                hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
+                for hex_match in re.findall(hex_pat, file_data):
+                    hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
+                    afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
+                                                                         patterns, request.result)
+                    if afile_found:
+                        asciihex_file_found = True
+                    if asciihex_results != b"":
+                        for ask, asi in asciihex_results.items():
+                            if ask.startswith('BB_'):
+                                # Add any xor'd content to its own result set
+                                ask = ask.split('_', 1)[1]
+                                if ask not in asciihex_bb_dict:
+                                    asciihex_bb_dict[ask] = []
+                                asciihex_bb_dict[ask].append(asi)
+                            else:
+                                if ask not in asciihex_dict:
+                                    asciihex_dict[ask] = []
+                                asciihex_dict[ask].append(asi)
+                
+                # Report Ascii Hex Encoded Data:
+                if asciihex_file_found:
+                    asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
+                                                      body_format=BODY_FORMAT.MEMORY_DUMP,
+                                                      heuristic=Heuristic(7),
+                                                      parent=request.result))
+                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
+
+                if len(asciihex_dict) > 0:
+                    # Different scores are used depending on whether the file is a document
+                    heuristic = Heuristic(8)
+                    if request.file_type.startswith("document"):
+                        heuristic = Heuristic(10)
+                    asciihex_res = (ResultSection("ASCII HEX DECODED IOC Strings:",
                                                   body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                  heuristic=Heuristic(7),
+                                                  heuristic=heuristic,
                                                   parent=request.result))
-                asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
+                    for k, l in sorted(asciihex_dict.items()):
+                        for i in l:
+                            for ii in i:
+                                asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {ii}")
 
-            if len(asciihex_dict) > 0:
-                # Different scores are used depending on whether the file is a document
-                heuristic = Heuristic(8)
-                if request.file_type.startswith("document"):
-                    heuristic = Heuristic(10)
-                asciihex_res = (ResultSection("ASCII HEX DECODED IOC Strings:",
-                                              body_format=BODY_FORMAT.MEMORY_DUMP,
-                                              heuristic=heuristic,
-                                              parent=request.result))
-                for k, l in sorted(asciihex_dict.items()):
-                    for i in l:
-                        for ii in i:
-                            asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {ii}")
+                if len(asciihex_bb_dict) > 0:
+                    asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
+                                                     heuristic=Heuristic(9), parent=request.result))
+                    xindex = 0
+                    for k, l in sorted(asciihex_bb_dict.items()):
+                        for i in l:
+                            for kk, ii in i.items():
+                                xindex += 1
+                                asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_bb_res))
+                                asx_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string, masked with "
+                                                 f"transform {ii[1]}:")
+                                asx_res.add_line("Decoded XOR string:")
+                                asx_res.add_line(ii[0])
+                                asx_res.add_line("Original ASCII HEX String:")
+                                asx_res.add_line(kk)
+                                asciihex_bb_res.add_tag(k, ii[0])
 
-            if len(asciihex_bb_dict) > 0:
-                asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
-                                                 heuristic=Heuristic(9), parent=request.result))
-                xindex = 0
-                for k, l in sorted(asciihex_bb_dict.items()):
-                    for i in l:
-                        for kk, ii in i.items():
-                            xindex += 1
-                            asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_bb_res))
-                            asx_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string, masked with "
-                                             f"transform {ii[1]}:")
-                            asx_res.add_line("Decoded XOR string:")
-                            asx_res.add_line(ii[0])
-                            asx_res.add_line("Original ASCII HEX String:")
-                            asx_res.add_line(kk)
-                            asciihex_bb_res.add_tag(k, ii[0])
