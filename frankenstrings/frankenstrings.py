@@ -473,7 +473,6 @@ class FrankenStrings(ServiceBase):
         asciihex_file_found = False
         asciihex_dict = {}
         asciihex_bb_dict = {}
-        embedded_pe = False
 
 # --- Generate Results -------------------------------------------------------------------------------------------------
         file_data = request.file_contents
@@ -504,6 +503,7 @@ class FrankenStrings(ServiceBase):
         pat_exedos = rb'(?s)This program cannot be run in DOS mode'
         pat_exeheader = rb'(?s)MZ.{32,1024}PE\000\000.+'
 
+        embedded_pe = False
         for pos_exe in re.findall(pat_exeheader, file_data[1:]):
             if re.search(pat_exedos, pos_exe):
                 pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
@@ -512,12 +512,13 @@ class FrankenStrings(ServiceBase):
                 with open(temp_file, 'wb') as pedata:
                     pedata.write(pos_exe)
 
-                embedded_pe = self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
+                embedded_pe = embedded_pe or self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
                                            msg="PE header strings discovered in sample",
                                            fail_on_except=True)
-                if embedded_pe:
-                    ResultSection("Embedded PE header discovered in sample. See extracted files.",
-                                  heuristic=Heuristic(3), parent=request.result)
+        # Report embedded PEs if any are found
+        if embedded_pe:
+            ResultSection("Embedded PE header discovered in sample. See extracted files.",
+                          heuristic=Heuristic(3), parent=request.result)
 
 
         # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
