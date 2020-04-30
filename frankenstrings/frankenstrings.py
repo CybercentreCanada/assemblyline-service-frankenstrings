@@ -440,8 +440,8 @@ class FrankenStrings(ServiceBase):
         Finds ASCII & Unicode IOC Strings.
 
         Args:
-            request: the request given to frankenstrings
-            patterns: the patterns to search for
+            request: The request given to frankenstrings
+            patterns: The patterns to search for
         """
         # Find all patterns if the file is identified as code (for crowbar plugin)
         if self.sample_type.startswith('code'):
@@ -551,54 +551,54 @@ class FrankenStrings(ServiceBase):
                 except Exception as e:
                     self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
             return b64_res
-
         return None
 
-    def bbcrack_results(self, request, patterns, bb_max_size):
-        """ Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest"""
-        xresult = []
+    def bbcrack_results(self, request):
+        """
+        Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
+
+        Args:
+            request: The request that frankenstrings is handling
+
+        Returns:
+            The result section if one is created else None.
+
+        The section is added to the request.result in the method, so using the return value is optional
+        """
+        x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
+                               heuristic=Heuristic(2)))
+        if request.deep_scan:
+            xresult = bbcrack(request.file_contents, level=2)
+        else:
+            xresult = bbcrack(request.file_contents, level=1)
+        xformat_string = '%-20s %-7s %-7s %-50s'
         xor_al_results = []
-        if (len(request.file_contents) or 0) < bb_max_size:
-            if request.deep_scan:
-                xresult = bbcrack(request.file_contents, level=2)
+        xindex = 0
+        for transform, regex, offset, score, smatch in xresult:
+            if regex == 'EXE_HEAD':
+                xindex += 1
+                xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
+                with open(xtemp_file, 'wb') as xdata:
+                    xdata.write(smatch)
+                pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
+                                            msg="Extracted xor file during FrakenStrings analysis.")
+                if pe_extracted:
+                    xor_al_results.append(xformat_string % (str(transform), offset, score,
+                                                            "[PE Header Detected. "
+                                                            "See Extracted files]"))
             else:
-                xresult = bbcrack(request.file_contents, level=1)
-
-            xindex = 0
-            for transform, regex, offset, score, smatch in xresult:
-                if regex == 'EXE_HEAD':
-                    xindex += 1
-                    xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
-                    with open(xtemp_file, 'wb') as xdata:
-                        xdata.write(smatch)
-                    pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
-                                                msg="Extracted xor file during FrakenStrings analysis.")
-                    if pe_extracted:
-                        xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
-                                                                         "[PE Header Detected. "
-                                                                         "See Extracted files]"))
-                else:
-                    xor_al_results.append('%-20s %-7s %-7s %-50s'
-                                          % (str(transform), offset, score, safe_str(smatch)))
-
-            # Report XOR embedded results
-            # Result Graph:
-            if len(xor_al_results) > 0:
-                x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
-                                       heuristic=Heuristic(2), parent=request.result))
-                xformat_string = '%-20s %-7s %-7s %-50s'
-                xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
-                x_res.add_line(xformat_string % xcolumn_names)
-                x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
-                for xst in xor_al_results:
-                    x_res.add_line(xst)
-
-                # Result Tags:
-                for transform, regex, offset, score, smatch in xresult:
-                    if not regex.startswith("EXE_"):
-                        x_res.add_tag(regex, smatch)
-                        x_res.add_tag(regex, smatch)
-                return x_res
+                if not regex.startswith("EXE_"):
+                    x_res.add_tag(regex, smatch)
+                xor_al_results.append(xformat_string
+                                      % (str(transform), offset, score, safe_str(smatch)))
+        # Result Graph:
+        if len(xor_al_results) > 0:
+            xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
+            x_res.add_line(xformat_string % xcolumn_names)
+            x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
+            x_res.add_lines(xor_al_results)
+            request.result.add_section(x_res)
+            return x_res
         return None
 
     def unicode_results(self, request, patterns):
@@ -754,26 +754,21 @@ class FrankenStrings(ServiceBase):
 
         # Find ascii results
         self.ascii_results(request, patterns, max_length, st_max_size)
-
         # Embedded executables -- all file types
         self.embedded_pe_results(request)
 
         # Possible encoded strings -- all sample types except code/* (code is handled by crowbar service)
         if not self.sample_type.startswith('code'):
-
             # Find base64 encoded sections with possible space, newline characters and HTML line feeds (&#(XA|10);)
             self.base64_results(request, patterns)
-
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
-            self.bbcrack_results(request, patterns, bb_max_size)
-
+            if (len(request.file_contents) or 0) < bb_max_size:
+                self.bbcrack_results(request)
 
         # Other possible encoded strings -- all sample types but code and executables
         if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
             # Unicode/Hex Strings
             self.unicode_results(request, patterns)
-
             # Go over again, looking for long ASCII-HEX character strings
             if not self.sample_type.startswith('document/office'):
                 self.hex_results(request, patterns)
-
