@@ -432,6 +432,292 @@ class FrankenStrings(ServiceBase):
             else:
                 return False
 
+# --- Results methods ------------------------------------------------------------------------------------------------
+
+    def ascii_results(self, request, patterns, max_length, st_max_size):
+        """ 
+        Finds ASCII & Unicode IOC Strings.
+
+        Args:
+            request: the request given to frankenstrings
+            patterns: the patterns to search for
+        """
+        # Find all patterns if the file is identified as code (for crowbar plugin)
+        if self.sample_type.startswith('code'):
+            chkl = False
+            svse = True
+        else:
+            chkl = True
+            svse = False
+
+        ascii_res = (ResultSection("The following IOC were found in plain text in the file:",
+                                   body_format=BODY_FORMAT.MEMORY_DUMP,
+                                   parent=request.result))
+
+        file_plainstr_iocs = self.ioc_to_tag(request.file_contents, patterns, ascii_res, taglist=True,
+                                             check_length=chkl, strs_max_size=st_max_size,
+                                             st_max_length=max_length, savetoset=svse)
+
+        for k, l in sorted(file_plainstr_iocs.items()):
+            for i in sorted(l):
+                ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
+
+        return ascii_res
+
+
+    def embedded_pe_results(self, request):
+        """ Finds embedded executables in all sample types """
+        # PE Strings
+        pat_exedos = rb'(?s)This program cannot be run in DOS mode'
+        pat_exeheader = rb'(?s)MZ.{32,1024}PE\000\000.+'
+
+        embedded_pe = False
+        for pos_exe in re.findall(pat_exeheader, request.file_contents[1:]):
+            if re.search(pat_exedos, pos_exe):
+                pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
+                temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
+
+                with open(temp_file, 'wb') as pedata:
+                    pedata.write(pos_exe)
+
+                embedded_pe = embedded_pe or self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
+                                           msg="PE header strings discovered in sample",
+                                           fail_on_except=True)
+        # Report embedded PEs if any are found
+        if embedded_pe:
+            return ResultSection("Embedded PE header discovered in sample. See extracted files.",
+                                 heuristic=Heuristic(3), parent=request.result)
+        return None
+
+
+    def base64_results(self, request, patterns):
+        """ Finds Base64 encoded text """
+        b64_al_results = []
+        b64_matches = set()
+
+        # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
+        for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
+                                    b'(?:&#[x1][A0];)?[\r]?[\n]?){2,})', request.file_contents):
+            b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')\
+                .replace(b'&#xA;', b'').replace(b'&#10;', b'')
+            if b64_string in b64_matches:
+                continue
+            b64_matches.add(b64_string)
+            uniq_char = set(b64_string)
+            if len(uniq_char) > 6:
+                b64result = self.b64(request, b64_string, patterns, request.result)
+                if len(b64result) > 0:
+                    b64_al_results.append(b64result)
+
+        # UTF-16 strings
+        for ust in strings.extract_unicode_strings(request.file_contents, n=self.st_min_length):
+            for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
+                b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')
+                uniq_char = set(b64_string)
+                if len(uniq_char) > 6:
+                    b64result = self.b64(request, b64_string, patterns, request.result)
+                    if len(b64result) > 0:
+                        b64_al_results.append(b64result)
+
+        # Report B64 Results
+        if len(b64_al_results) > 0:
+            b64_ascii_content = []
+            b64_res = (ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=request.result))
+            b64index = 0
+            for b64dict in b64_al_results:
+                for b64k, b64l in b64dict.items():
+                    b64index += 1
+                    sub_b64_res = (ResultSection(f"Result {b64index}", parent=b64_res))
+                    sub_b64_res.add_line(f'BASE64 TEXT SIZE: {b64l[0]}')
+                    sub_b64_res.add_line(f'BASE64 SAMPLE TEXT: {safe_str(b64l[1])}[........]')
+                    sub_b64_res.add_line(f'DECODED SHA256: {b64k}')
+                    subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
+                                                  body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
+                    subb_b64_res.add_line(safe_str(b64l[2]))
+                    if b64l[2] not in ["[Possible file contents. See extracted files.]",
+                                       "[IOCs discovered with other non-printable data. See extracted files.]"]:
+                        b64_ascii_content.append(b64l[2])
+            # Write all non-extracted decoded b64 content to file
+            if len(b64_ascii_content) > 0:
+                all_b64 = b"\n".join(b64_ascii_content)
+                b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
+                b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
+                try:
+                    with open(b64_file_path, 'wb') as fh:
+                        fh.write(all_b64)
+                    request.add_extracted(b64_file_path, f"all_b64_{b64_all_sha256[:7]}.txt",
+                                          "all misc decoded b64 from sample")
+                except Exception as e:
+                    self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
+            return b64_res
+
+        return None
+
+    def bbcrack_results(self, request, patterns, bb_max_size):
+        """ Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest"""
+        xresult = []
+        xor_al_results = []
+        if (len(request.file_contents) or 0) < bb_max_size:
+            if request.deep_scan:
+                xresult = bbcrack(request.file_contents, level=2)
+            else:
+                xresult = bbcrack(request.file_contents, level=1)
+
+            xindex = 0
+            for transform, regex, offset, score, smatch in xresult:
+                if regex == 'EXE_HEAD':
+                    xindex += 1
+                    xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
+                    with open(xtemp_file, 'wb') as xdata:
+                        xdata.write(smatch)
+                    pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
+                                                msg="Extracted xor file during FrakenStrings analysis.")
+                    if pe_extracted:
+                        xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
+                                                                         "[PE Header Detected. "
+                                                                         "See Extracted files]"))
+                else:
+                    xor_al_results.append('%-20s %-7s %-7s %-50s'
+                                          % (str(transform), offset, score, safe_str(smatch)))
+            
+            # Report XOR embedded results
+            # Result Graph:
+            if len(xor_al_results) > 0:
+                x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
+                                       heuristic=Heuristic(2), parent=request.result))
+                xformat_string = '%-20s %-7s %-7s %-50s'
+                xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
+                x_res.add_line(xformat_string % xcolumn_names)
+                x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
+                for xst in xor_al_results:
+                    x_res.add_line(xst)
+
+                # Result Tags:
+                for transform, regex, offset, score, smatch in xresult:
+                    if not regex.startswith("EXE_"):
+                        x_res.add_tag(regex, smatch)
+                        x_res.add_tag(regex, smatch)
+                return x_res
+        return None
+
+    def unicode_results(self, request, patterns):
+        """ Finds unicode encoded strings """
+        unicode_al_results = {}
+        unicode_al_dropped_results = []
+        for hes in self.HEXENC_STRINGS:
+            hes_regex = re.compile(re.escape(hes) + b'[A-Fa-f0-9]{2}')
+            if re.search(hes_regex, request.file_contents) is not None:
+                uhash, unires = self.decode_encoded_udata(request, hes, request.file_contents)
+                if len(uhash) > 0:
+                    for usha in uhash:
+                        unicode_al_dropped_results.append('{0}_{1}' .format(usha, hes))
+                if len(unires) > 0:
+                    for i in unires:
+                        unicode_al_results[i[0]] = [i[1], i[2], i[3]]
+
+        # Report Unicode Encoded Data:
+        if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
+            unicode_emb_res = (ResultSection("Found Unicode-Like Strings in Non-Executable:",
+                                             body_format=BODY_FORMAT.MEMORY_DUMP,
+                                             parent=request.result))
+
+            if len(unicode_al_results) > 0:
+                unires_index = 0
+                for uk, ui in unicode_al_results.items():
+                    unires_index += 1
+                    sub_uni_res = (ResultSection(f"Result {unires_index}", heuristic=Heuristic(4),
+                                                 parent=unicode_emb_res))
+                    sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
+                    sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {safe_str(ui[1])}[........]')
+                    sub_uni_res.add_line(f'DECODED SHA256: {uk}')
+                    subb_uni_res = (ResultSection("DECODED ASCII DUMP:",
+                                                  body_format=BODY_FORMAT.MEMORY_DUMP,
+                                                  parent=sub_uni_res))
+                    subb_uni_res.add_line('{}'.format(safe_str(ui[2])))
+                    # Look for IOCs of interest
+                    hits = self.ioc_to_tag(ui[2], patterns, request.result, st_max_length=1000, taglist=True)
+                    if len(hits) > 0:
+                        sub_uni_res.set_heuristic(6)
+                        subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
+                    else:
+                        sub_uni_res.set_heuristic(4)
+
+            if len(unicode_al_dropped_results) > 0:
+                for ures in unicode_al_dropped_results:
+                    uhas = ures.split('_')[0]
+                    uenc = ures.split('_')[1]
+                    unicode_emb_res.set_heuristic(5)
+                    unicode_emb_res.add_line(f"Extracted over 50 bytes of possible embedded unicode with "
+                                             f"{uenc} encoding. SHA256: {uhas}. See extracted files.")
+            return unicode_emb_res
+        return None
+
+    def hex_results(self, request, patterns):
+        """ Finds long ascii hex strings """
+        asciihex_file_found = False
+        asciihex_dict = {}
+        asciihex_bb_dict = {}
+
+        hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
+        for hex_match in re.findall(hex_pat, request.file_contents):
+            hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
+            afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
+                                                                 patterns, request.result)
+            if afile_found:
+                asciihex_file_found = True
+            if asciihex_results != b"":
+                for ask, asi in asciihex_results.items():
+                    if ask.startswith('BB_'):
+                        # Add any xor'd content to its own result set
+                        ask = ask.split('_', 1)[1]
+                        if ask not in asciihex_bb_dict:
+                            asciihex_bb_dict[ask] = []
+                        asciihex_bb_dict[ask].append(asi)
+                    else:
+                        if ask not in asciihex_dict:
+                            asciihex_dict[ask] = []
+                        asciihex_dict[ask].append(asi)
+        
+        # Report Ascii Hex Encoded Data:
+        if asciihex_file_found:
+            asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
+                                              body_format=BODY_FORMAT.MEMORY_DUMP,
+                                              heuristic=Heuristic(7),
+                                              parent=request.result))
+            asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
+
+        if len(asciihex_dict) > 0:
+            # Different scores are used depending on whether the file is a document
+            heuristic = Heuristic(8)
+            if request.file_type.startswith("document"):
+                heuristic = Heuristic(10)
+            asciihex_res = (ResultSection("ASCII HEX DECODED IOC Strings:",
+                                          body_format=BODY_FORMAT.MEMORY_DUMP,
+                                          heuristic=heuristic,
+                                          parent=request.result))
+            for k, l in sorted(asciihex_dict.items()):
+                for i in l:
+                    for ii in i:
+                        asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {ii}")
+
+        if len(asciihex_bb_dict) > 0:
+            asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
+                                             heuristic=Heuristic(9), parent=request.result))
+            xindex = 0
+            for k, l in sorted(asciihex_bb_dict.items()):
+                for i in l:
+                    for kk, ii in i.items():
+                        xindex += 1
+                        asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_bb_res))
+                        asx_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string, masked with "
+                                         f"transform {ii[1]}:")
+                        asx_res.add_line("Decoded XOR string:")
+                        asx_res.add_line(ii[0])
+                        asx_res.add_line("Original ASCII HEX String:")
+                        asx_res.add_line(kk)
+                        asciihex_bb_res.add_tag(k, ii[0])
+
+
 # --- Execute ----------------------------------------------------------------------------------------------------------
 
     def execute(self, request):
@@ -465,274 +751,31 @@ class FrankenStrings(ServiceBase):
             # No analysis is done if the file is an archive or too large
             return
 
-        # Generate section in results set
-        xresult = []
-        xor_al_results = []
-        unicode_al_results = {}
-        unicode_al_dropped_results = []
-        asciihex_file_found = False
-        asciihex_dict = {}
-        asciihex_bb_dict = {}
-
 # --- Generate Results -------------------------------------------------------------------------------------------------
         file_data = request.file_contents
 
-        # Find ASCII & Unicode IOC Strings
-        # Find all patterns if the file is identified as code (for crowbar plugin)
-        if self.sample_type.startswith('code'):
-            chkl = False
-            svse = True
-        else:
-            chkl = True
-            svse = False
+        # Find ascii results
+        self.ascii_results(request, patterns, max_length, st_max_size)
 
-        ascii_res = (ResultSection("The following IOC were found in plain text in the file:",
-                                   body_format=BODY_FORMAT.MEMORY_DUMP,
-                                   parent=request.result))
-
-        file_plainstr_iocs = self.ioc_to_tag(request.file_contents, patterns, ascii_res, taglist=True,
-                                             check_length=chkl, strs_max_size=st_max_size,
-                                             st_max_length=max_length, savetoset=svse)
-
-        for k, l in sorted(file_plainstr_iocs.items()):
-            for i in sorted(l):
-                ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
-
-        # Embedded executable -- all sample types
-        # PE Strings
-        pat_exedos = rb'(?s)This program cannot be run in DOS mode'
-        pat_exeheader = rb'(?s)MZ.{32,1024}PE\000\000.+'
-
-        embedded_pe = False
-        for pos_exe in re.findall(pat_exeheader, file_data[1:]):
-            if re.search(pat_exedos, pos_exe):
-                pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
-                temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
-
-                with open(temp_file, 'wb') as pedata:
-                    pedata.write(pos_exe)
-
-                embedded_pe = embedded_pe or self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
-                                           msg="PE header strings discovered in sample",
-                                           fail_on_except=True)
-        # Report embedded PEs if any are found
-        if embedded_pe:
-            ResultSection("Embedded PE header discovered in sample. See extracted files.",
-                          heuristic=Heuristic(3), parent=request.result)
-
+        # Embedded executables -- all file types
+        self.embedded_pe_results(request)
 
         # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
-        # Find Base64 encoded strings and files of interest
         if not self.sample_type.startswith('code'):
-            b64_al_results = []
-            b64_matches = set()
-            # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
-            for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
-                                        b'(?:&#[x1][A0];)?[\r]?[\n]?){2,})', file_data):
-                b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')\
-                    .replace(b'&#xA;', b'').replace(b'&#10;', b'')
-                if b64_string in b64_matches:
-                    continue
-                b64_matches.add(b64_string)
-                uniq_char = set(b64_string)
-                if len(uniq_char) > 6:
-                    b64result = self.b64(request, b64_string, patterns, request.result)
-                    if len(b64result) > 0:
-                        b64_al_results.append(b64result)
 
-            # UTF-16 strings
-            for ust in strings.extract_unicode_strings(file_data, n=self.st_min_length):
-                for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
-                    b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')
-                    uniq_char = set(b64_string)
-                    if len(uniq_char) > 6:
-                        b64result = self.b64(request, b64_string, patterns, request.result)
-                        if len(b64result) > 0:
-                            b64_al_results.append(b64result)
-
-            # Report B64 Results
-            if len(b64_al_results) > 0:
-                b64_ascii_content = []
-                b64_res = (ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=request.result))
-                b64index = 0
-                for b64dict in b64_al_results:
-                    for b64k, b64l in b64dict.items():
-                        b64index += 1
-                        sub_b64_res = (ResultSection(f"Result {b64index}", parent=b64_res))
-                        sub_b64_res.add_line(f'BASE64 TEXT SIZE: {b64l[0]}')
-                        sub_b64_res.add_line(f'BASE64 SAMPLE TEXT: {safe_str(b64l[1])}[........]')
-                        sub_b64_res.add_line(f'DECODED SHA256: {b64k}')
-                        subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
-                                                      body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
-                        subb_b64_res.add_line(safe_str(b64l[2]))
-                        if b64l[2] not in ["[Possible file contents. See extracted files.]",
-                                           "[IOCs discovered with other non-printable data. See extracted files.]"]:
-                            b64_ascii_content.append(b64l[2])
-                # Write all non-extracted decoded b64 content to file
-                if len(b64_ascii_content) > 0:
-                    all_b64 = b"\n".join(b64_ascii_content)
-                    b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
-                    b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
-                    try:
-                        with open(b64_file_path, 'wb') as fh:
-                            fh.write(all_b64)
-                        request.add_extracted(b64_file_path, f"all_b64_{b64_all_sha256[:7]}.txt",
-                                              "all misc decoded b64 from sample")
-                    except Exception as e:
-                        self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
+            # Find base64 encoded sections with possible space, newline characters and HTML line feeds (&#(XA|10);)
+            self.base64_results(request, patterns)
 
             # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
-            if (len(request.file_contents) or 0) < bb_max_size:
-                if request.deep_scan:
-                    xresult = bbcrack(file_data, level=2)
-                else:
-                    xresult = bbcrack(file_data, level=1)
-
-                xindex = 0
-                for transform, regex, offset, score, smatch in xresult:
-                    if regex == 'EXE_HEAD':
-                        xindex += 1
-                        xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
-                        with open(xtemp_file, 'wb') as xdata:
-                            xdata.write(smatch)
-                        pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
-                                                    msg="Extracted xor file during FrakenStrings analysis.")
-                        if pe_extracted:
-                            xor_al_results.append('%-20s %-7s %-7s %-50s' % (str(transform), offset, score,
-                                                                             "[PE Header Detected. "
-                                                                             "See Extracted files]"))
-                    else:
-                        xor_al_results.append('%-20s %-7s %-7s %-50s'
-                                              % (str(transform), offset, score, safe_str(smatch)))
-                
-                # Report XOR embedded results
-                # Result Graph:
-                if len(xor_al_results) > 0:
-                    x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
-                                           heuristic=Heuristic(2), parent=request.result))
-                    xformat_string = '%-20s %-7s %-7s %-50s'
-                    xcolumn_names = ('Transform', 'Offset', 'Score', 'Decoded String')
-                    x_res.add_line(xformat_string % xcolumn_names)
-                    x_res.add_line(xformat_string % tuple(['-' * len(s) for s in xcolumn_names]))
-                    for xst in xor_al_results:
-                        x_res.add_line(xst)
-
-                    # Result Tags:
-                    for transform, regex, offset, score, smatch in xresult:
-                        if not regex.startswith("EXE_"):
-                            x_res.add_tag(regex, smatch)
-                            x_res.add_tag(regex, smatch)
-
+            self.bbcrack_results(request, patterns, bb_max_size)
 
 
         # Other possible encoded strings -- all sample types but code and executables
         if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
             # Unicode/Hex Strings
-            for hes in self.HEXENC_STRINGS:
-                hes_regex = re.compile(re.escape(hes) + b'[A-Fa-f0-9]{2}')
-                if re.search(hes_regex, file_data) is not None:
-                    uhash, unires = self.decode_encoded_udata(request, hes, file_data)
-                    if len(uhash) > 0:
-                        for usha in uhash:
-                            unicode_al_dropped_results.append('{0}_{1}' .format(usha, hes))
-                    if len(unires) > 0:
-                        for i in unires:
-                            unicode_al_results[i[0]] = [i[1], i[2], i[3]]
-
-            # Report Unicode Encoded Data:
-            if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
-                unicode_emb_res = (ResultSection("Found Unicode-Like Strings in Non-Executable:",
-                                                 body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                 parent=request.result))
-
-                if len(unicode_al_results) > 0:
-                    unires_index = 0
-                    for uk, ui in unicode_al_results.items():
-                        unires_index += 1
-                        sub_uni_res = (ResultSection(f"Result {unires_index}", heuristic=Heuristic(4),
-                                                     parent=unicode_emb_res))
-                        sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
-                        sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {safe_str(ui[1])}[........]')
-                        sub_uni_res.add_line(f'DECODED SHA256: {uk}')
-                        subb_uni_res = (ResultSection("DECODED ASCII DUMP:",
-                                                      body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                      parent=sub_uni_res))
-                        subb_uni_res.add_line('{}'.format(safe_str(ui[2])))
-                        # Look for IOCs of interest
-                        hits = self.ioc_to_tag(ui[2], patterns, request.result, st_max_length=1000, taglist=True)
-                        if len(hits) > 0:
-                            sub_uni_res.set_heuristic(6)
-                            subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
-                        else:
-                            sub_uni_res.set_heuristic(4)
-
-                if len(unicode_al_dropped_results) > 0:
-                    for ures in unicode_al_dropped_results:
-                        uhas = ures.split('_')[0]
-                        uenc = ures.split('_')[1]
-                        unicode_emb_res.set_heuristic(5)
-                        unicode_emb_res.add_line(f"Extracted over 50 bytes of possible embedded unicode with "
-                                                 f"{uenc} encoding. SHA256: {uhas}. See extracted files.")
-
+            self.unicode_results(request, patterns)
 
             # Go over again, looking for long ASCII-HEX character strings
             if not self.sample_type.startswith('document/office'):
-                hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
-                for hex_match in re.findall(hex_pat, file_data):
-                    hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
-                    afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
-                                                                         patterns, request.result)
-                    if afile_found:
-                        asciihex_file_found = True
-                    if asciihex_results != b"":
-                        for ask, asi in asciihex_results.items():
-                            if ask.startswith('BB_'):
-                                # Add any xor'd content to its own result set
-                                ask = ask.split('_', 1)[1]
-                                if ask not in asciihex_bb_dict:
-                                    asciihex_bb_dict[ask] = []
-                                asciihex_bb_dict[ask].append(asi)
-                            else:
-                                if ask not in asciihex_dict:
-                                    asciihex_dict[ask] = []
-                                asciihex_dict[ask].append(asi)
+                self.hex_results(request, patterns)
                 
-                # Report Ascii Hex Encoded Data:
-                if asciihex_file_found:
-                    asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
-                                                      body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                      heuristic=Heuristic(7),
-                                                      parent=request.result))
-                    asciihex_emb_res.add_line("Extracted possible ascii-hex object(s). See extracted files.")
-
-                if len(asciihex_dict) > 0:
-                    # Different scores are used depending on whether the file is a document
-                    heuristic = Heuristic(8)
-                    if request.file_type.startswith("document"):
-                        heuristic = Heuristic(10)
-                    asciihex_res = (ResultSection("ASCII HEX DECODED IOC Strings:",
-                                                  body_format=BODY_FORMAT.MEMORY_DUMP,
-                                                  heuristic=heuristic,
-                                                  parent=request.result))
-                    for k, l in sorted(asciihex_dict.items()):
-                        for i in l:
-                            for ii in i:
-                                asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {ii}")
-
-                if len(asciihex_bb_dict) > 0:
-                    asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
-                                                     heuristic=Heuristic(9), parent=request.result))
-                    xindex = 0
-                    for k, l in sorted(asciihex_bb_dict.items()):
-                        for i in l:
-                            for kk, ii in i.items():
-                                xindex += 1
-                                asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_bb_res))
-                                asx_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string, masked with "
-                                                 f"transform {ii[1]}:")
-                                asx_res.add_line("Decoded XOR string:")
-                                asx_res.add_line(ii[0])
-                                asx_res.add_line("Original ASCII HEX String:")
-                                asx_res.add_line(kk)
-                                asciihex_bb_res.add_tag(k, ii[0])
-
