@@ -1,10 +1,11 @@
 import binascii
 import hashlib
-import magic
 import mmap
 import os
-import pefile
 import re
+
+import magic
+import pefile
 
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.common.str_utils import safe_str
@@ -435,7 +436,7 @@ class FrankenStrings(ServiceBase):
 # --- Results methods ------------------------------------------------------------------------------------------------
 
     def ascii_results(self, request, patterns, max_length, st_max_size):
-        """ 
+        """
         Finds ASCII & Unicode IOC Strings.
 
         Args:
@@ -481,8 +482,8 @@ class FrankenStrings(ServiceBase):
                     pedata.write(pos_exe)
 
                 embedded_pe = embedded_pe or self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
-                                           msg="PE header strings discovered in sample",
-                                           fail_on_except=True)
+                                                          msg="PE header strings discovered in sample",
+                                                          fail_on_except=True)
         # Report embedded PEs if any are found
         if embedded_pe:
             return ResultSection("Embedded PE header discovered in sample. See extracted files.",
@@ -579,7 +580,7 @@ class FrankenStrings(ServiceBase):
                 else:
                     xor_al_results.append('%-20s %-7s %-7s %-50s'
                                           % (str(transform), offset, score, safe_str(smatch)))
-            
+
             # Report XOR embedded results
             # Result Graph:
             if len(xor_al_results) > 0:
@@ -677,7 +678,7 @@ class FrankenStrings(ServiceBase):
                         if ask not in asciihex_dict:
                             asciihex_dict[ask] = []
                         asciihex_dict[ask].append(asi)
-        
+
         # Report Ascii Hex Encoded Data:
         if asciihex_file_found:
             asciihex_emb_res = (ResultSection("Found Large Ascii Hex Strings in Non-Executable:",
@@ -751,16 +752,13 @@ class FrankenStrings(ServiceBase):
             # No analysis is done if the file is an archive or too large
             return
 
-# --- Generate Results -------------------------------------------------------------------------------------------------
-        file_data = request.file_contents
-
         # Find ascii results
         self.ascii_results(request, patterns, max_length, st_max_size)
 
         # Embedded executables -- all file types
         self.embedded_pe_results(request)
 
-        # Possible encoded strings -- all sample types except code/* (code will be handled by crowbar plugin)
+        # Possible encoded strings -- all sample types except code/* (code is handled by crowbar service)
         if not self.sample_type.startswith('code'):
 
             # Find base64 encoded sections with possible space, newline characters and HTML line feeds (&#(XA|10);)
@@ -778,4 +776,4 @@ class FrankenStrings(ServiceBase):
             # Go over again, looking for long ASCII-HEX character strings
             if not self.sample_type.startswith('document/office'):
                 self.hex_results(request, patterns)
-                
+
