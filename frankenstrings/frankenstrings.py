@@ -39,7 +39,6 @@ class FrankenStrings(ServiceBase):
         super(FrankenStrings, self).__init__(config)
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
-        self.before = None
         self.sample_type = None
 
     def start(self):
@@ -48,7 +47,7 @@ class FrankenStrings(ServiceBase):
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
     def ioc_to_tag(self, data, patterns, res, taglist=False, check_length=False, strs_max_size=0,
-                   st_max_length=300, savetoset=False):
+                   st_max_length=300):
         """Searches data for patterns and adds as AL tag to result output.
 
         Args:
@@ -59,7 +58,6 @@ class FrankenStrings(ServiceBase):
             check_length: True if length of string should be compared to st_max_length.
             strs_max_size: Maximum size of strings list. If greater then only network IOCs will be searched.
             st_max_length: Maximum length of a string from data that can be searched.
-            savetoset: When True tag value will be saved to self.before (for Crowbar module).
 
         Returns:
             If tag list has been requested, returns tag list as dictionary. Otherwise returns None.
@@ -104,8 +102,6 @@ class FrankenStrings(ServiceBase):
                             tags[ty] = set()
                         for v in val:
                             # For crowbar plugin
-                            if savetoset:
-                                self.before.add(v)
                             if ty == 'network.static.domain':
                                 if not is_valid_domain(v.decode('utf-8')):
                                     continue
@@ -446,13 +442,8 @@ class FrankenStrings(ServiceBase):
         Returns:
             The created result section (with request.result as its parent)
         """
-        # Find all patterns if the file is identified as code (for crowbar plugin)
-        if self.sample_type.startswith('code'):
-            chkl = False
-            svse = True
-        else:
-            chkl = True
-            svse = False
+        # Check the maximum length except for code files
+        chkl = not self.sample_type.startswith('code'):
 
         ascii_res = (ResultSection("The following IOC were found in plain text in the file:",
                                    body_format=BODY_FORMAT.MEMORY_DUMP,
@@ -460,7 +451,7 @@ class FrankenStrings(ServiceBase):
 
         file_plainstr_iocs = self.ioc_to_tag(request.file_contents, patterns, ascii_res, taglist=True,
                                              check_length=chkl, strs_max_size=st_max_size,
-                                             st_max_length=max_length, savetoset=svse)
+                                             st_max_length=max_length)
 
         for k, l in sorted(file_plainstr_iocs.items()):
             for i in sorted(l):
@@ -759,8 +750,6 @@ class FrankenStrings(ServiceBase):
         """ Main Module. See README for details."""
         request.result = Result()
         patterns = PatternMatch()
-        # For crowbar plugin
-        self.before = set()
         self.sample_type = request.file_type
         # Filters for submission modes. Listed in order of use.
         if request.deep_scan:
