@@ -437,11 +437,14 @@ class FrankenStrings(ServiceBase):
 
     def ascii_results(self, request, patterns, max_length, st_max_size):
         """
-        Finds ASCII & Unicode IOC Strings.
+        Finds and reports ASCII & Unicode IOC Strings.
 
         Args:
-            request: The request given to frankenstrings
-            patterns: The patterns to search for
+            request: AL request object with result section
+            patterns: PatternMatch object
+
+        Returns:
+            The created result section (with request.result as its parent)
         """
         # Find all patterns if the file is identified as code (for crowbar plugin)
         if self.sample_type.startswith('code'):
@@ -467,7 +470,16 @@ class FrankenStrings(ServiceBase):
 
 
     def embedded_pe_results(self, request):
-        """ Finds embedded executables in all sample types """
+        """ 
+        Finds, extracts and reports embedded executables
+        
+        Args:
+            request: AL request object with result section
+            patterns: PatternMatch object
+
+        Returns:
+            The result section (with request.result as its parent) if one is created
+        """
         # PE Strings
         pat_exedos = rb'(?s)This program cannot be run in DOS mode'
         pat_exeheader = rb'(?s)MZ.{32,1024}PE\000\000.+'
@@ -492,7 +504,16 @@ class FrankenStrings(ServiceBase):
 
 
     def base64_results(self, request, patterns):
-        """ Finds Base64 encoded text """
+        """
+        Finds and reports Base64 encoded text
+        
+        Args:
+            request: AL request object with result section
+            patterns: PatternMatch object
+        
+        Returns:
+            The result section (with request.result as its parent) if one is created
+        """
         b64_al_results = []
         b64_matches = set()
 
@@ -558,12 +579,10 @@ class FrankenStrings(ServiceBase):
         Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
 
         Args:
-            request: The request that frankenstrings is handling
+            request: AL request object with result section
 
         Returns:
-            The result section if one is created else None.
-
-        The section is added to the request.result in the method, so using the return value is optional
+            The result section (with request.result as its parent) if one is created
         """
         x_res = (ResultSection("BBCrack XOR'd Strings:", body_format=BODY_FORMAT.MEMORY_DUMP,
                                heuristic=Heuristic(2)))
@@ -602,7 +621,16 @@ class FrankenStrings(ServiceBase):
         return None
 
     def unicode_results(self, request, patterns):
-        """ Finds unicode encoded strings """
+        """
+        Finds and report unicode encoded strings
+        
+        Args:
+            request: AL request object with result section
+            patterns: PatternMatch object
+
+        Returns:
+            The result section (with request.result as its parent) if one is created
+        """
         unicode_al_results = {}
         unicode_al_dropped_results = []
         for hes in self.HEXENC_STRINGS:
@@ -654,7 +682,13 @@ class FrankenStrings(ServiceBase):
         return None
 
     def hex_results(self, request, patterns):
-        """ Finds long ascii hex strings """
+        """ 
+        Finds and reports long ascii hex strings
+        
+        Args:
+            request: AL request object with result section
+            patterns: PatternMatch object
+        """
         asciihex_file_found = False
         asciihex_dict = {}
         asciihex_bb_dict = {}
@@ -752,22 +786,17 @@ class FrankenStrings(ServiceBase):
             # No analysis is done if the file is an archive or too large
             return
 
-        # Find ascii results
         self.ascii_results(request, patterns, max_length, st_max_size)
-        # Embedded executables -- all file types
         self.embedded_pe_results(request)
 
-        # Possible encoded strings -- all sample types except code/* (code is handled by crowbar service)
+        # Possible encoded strings -- all sample types except code/* (code is handled by deobfuscripter service)
         if not self.sample_type.startswith('code'):
-            # Find base64 encoded sections with possible space, newline characters and HTML line feeds (&#(XA|10);)
             self.base64_results(request, patterns)
-            # Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
             if (len(request.file_contents) or 0) < bb_max_size:
                 self.bbcrack_results(request)
 
         # Other possible encoded strings -- all sample types but code and executables
         if not self.sample_type.split('/', 1)[0] in ['executable', 'code']:
-            # Unicode/Hex Strings
             self.unicode_results(request, patterns)
             # Go over again, looking for long ASCII-HEX character strings
             if not self.sample_type.startswith('document/office'):
