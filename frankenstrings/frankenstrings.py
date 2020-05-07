@@ -677,7 +677,7 @@ class FrankenStrings(ServiceBase):
                     unires_index = 0
                     for uk, ui in unicode_al_results.items():
                         unires_index += 1
-                        sub_uni_res = (ResultSection(f"Result {unires_index}", heuristic=Heuristic(4),
+                        sub_uni_res = (ResultSection(f"Result {unires_index}",
                                                      parent=unicode_emb_res))
                         sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
                         sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {safe_str(ui[1])}[........]')
