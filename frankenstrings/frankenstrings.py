@@ -276,7 +276,7 @@ class FrankenStrings(ServiceBase):
                                                   "Extracted b64 file during FrankenStrings analysis")
                             results[sha256hash] = [len(b64_string), b64_string[0:50],
                                                    "[Possible file contents. See extracted files.]", ""]
-                            return results
+                            return results, pat
 
                 # See if any IOCs in decoded data
                 pat = self.ioc_to_tag(base64data, patterns, taglist=True)
