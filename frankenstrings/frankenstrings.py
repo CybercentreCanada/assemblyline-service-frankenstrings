@@ -46,7 +46,7 @@ class FrankenStrings(ServiceBase):
 
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
-    def ioc_to_tag(self, data, patterns, res, taglist=False, check_length=False, strs_max_size=0,
+    def ioc_to_tag(self, data, patterns, res=None, taglist=False, check_length=False, strs_max_size=0,
                    st_max_length=300):
         """Searches data for patterns and adds as AL tag to result output.
 
@@ -101,7 +101,6 @@ class FrankenStrings(ServiceBase):
                         if taglist and ty not in tags:
                             tags[ty] = set()
                         for v in val:
-                            # For crowbar plugin
                             if ty == 'network.static.domain':
                                 if not is_valid_domain(v.decode('utf-8')):
                                     continue
@@ -109,9 +108,10 @@ class FrankenStrings(ServiceBase):
                                 if not is_valid_email(v.decode('utf-8')):
                                     continue
                             if len(v) < 1001:
-                                res.add_tag(ty, v)
+                                if res is not None:
+                                    res.add_tag(ty, safe_str(v))
                                 if taglist:
-                                    tags[ty].add(v)
+                                    tags[ty].add(safe_str(v))
         if taglist:
             return tags
         else:
@@ -228,7 +228,7 @@ class FrankenStrings(ServiceBase):
                 if len(uniq_char) > 20:
                     sha256hash = hashlib.sha256(decoded[0]).hexdigest()
                     shalist.append(sha256hash)
-                    udata_file_name = f"{sha256hash[0:10]}_enchex_{encoding}_decoded"
+                    udata_file_name = f"{sha256hash[0:10]}_enchex_{safe_str(encoding)}_decoded"
                     udata_file_path = os.path.join(self.working_directory, udata_file_name)
                     with open(udata_file_path, 'wb') as unibu_file:
                         unibu_file.write(decoded[0])
@@ -242,19 +242,19 @@ class FrankenStrings(ServiceBase):
         return shalist, decoded_res
 
     # Base64 Parse
-    def b64(self, request, b64_string, patterns, res):
+    def b64(self, request, b64_string, patterns):
         """Decode B64 data.
 
         Args:
             request: AL request object (for submitting extracted files to AL when needed).
             b64_string: Possible base64 string.
             patterns: FrankenStrings Patterns() object.
-            res: AL result object.
 
         Returns:
             List of result information.
         """
         results = {}
+        pat = {}
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
             # noinspection PyBroadException
             try:
@@ -277,10 +277,10 @@ class FrankenStrings(ServiceBase):
                                                   "Extracted b64 file during FrankenStrings analysis")
                             results[sha256hash] = [len(b64_string), b64_string[0:50],
                                                    "[Possible file contents. See extracted files.]", ""]
-                            return results
+                            return results, pat
 
                 # See if any IOCs in decoded data
-                pat = self.ioc_to_tag(base64data, patterns, res, taglist=True)
+                pat = self.ioc_to_tag(base64data, patterns, taglist=True)
                 # Filter printable characters then put in results
                 asc_b64 = bytes(i for i in base64data if 31 < i < 127)
                 if len(asc_b64) > 0:
@@ -308,10 +308,10 @@ class FrankenStrings(ServiceBase):
                                            "See extracted files.]", ""]
 
             except Exception:
-                return results
-        return results
+                return results, pat
+        return results, pat
 
-    def unhexlify_ascii(self, request, data, tag, patterns, res):
+    def unhexlify_ascii(self, request, data, tag, patterns):
         """Plain ascii hex conversion.
 
         Args:
@@ -319,7 +319,6 @@ class FrankenStrings(ServiceBase):
             data: Data to examine.
             tag: AL request.tag (file type string).
             patterns: Frankenstrings Patterns() object.
-            res: AL result object.
 
         Returns:
             List of result information.
@@ -351,7 +350,7 @@ class FrankenStrings(ServiceBase):
                                   "Extracted ascii-hex file during FrankenStrings analysis")
             return filefound, tags
         # Else look for patterns
-        tags = self.ioc_to_tag(binstr, patterns, res, taglist=True, st_max_length=1000)
+        tags = self.ioc_to_tag(binstr, patterns, taglist=True, st_max_length=1000)
         if len(tags) > 0:
             return filefound, tags
         # Else look for small XOR encoded strings in code files
@@ -446,16 +445,17 @@ class FrankenStrings(ServiceBase):
         chkl = not self.sample_type.startswith('code'):
 
         ascii_res = (ResultSection("The following IOC were found in plain text in the file:",
-                                   body_format=BODY_FORMAT.MEMORY_DUMP,
-                                   parent=request.result))
+                                   body_format=BODY_FORMAT.MEMORY_DUMP))
 
         file_plainstr_iocs = self.ioc_to_tag(request.file_contents, patterns, ascii_res, taglist=True,
                                              check_length=chkl, strs_max_size=st_max_size,
                                              st_max_length=max_length)
 
-        for k, l in sorted(file_plainstr_iocs.items()):
-            for i in sorted(l):
-                ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
+        if file_plainstr_iocs:
+            request.result.add_section(ascii_res)
+            for k, l in sorted(file_plainstr_iocs.items()):
+                for i in sorted(l):
+                    ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
 
         return ascii_res
 
@@ -518,7 +518,7 @@ class FrankenStrings(ServiceBase):
             b64_matches.add(b64_string)
             uniq_char = set(b64_string)
             if len(uniq_char) > 6:
-                b64result = self.b64(request, b64_string, patterns, request.result)
+                b64result, tags = self.b64(request, b64_string, patterns, request.result)
                 if len(b64result) > 0:
                     b64_al_results.append(b64result)
 
@@ -528,16 +528,19 @@ class FrankenStrings(ServiceBase):
                 b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')
                 uniq_char = set(b64_string)
                 if len(uniq_char) > 6:
-                    b64result = self.b64(request, b64_string, patterns, request.result)
+                    b64result, tags = self.b64(request, b64_string, patterns)
                     if len(b64result) > 0:
-                        b64_al_results.append(b64result)
+                        b64_al_results.append((b64result, tags))
 
         # Report B64 Results
         if len(b64_al_results) > 0:
             b64_ascii_content = []
             b64_res = (ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=request.result))
             b64index = 0
-            for b64dict in b64_al_results:
+            for b64dict, tags in b64_al_results:
+                for ttype, values in tags.items():
+                    for v in values:
+                        b64_res.add_tag(ttype, v)
                 for b64k, b64l in b64dict.items():
                     b64index += 1
                     sub_b64_res = (ResultSection(f"Result {b64index}", parent=b64_res))
@@ -547,6 +550,7 @@ class FrankenStrings(ServiceBase):
                     subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
                                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
                     subb_b64_res.add_line(safe_str(b64l[2]))
+                    
                     if b64l[2] not in ["[Possible file contents. See extracted files.]",
                                        "[IOCs discovered with other non-printable data. See extracted files.]"]:
                         b64_ascii_content.append(b64l[2])
@@ -645,7 +649,7 @@ class FrankenStrings(ServiceBase):
                 unires_index = 0
                 for uk, ui in unicode_al_results.items():
                     unires_index += 1
-                    sub_uni_res = (ResultSection(f"Result {unires_index}", heuristic=Heuristic(4),
+                    sub_uni_res = (ResultSection(f"Result {unires_index}",
                                                  parent=unicode_emb_res))
                     sub_uni_res.add_line(f'ENCODED TEXT SIZE: {ui[0]}')
                     sub_uni_res.add_line(f'ENCODED SAMPLE TEXT: {safe_str(ui[1])}[........]')
@@ -655,7 +659,7 @@ class FrankenStrings(ServiceBase):
                                                   parent=sub_uni_res))
                     subb_uni_res.add_line('{}'.format(safe_str(ui[2])))
                     # Look for IOCs of interest
-                    hits = self.ioc_to_tag(ui[2], patterns, request.result, st_max_length=1000, taglist=True)
+                    hits = self.ioc_to_tag(ui[2], patterns, sub_uni_res, st_max_length=1000, taglist=True)
                     if len(hits) > 0:
                         sub_uni_res.set_heuristic(6)
                         subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
@@ -664,11 +668,15 @@ class FrankenStrings(ServiceBase):
 
             if len(unicode_al_dropped_results) > 0:
                 for ures in unicode_al_dropped_results:
+                    if unicode_emb_res.heuristic is not None:
+                        unicode_emb_res.heuristic.increment_frequency()
+                    else:
+                        unicode_emb_res.set_heuristic(5)
                     uhas = ures.split('_')[0]
                     uenc = ures.split('_')[1]
-                    unicode_emb_res.set_heuristic(5)
                     unicode_emb_res.add_line(f"Extracted over 50 bytes of possible embedded unicode with "
                                              f"{uenc} encoding. SHA256: {uhas}. See extracted files.")
+
             return unicode_emb_res
         return None
 
@@ -688,7 +696,7 @@ class FrankenStrings(ServiceBase):
         for hex_match in re.findall(hex_pat, request.file_contents):
             hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
             afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
-                                                                 patterns, request.result)
+                                                                 patterns)
             if afile_found:
                 asciihex_file_found = True
             if asciihex_results != b"":
