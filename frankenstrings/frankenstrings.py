@@ -457,8 +457,8 @@ class FrankenStrings(ServiceBase):
                 for i in sorted(l):
                     ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
 
-        return ascii_res
-
+            return ascii_res
+        return None
 
     def embedded_pe_results(self, request):
         """
