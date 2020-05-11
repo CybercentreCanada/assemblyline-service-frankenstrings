@@ -442,7 +442,7 @@ class FrankenStrings(ServiceBase):
             The created result section (with request.result as its parent)
         """
         # Check the maximum length except for code files
-        chkl = not self.sample_type.startswith('code'):
+        chkl = not self.sample_type.startswith('code')
 
         ascii_res = (ResultSection("The following IOC were found in plain text in the file:",
                                    body_format=BODY_FORMAT.MEMORY_DUMP))
@@ -461,9 +461,9 @@ class FrankenStrings(ServiceBase):
 
 
     def embedded_pe_results(self, request):
-        """ 
+        """
         Finds, extracts and reports embedded executables
-        
+
         Args:
             request: AL request object with result section
             patterns: PatternMatch object
@@ -497,11 +497,11 @@ class FrankenStrings(ServiceBase):
     def base64_results(self, request, patterns):
         """
         Finds and reports Base64 encoded text
-        
+
         Args:
             request: AL request object with result section
             patterns: PatternMatch object
-        
+
         Returns:
             The result section (with request.result as its parent) if one is created
         """
@@ -550,7 +550,7 @@ class FrankenStrings(ServiceBase):
                     subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
                                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
                     subb_b64_res.add_line(safe_str(b64l[2]))
-                    
+
                     if b64l[2] not in ["[Possible file contents. See extracted files.]",
                                        "[IOCs discovered with other non-printable data. See extracted files.]"]:
                         b64_ascii_content.append(b64l[2])
@@ -618,7 +618,7 @@ class FrankenStrings(ServiceBase):
     def unicode_results(self, request, patterns):
         """
         Finds and report unicode encoded strings
-        
+
         Args:
             request: AL request object with result section
             patterns: PatternMatch object
@@ -681,9 +681,9 @@ class FrankenStrings(ServiceBase):
         return None
 
     def hex_results(self, request, patterns):
-        """ 
+        """
         Finds and reports long ascii hex strings
-        
+
         Args:
             request: AL request object with result section
             patterns: PatternMatch object
