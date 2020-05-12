@@ -518,9 +518,9 @@ class FrankenStrings(ServiceBase):
             b64_matches.add(b64_string)
             uniq_char = set(b64_string)
             if len(uniq_char) > 6:
-                b64result, tags = self.b64(request, b64_string, patterns, request.result)
+                b64result, tags = self.b64(request, b64_string, patterns)
                 if len(b64result) > 0:
-                    b64_al_results.append(b64result)
+                    b64_al_results.append((b64result, tags))
 
         # UTF-16 strings
         for ust in strings.extract_unicode_strings(request.file_contents, n=self.st_min_length):
