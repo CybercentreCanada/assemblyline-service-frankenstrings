@@ -1,5 +1,5 @@
 name: FrankenStrings
-version: 1
+version: $SERVICE_TAG
 description: This service performs file and IOC extractions using pattern matching, simple encoding decoder and script deobfuscators.
 
 accepts: .*
@@ -84,6 +84,6 @@ heuristics:
     description: ASCII hex-like strings found and decoded in a document file
 
 docker_config:
-  image: ${REGISTRY}cccs/assemblyline-service-frankenstrings:latest
+  image: ${REGISTRY}cccs/assemblyline-service-frankenstrings:$SERVICE_TAG
   cpu_cores: 1
   ram_mb: 512
