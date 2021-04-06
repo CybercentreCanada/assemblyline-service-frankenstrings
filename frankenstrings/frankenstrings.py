@@ -4,6 +4,8 @@ import mmap
 import os
 import re
 
+from typing import Dict, List, Optional, Set, Tuple, Union
+
 import magic
 import pefile
 
@@ -13,6 +15,7 @@ from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
+from assemblyline_v4_service.common.request import ServiceRequest
 
 from frankenstrings.flarefloss import strings
 
@@ -35,19 +38,20 @@ class FrankenStrings(ServiceBase):
         b'&H',  # hex notation in VBA
     ]
 
-    def __init__(self, config=None):
-        super(FrankenStrings, self).__init__(config)
+    def __init__(self, config: Optional[Dict]=None) -> None:
+        super().__init__(config)
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
-        self.sample_type = None
+        self.sample_type = ''
 
-    def start(self):
+    def start(self) -> None:
         self.log.debug("FrankenStrings service started")
 
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
-    def ioc_to_tag(self, data, patterns, res=None, taglist=False, check_length=False, strs_max_size=0,
-                   st_max_length=300):
+    def ioc_to_tag(self, data: bytes, patterns: PatternMatch, res: Optional[ResultSection] = None,
+            taglist: bool = False, check_length: bool = False, strs_max_size: int = 0,
+            st_max_length: int = 300) -> Dict[str, Set[bytes]]:
         """Searches data for patterns and adds as AL tag to result output.
 
         Args:
@@ -59,19 +63,17 @@ class FrankenStrings(ServiceBase):
             strs_max_size: Maximum size of strings list. If greater then only network IOCs will be searched.
             st_max_length: Maximum length of a string from data that can be searched.
 
-        Returns:
-            If tag list has been requested, returns tag list as dictionary. Otherwise returns None.
-
+        Returns: tag list as dictionary (always empty if taglist is false)
         """
 
-        tags = {}
+        tags: Dict[str, Set[bytes]]= {}
 
         if check_length:
             ml = self.st_min_length
         else:
             ml = 4
 
-        strs = set()
+        strs: Set[bytes]= set()
         jn = False
 
         # Flare-FLOSS ascii string extract
@@ -112,13 +114,10 @@ class FrankenStrings(ServiceBase):
                                     res.add_tag(ty, safe_str(v))
                                 if taglist:
                                     tags[ty].add(safe_str(v))
-        if taglist:
-            return tags
-        else:
-            return
+        return tags
 
     @staticmethod
-    def decode_bu(data, size):
+    def decode_bu(data: bytes, size: int) -> bytes:
         """ Convert ascii to hex.
 
         Args:
@@ -154,11 +153,11 @@ class FrankenStrings(ServiceBase):
         return decoded
 
     @staticmethod
-    def unicode_longest_string(lisdata):
+    def unicode_longest_string(listdata: List[bytes]) -> bytes:
         """Compare sizes of unicode strings.
 
         Args:
-            lisdata: A list of strings.
+            listdata: A list of binary strings
 
         Returns:
             Result of test: Do all strings match in length?
@@ -166,19 +165,20 @@ class FrankenStrings(ServiceBase):
                 If False, returns longest string greater than 50 bytes.
                 If no string lonfer than 50 bytes, returns empty string.
         """
-        maxstr = len(max(lisdata, key=len))
+        maxstr = len(max(listdata, key=len))
         newstr = b""
 
-        if all(len(i) == maxstr for i in lisdata):
-            for i in lisdata:
+        if all(len(i) == maxstr for i in listdata):
+            for i in listdata:
                 newstr += i
             return newstr
         elif maxstr > 50:
-            return max(lisdata, key=len)
+            return max(listdata, key=len)
         else:
             return newstr
 
-    def decode_encoded_udata(self, request, encoding, data):
+    def decode_encoded_udata(self, request: ServiceRequest, encoding: bytes,
+            data: bytes) -> Tuple[List[str], List[Tuple[str, int, bytes, bytes]]]:
         """Compare sizes of unicode strings. Some code taken from bas64dump.py @ https://DidierStevens.com.
 
         Args:
@@ -190,9 +190,9 @@ class FrankenStrings(ServiceBase):
             List of hashes of extracted files submitted to AL and list of decoded unicode data information.
         """
 
-        decoded_list = []
-        shalist = []
-        decoded_res = []
+        decoded_list: List[Tuple[bytes, bytes]] = []
+        shalist: List[str] = []
+        decoded_res: List[Tuple[str, int, bytes, bytes]] = []
 
         qword = re.compile(rb'(?:'+re.escape(encoding)+b'[A-Fa-f0-9]{16})+')
         dword = re.compile(rb'(?:'+re.escape(encoding)+b'[A-Fa-f0-9]{8})+')
@@ -242,19 +242,20 @@ class FrankenStrings(ServiceBase):
         return shalist, decoded_res
 
     # Base64 Parse
-    def b64(self, request, b64_string, patterns):
+    def b64(self, request: ServiceRequest, b64_string: bytes,
+            patterns: PatternMatch) -> Tuple[Dict[str, Tuple[int, bytes, bytes, bytes]], Dict[str, Set[bytes]]]:
         """Decode B64 data.
 
         Args:
             request: AL request object (for submitting extracted files to AL when needed).
             b64_string: Possible base64 string.
-            patterns: FrankenStrings Patterns() object.
+            patterns: FrankenStrings patterns object.
 
         Returns:
-            List of result information.
+            Result information.
         """
-        results = {}
-        pat = {}
+        results: Dict[str, Tuple[int, bytes, bytes, bytes]] = {}
+        pat: Dict[str, Set[bytes]] = {}
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
             # noinspection PyBroadException
             try:
@@ -275,8 +276,8 @@ class FrankenStrings(ServiceBase):
                                 self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
                             request.add_extracted(b64_file_path, b64_file_name,
                                                   "Extracted b64 file during FrankenStrings analysis")
-                            results[sha256hash] = [len(b64_string), b64_string[0:50],
-                                                   "[Possible file contents. See extracted files.]", ""]
+                            results[sha256hash] = (len(b64_string), b64_string[0:50],
+                                                   b"[Possible file contents. See extracted files.]", b"")
                             return results, pat
 
                 # See if any IOCs in decoded data
@@ -286,14 +287,14 @@ class FrankenStrings(ServiceBase):
                 if len(asc_b64) > 0:
                     # If patterns exists, report. If not, report only if string looks interesting
                     if len(pat) > 0:
-                        results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
+                        results[sha256hash] = (len(b64_string), b64_string[0:50], asc_b64, base64data)
                     # PDF and Office documents have too many FPS
                     elif not self.sample_type.startswith('document/office') \
                             and not self.sample_type.startswith('document/pdf'):
                         # If data has length greater than 50, and unique character to length ratio is high
                         uniq_char = set(asc_b64)
                         if len(uniq_char) > 12 and len(re.sub(b"[^A-Za-z0-9]+", b"", asc_b64)) > 50:
-                            results[sha256hash] = [len(b64_string), b64_string[0:50], asc_b64, base64data]
+                            results[sha256hash] = (len(b64_string), b64_string[0:50], asc_b64, base64data)
                 # If not all printable characters but IOCs discovered, extract to file
                 elif len(pat) > 0:
                     b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
@@ -303,43 +304,44 @@ class FrankenStrings(ServiceBase):
                         self.log.debug(f"Submitted dropped file for analysis: {b64_file_path}")
                     request.add_extracted(b64_file_path, b64_file_name,
                                           "Extracted b64 file during FrankenStrings analysis")
-                    results[sha256hash] = [len(b64_string), b64_string[0:50],
-                                           "[IOCs discovered with other non-printable data. "
-                                           "See extracted files.]", ""]
+                    results[sha256hash] =(len(b64_string), b64_string[0:50],
+                                           b"[IOCs discovered with other non-printable data. "
+                                           b"See extracted files.]", b"")
 
             except Exception:
                 return results, pat
         return results, pat
 
-    def unhexlify_ascii(self, request, data, tag, patterns):
+    def unhexlify_ascii(self, request: ServiceRequest, data: bytes, filetype: str,
+            patterns: PatternMatch) -> Tuple[bool, Dict[str, Set[bytes]], Dict[str, Dict[bytes, List[bytes]]]]:
         """Plain ascii hex conversion.
 
         Args:
             request: AL request object (for submitting extracted files to AL when needed).
             data: Data to examine.
-            tag: AL request.tag (file type string).
-            patterns: Frankenstrings Patterns() object.
+            filetype: request file type.
+            patterns: Frankenstrings patterns object.
 
         Returns:
-            List of result information.
+            If a file was extracted and tags.
         """
-        filefound = False
-        tags = {}
+        tags: Dict[str, Set[bytes]] = {}
+        xor: Dict[str, Dict[bytes, List[bytes]]] = {}
         if len(data) % 2 != 0:
             data = data[:-1]
         # noinspection PyBroadException
         try:
             binstr = binascii.unhexlify(data)
         except Exception:
-            return filefound, tags
+            return False, tags, xor
         # If data has less than 7 uniq chars return
         uniq_char = set(binstr)
         if len(uniq_char) < 7:
-            return filefound, tags
+            return False, tags, xor
         # If data is greater than 500 bytes create extracted file
         if len(binstr) > 500:
             if len(uniq_char) < 20:
-                return filefound, tags
+                return False, tags, xor
             filefound = True
             sha256hash = hashlib.sha256(binstr).hexdigest()
             ascihex_file_name = f"{sha256hash[0:10]}_asciihex_decoded"
@@ -348,27 +350,28 @@ class FrankenStrings(ServiceBase):
                 fh.write(binstr)
             request.add_extracted(ascihex_file_path, ascihex_file_name,
                                   "Extracted ascii-hex file during FrankenStrings analysis")
-            return filefound, tags
+            return True, tags, xor
         # Else look for patterns
         tags = self.ioc_to_tag(binstr, patterns, taglist=True, st_max_length=1000)
-        if len(tags) > 0:
-            return filefound, tags
+        if tags:
+            return False, tags, xor
         # Else look for small XOR encoded strings in code files
-        if 20 < len(binstr) <= 128 and tag.startswith('code/'):
+        if 20 < len(binstr) <= 128 and filetype.startswith('code/'):
             xresult = bbcrack(binstr, level='small_string')
             if len(xresult) > 0:
                 for transform, regex, match in xresult:
                     if regex.startswith('EXE_'):
                         # noinspection PyTypeChecker
-                        tags['file.string.blacklisted'] = {data: [match, transform]}
+                        xor['file.string.blacklisted'] = {data: [match, transform]}
                     else:
                         # noinspection PyTypeChecker
-                        tags[regex] = {data: [match, transform]}
-                    return filefound, tags
-        return filefound, tags
+                        xor[regex] = {data: [match, transform]}
+                    return filefound, tags, xor
+        return False, tags, xor
 
     # Executable extraction
-    def pe_dump(self, request, temp_file, offset, fn, msg, fail_on_except=False):
+    def pe_dump(self, request: ServiceRequest, temp_file: str, offset: int, fn: str, msg: str,
+            fail_on_except: bool = False) -> bool:
         """Use PEFile application to find the end of the file (biggest section length wins).
 
         Args:
@@ -430,7 +433,8 @@ class FrankenStrings(ServiceBase):
 
 # --- Results methods ------------------------------------------------------------------------------------------------
 
-    def ascii_results(self, request, patterns, max_length, st_max_size):
+    def ascii_results(self, request: ServiceRequest, patterns: PatternMatch,
+            max_length: int, st_max_size: int) -> Optional[ResultSection]:
         """
         Finds and reports ASCII & Unicode IOC Strings.
 
@@ -460,7 +464,7 @@ class FrankenStrings(ServiceBase):
             return ascii_res
         return None
 
-    def embedded_pe_results(self, request):
+    def embedded_pe_results(self, request: ServiceRequest) -> Optional[ResultSection]:
         """
         Finds, extracts and reports embedded executables
 
@@ -494,7 +498,7 @@ class FrankenStrings(ServiceBase):
         return None
 
 
-    def base64_results(self, request, patterns):
+    def base64_results(self, request: ServiceRequest, patterns: PatternMatch) -> Optional[ResultSection]:
         """
         Finds and reports Base64 encoded text
 
@@ -534,7 +538,7 @@ class FrankenStrings(ServiceBase):
 
         # Report B64 Results
         if len(b64_al_results) > 0:
-            b64_ascii_content = []
+            b64_ascii_content: List[bytes] = []
             b64_res = (ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=request.result))
             b64index = 0
             for b64dict, tags in b64_al_results:
@@ -551,9 +555,9 @@ class FrankenStrings(ServiceBase):
                                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
                     subb_b64_res.add_line(safe_str(b64l[2]))
 
-                    if b64l[2] not in ["[Possible file contents. See extracted files.]",
-                                       "[IOCs discovered with other non-printable data. See extracted files.]"]:
-                        b64_ascii_content.append(b64l[2])
+                    if b64l[2] not in [b"[Possible file contents. See extracted files.]",
+                                       b"[IOCs discovered with other non-printable data. See extracted files.]"]:
+                        b64_ascii_content.append(b64l[3])
             # Write all non-extracted decoded b64 content to file
             if len(b64_ascii_content) > 0:
                 all_b64 = b"\n".join(b64_ascii_content)
@@ -569,7 +573,7 @@ class FrankenStrings(ServiceBase):
             return b64_res
         return None
 
-    def bbcrack_results(self, request):
+    def bbcrack_results(self, request: ServiceRequest) -> Optional[ResultSection]:
         """
         Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
 
@@ -615,7 +619,7 @@ class FrankenStrings(ServiceBase):
             return x_res
         return None
 
-    def unicode_results(self, request, patterns):
+    def unicode_results(self, request: ServiceRequest, patterns: PatternMatch) -> Optional[ResultSection]:
         """
         Finds and report unicode encoded strings
 
@@ -626,18 +630,18 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        unicode_al_results = {}
-        unicode_al_dropped_results = []
+        unicode_al_results: Dict[str, Tuple[int, bytes, bytes]] = {}
+        unicode_al_dropped_results: List[str] = []
         for hes in self.HEXENC_STRINGS:
             hes_regex = re.compile(re.escape(hes) + b'[A-Fa-f0-9]{2}')
             if re.search(hes_regex, request.file_contents) is not None:
                 uhash, unires = self.decode_encoded_udata(request, hes, request.file_contents)
                 if len(uhash) > 0:
                     for usha in uhash:
-                        unicode_al_dropped_results.append('{0}_{1}' .format(usha, hes))
+                        unicode_al_dropped_results.append('{0}_{1}'.format(safe_str(usha), safe_str(hes)))
                 if len(unires) > 0:
                     for i in unires:
-                        unicode_al_results[i[0]] = [i[1], i[2], i[3]]
+                        unicode_al_results[i[0]] = (i[1], i[2], i[3])
 
         # Report Unicode Encoded Data:
         if len(unicode_al_results) > 0 or len(unicode_al_dropped_results) > 0:
@@ -680,7 +684,7 @@ class FrankenStrings(ServiceBase):
             return unicode_emb_res
         return None
 
-    def hex_results(self, request, patterns):
+    def hex_results(self, request: ServiceRequest, patterns: PatternMatch) -> None:
         """
         Finds and reports long ascii hex strings
 
@@ -689,28 +693,30 @@ class FrankenStrings(ServiceBase):
             patterns: PatternMatch object
         """
         asciihex_file_found = False
-        asciihex_dict = {}
-        asciihex_bb_dict = {}
+        asciihex_dict: Dict[str, List[Union[Set[bytes], Dict[bytes, List[bytes]]]]] = {}
+        asciihex_bb_dict: Dict[str, List[Dict[bytes, List[bytes]]]] = {}
 
         hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
         for hex_match in re.findall(hex_pat, request.file_contents):
             hex_string = hex_match.replace(b'\r', b'').replace(b'\n', b'')
-            afile_found, asciihex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
-                                                                 patterns)
+            afile_found, asciihex_results, xorhex_results = self.unhexlify_ascii(request, hex_string, request.file_type,
+                    patterns)
             if afile_found:
                 asciihex_file_found = True
-            if asciihex_results != b"":
-                for ask, asi in asciihex_results.items():
-                    if ask.startswith('BB_'):
-                        # Add any xor'd content to its own result set
-                        ask = ask.split('_', 1)[1]
-                        if ask not in asciihex_bb_dict:
-                            asciihex_bb_dict[ask] = []
-                        asciihex_bb_dict[ask].append(asi)
-                    else:
-                        if ask not in asciihex_dict:
-                            asciihex_dict[ask] = []
-                        asciihex_dict[ask].append(asi)
+            for ask, asi in asciihex_results.items():
+                if ask not in asciihex_dict:
+                    asciihex_dict[ask] = []
+                asciihex_dict[ask].append(asi)
+            for xor_key, xor_results in xorhex_results.items():
+                if xor_key.startswith('BB_'):
+                    xor_key = xor_key.split(' ', 1)[1]
+                    if xor_key not in asciihex_bb_dict:
+                        asciihex_bb_dict[ask] = []
+                    asciihex_bb_dict[xor_key].append(xor_results)
+                else:
+                    if xor_key not in asciihex_dict:
+                        asciihex_dict[xor_key] = []
+                    asciihex_dict[xor_key].append(xor_results)
 
         # Report Ascii Hex Encoded Data:
         if asciihex_file_found:
@@ -732,29 +738,29 @@ class FrankenStrings(ServiceBase):
             for k, l in sorted(asciihex_dict.items()):
                 for i in l:
                     for ii in i:
-                        asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {ii}")
+                        asciihex_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string: {safe_str(ii)}")
 
         if len(asciihex_bb_dict) > 0:
             asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
                                              heuristic=Heuristic(9), parent=request.result))
             xindex = 0
-            for k, l in sorted(asciihex_bb_dict.items()):
-                for i in l:
-                    for kk, ii in i.items():
+            for xk, xl in sorted(asciihex_bb_dict.items()):
+                for xi in xl:
+                    for xkk, xii in xi.items():
                         xindex += 1
                         asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_bb_res))
-                        asx_res.add_line(f"Found {k.replace('_', ' ')} decoded HEX string, masked with "
-                                         f"transform {ii[1]}:")
+                        asx_res.add_line(f"Found {xk.replace('_', ' ')} decoded HEX string, masked with "
+                                         f"transform {safe_str(xii[1])}:")
                         asx_res.add_line("Decoded XOR string:")
-                        asx_res.add_line(ii[0])
+                        asx_res.add_line(safe_str(xii[0]))
                         asx_res.add_line("Original ASCII HEX String:")
-                        asx_res.add_line(kk)
-                        asciihex_bb_res.add_tag(k, ii[0])
+                        asx_res.add_line(safe_str(xkk))
+                        asciihex_bb_res.add_tag(xk, xii[0])
 
 
 # --- Execute ----------------------------------------------------------------------------------------------------------
 
-    def execute(self, request):
+    def execute(self, request: ServiceRequest) -> None:
         """ Main Module. See README for details."""
         request.result = Result()
         patterns = PatternMatch()
