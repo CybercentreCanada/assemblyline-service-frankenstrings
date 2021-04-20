@@ -41,7 +41,7 @@ class FrankenStrings(ServiceBase):
         b'&H',  # hex notation in VBA
     ]
 
-    def __init__(self, config: Optional[Dict]=None) -> None:
+    def __init__(self, config: Optional[Dict] = None) -> None:
         super().__init__(config)
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
@@ -73,7 +73,7 @@ class FrankenStrings(ServiceBase):
 
         min_length = self.st_min_length if check_length else 4
 
-        strs: Set[bytes]= set()
+        strs: Set[bytes] = set()
         just_network = False
 
         # Flare-FLOSS ascii string extract
@@ -152,7 +152,7 @@ class FrankenStrings(ServiceBase):
             Result of test: Do all strings match in length?
                 If True, returns all strings combined.
                 If False, returns longest string greater than 50 bytes.
-                If no string lonfer than 50 bytes, returns empty string.
+                If no string longer than 50 bytes, returns empty string.
         """
         maxstr = max(listdata, key=len)
         newstr = b""
@@ -290,7 +290,7 @@ class FrankenStrings(ServiceBase):
                         self.log.debug(f"Submitted dropped file for analysis: {b64_file_path}")
                     request.add_extracted(b64_file_path, b64_file_name,
                                           "Extracted b64 file during FrankenStrings analysis")
-                    results[sha256hash] =(len(b64_string), b64_string[0:50],
+                    results[sha256hash] = (len(b64_string), b64_string[0:50],
                                            b"[IOCs discovered with other non-printable data. "
                                            b"See extracted files.]", b"")
 
@@ -309,7 +309,7 @@ class FrankenStrings(ServiceBase):
             patterns: Frankenstrings patterns object.
 
         Returns:
-            If a file was extracted and tags.
+            If a file was extracted, tags, and xor results
         """
         tags: Dict[str, Set[bytes]] = {}
         xor: Dict[str, Tuple[bytes, bytes, str]] = {}
@@ -454,7 +454,6 @@ class FrankenStrings(ServiceBase):
 
         Args:
             request: AL request object with result section
-            patterns: PatternMatch object
 
         Returns:
             The result section (with request.result as its parent) if one is created
