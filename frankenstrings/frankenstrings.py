@@ -253,8 +253,8 @@ class FrankenStrings(ServiceBase):
                     mag = magic.Magic()
                     ftype = m.from_buffer(base64data)
                     mag_ftype = mag.from_buffer(base64data)
-                    for ft in self.FILETYPES:
-                        if (ft in ftype and 'octet-stream' not in ftype) or ft in mag_ftype:
+                    for file_type in self.FILETYPES:
+                        if (file_type in ftype and 'octet-stream' not in ftype) or file_type in mag_ftype:
                             b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
                             b64_file_path = os.path.join(self.working_directory, b64_file_name)
                             with open(b64_file_path, 'wb') as b64_file:
@@ -356,7 +356,7 @@ class FrankenStrings(ServiceBase):
         return False, tags, xor
 
     # Executable extraction
-    def pe_dump(self, request: ServiceRequest, temp_file: str, offset: int, fn: str, msg: str,
+    def pe_dump(self, request: ServiceRequest, temp_file: str, offset: int, file_string: str, msg: str,
             fail_on_except: bool = False) -> bool:
         """Use PEFile application to find the end of the file (biggest section length wins).
 
@@ -364,7 +364,7 @@ class FrankenStrings(ServiceBase):
             request: AL request object (for submitting extracted PE AL).
             temp_file: Sample file with possible embedded PE.
             offset: Offset of temp_file where PE file begins.
-            fn: String appended to extracted PE file name.
+            file_string: String appended to extracted PE file name.
             msg: File extraction message
             fail_on_except: When False, if PEFile fails, extract from offset all the way to the end of the initial file.
 
@@ -397,13 +397,14 @@ class FrankenStrings(ServiceBase):
                     pe_extract = pedata
 
             if pe_extract:
-                pe_file_name = f"{hashlib.sha256(pe_extract).hexdigest()[0:10]}_{fn}"
+                pe_file_name = f"{hashlib.sha256(pe_extract).hexdigest()[0:10]}_{file_string}"
                 pe_file_path = os.path.join(self.working_directory, pe_file_name)
                 with open(pe_file_path, 'wb') as exe_file:
                     exe_file.write(pe_extract)
                     self.log.debug(f"Submitted dropped file for analysis: {pe_file_path}")
                 request.add_extracted(pe_file_path, pe_file_name, msg)
-
+        except Exception:
+            self.log.warning("Dumping PE file failed for {request.sha256}")
         finally:
             # noinspection PyBroadException
             try:
@@ -412,10 +413,7 @@ class FrankenStrings(ServiceBase):
             except Exception:
                 pass
 
-            if pe_extract:
-                return True
-            else:
-                return False
+        return bool(pe_extract)
 
 # --- Results methods ------------------------------------------------------------------------------------------------
 
@@ -474,7 +472,7 @@ class FrankenStrings(ServiceBase):
                 with open(temp_file, 'wb') as pedata:
                     pedata.write(pos_exe)
 
-                embedded_pe = embedded_pe or self.pe_dump(request, temp_file, offset=0, fn="embed_pe",
+                embedded_pe = embedded_pe or self.pe_dump(request, temp_file, offset=0, file_string="embed_pe",
                                                           msg="PE header strings discovered in sample",
                                                           fail_on_except=True)
         # Report embedded PEs if any are found
@@ -584,7 +582,7 @@ class FrankenStrings(ServiceBase):
                 xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
                 with open(xtemp_file, 'wb') as xdata:
                     xdata.write(smatch)
-                pe_extracted = self.pe_dump(request, xtemp_file, offset, fn="xorpe_decoded",
+                pe_extracted = self.pe_dump(request, xtemp_file, offset, file_string="xorpe_decoded",
                                             msg="Extracted xor file during FrakenStrings analysis.")
                 if pe_extracted:
                     xor_al_results.append(xformat_string % (str(transform), offset, score,
@@ -709,17 +707,17 @@ class FrankenStrings(ServiceBase):
         if asciihex_bb_dict:
             asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
                                              heuristic=Heuristic(9), parent=request.result))
-            for xindex, (xk, xset) in enumerate(sorted(asciihex_bb_dict.items())):
+            for xindex, (xkey, xset) in enumerate(sorted(asciihex_bb_dict.items())):
                 for xresult in xset:
                     data, match, transform = xresult
                     asx_res = (ResultSection(f"Result {xindex}", parent=asciihex_bb_res))
-                    asx_res.add_line(f"Found {xk.replace('_', ' ')} decoded HEX string, masked with "
+                    asx_res.add_line(f"Found {xkey.replace('_', ' ')} decoded HEX string, masked with "
                                      f"transform {safe_str(transform)}:")
                     asx_res.add_line("Decoded XOR string:")
                     asx_res.add_line(safe_str(match))
                     asx_res.add_line("Original ASCII HEX String:")
                     asx_res.add_line(safe_str(data))
-                    asciihex_bb_res.add_tag(xk, match)
+                    asciihex_bb_res.add_tag(xkey, match)
 
 
 # --- Execute ----------------------------------------------------------------------------------------------------------
