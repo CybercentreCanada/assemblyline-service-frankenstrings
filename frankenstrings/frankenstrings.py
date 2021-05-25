@@ -662,8 +662,7 @@ class FrankenStrings(ServiceBase):
             patterns: PatternMatch object
         """
         asciihex_file_found = False
-        asciihex_dict: Dict[str, Set[bytes]]
-        #asciihex_dict: Dict[str, List[Union[Set[bytes], Dict[bytes, List[bytes]]]]] = {}
+        asciihex_dict: Dict[str, Set[bytes]] = {}
         asciihex_bb_dict: Dict[str, Set[Tuple[bytes, bytes, str]]] = {}
 
         hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
