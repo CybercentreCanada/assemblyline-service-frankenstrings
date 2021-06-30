@@ -5,6 +5,7 @@ import hashlib
 import mmap
 import os
 import re
+import traceback
 
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -18,6 +19,7 @@ from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
 from assemblyline_v4_service.common.request import ServiceRequest
+from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 from frankenstrings.flarefloss import strings
 
@@ -46,11 +48,37 @@ class FrankenStrings(ServiceBase):
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
         self.sample_type = ''
+        self.excess_extracted = 0
 
     def start(self) -> None:
         self.log.debug("FrankenStrings service started")
 
 # --- Support Functions ------------------------------------------------------------------------------------------------
+
+    def extract_file(self, request, data, file_name, description):
+        """ Adds data to a request as an extracted file
+
+        request: the request
+        data: the file data
+        filename: the name to give the file
+        description: the desctiption of the file to give the request
+        """
+        if self.excess_extracted:
+            # Already over maximimum number of extracted files
+            self.excess_extracted += 1
+            return
+        try:
+            # If for some reason the directory doesn't exist, create it
+            if not os.path.exists(self.working_directory):
+                os.makedirs(self.working_directory)
+            file_path = os.path.join(self.working_directory, file_name)
+            with open(file_path, 'wb') as f:
+                f.write(data)
+            request.add_extracted(file_path, file_name, description)
+        except MaxExtractedExceeded:
+            self.excess_extracted += 1
+        except Exception:
+            self.log.error(f"Error extracting {file_name}: {traceback.format_exc(limit=2)}")
 
     def ioc_to_tag(self, data: bytes, patterns: PatternMatch, res: Optional[ResultSection] = None,
             taglist: bool = False, check_length: bool = False, strs_max_size: int = 0,
@@ -216,12 +244,8 @@ class FrankenStrings(ServiceBase):
                 if len(uniq_char) > 20:
                     dropped.append(sha256hash)
                     udata_file_name = f"{sha256hash[0:10]}_enchex_{safe_str(encoding)}_decoded"
-                    udata_file_path = os.path.join(self.working_directory, udata_file_name)
-                    with open(udata_file_path, 'wb') as unibu_file:
-                        unibu_file.write(decoded[0])
-                        self.log.debug(f"Submitted dropped file for analysis: {udata_file_path}")
-                    request.add_extracted(udata_file_path, udata_file_name,
-                                          "Extracted unicode file during FrankenStrings analysis")
+                    self.extract_file(request, decoded[0], udata_file_name,
+                                      "Extracted unicode file during FrankenStrings analysis")
             elif len(uniq_char) > 6:
                 decoded_res[sha256hash] = decoded
 
@@ -256,12 +280,8 @@ class FrankenStrings(ServiceBase):
                     for file_type in self.FILETYPES:
                         if (file_type in ftype and 'octet-stream' not in ftype) or file_type in mag_ftype:
                             b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
-                            b64_file_path = os.path.join(self.working_directory, b64_file_name)
-                            with open(b64_file_path, 'wb') as b64_file:
-                                b64_file.write(base64data)
-                                self.log.debug("Submitted dropped file for analysis: %s" % b64_file_path)
-                            request.add_extracted(b64_file_path, b64_file_name,
-                                                  "Extracted b64 file during FrankenStrings analysis")
+                            self.extract_file(request, base64data, b64_file_name,
+                                              "Extracted b64 file during FrankenStrings analysis")
                             results[sha256hash] = (len(b64_string), b64_string[0:50],
                                                    b"[Possible file contents. See extracted files.]", b"")
                             return results, pat
@@ -284,12 +304,8 @@ class FrankenStrings(ServiceBase):
                 # If not all printable characters but IOCs discovered, extract to file
                 elif len(pat) > 0:
                     b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
-                    b64_file_path = os.path.join(self.working_directory, b64_file_name)
-                    with open(b64_file_path, 'wb') as b64_file:
-                        b64_file.write(base64data)
-                        self.log.debug(f"Submitted dropped file for analysis: {b64_file_path}")
-                    request.add_extracted(b64_file_path, b64_file_name,
-                                          "Extracted b64 file during FrankenStrings analysis")
+                    self.extract_file(request, base64data, b64_file_name,
+                                       "Extracted b64 file during FrankenStrings analysis")
                     results[sha256hash] = (len(b64_string), b64_string[0:50],
                                            b"[IOCs discovered with other non-printable data. "
                                            b"See extracted files.]", b"")
@@ -330,12 +346,9 @@ class FrankenStrings(ServiceBase):
                 return False, tags, xor
             filefound = True
             sha256hash = hashlib.sha256(binstr).hexdigest()
-            ascihex_file_name = f"{sha256hash[0:10]}_asciihex_decoded"
-            ascihex_file_path = os.path.join(self.working_directory, ascihex_file_name)
-            with open(ascihex_file_path, 'wb') as fh:
-                fh.write(binstr)
-            request.add_extracted(ascihex_file_path, ascihex_file_name,
-                                  "Extracted ascii-hex file during FrankenStrings analysis")
+            asciihex_file_name = f"{sha256hash[0:10]}_asciihex_decoded"
+            self.extract_file(request, binstr, asciihex_file_name,
+                              "Extracted ascii-hex file during FrankenStrings analysis")
             return True, tags, xor
         # Else look for patterns
         tags = self.ioc_to_tag(binstr, patterns, taglist=True, st_max_length=1000)
@@ -398,11 +411,7 @@ class FrankenStrings(ServiceBase):
 
             if pe_extract:
                 pe_file_name = f"{hashlib.sha256(pe_extract).hexdigest()[0:10]}_{file_string}"
-                pe_file_path = os.path.join(self.working_directory, pe_file_name)
-                with open(pe_file_path, 'wb') as exe_file:
-                    exe_file.write(pe_extract)
-                    self.log.debug(f"Submitted dropped file for analysis: {pe_file_path}")
-                request.add_extracted(pe_file_path, pe_file_name, msg)
+                self.extract_file(request, pe_extract, pe_file_name, msg)
         except Exception:
             self.log.warning("Dumping PE file failed for {request.sha256}")
         finally:
@@ -545,14 +554,8 @@ class FrankenStrings(ServiceBase):
             if len(b64_ascii_content) > 0:
                 all_b64 = b"\n".join(b64_ascii_content)
                 b64_all_sha256 = hashlib.sha256(all_b64).hexdigest()
-                b64_file_path = os.path.join(self.working_directory, b64_all_sha256)
-                try:
-                    with open(b64_file_path, 'wb') as fh:
-                        fh.write(all_b64)
-                    request.add_extracted(b64_file_path, f"all_b64_{b64_all_sha256[:7]}.txt",
-                                          "all misc decoded b64 from sample")
-                except Exception as e:
-                    self.log.error(f"Error while adding extracted b64 content: {b64_file_path}: {str(e)}")
+                self.extract_file(request, all_b64, f"all_b64_{b64_all_sha256[:7]}.txt",
+                                  "all misc decoded b64 from sample")
             return b64_res
         return None
 
@@ -725,6 +728,7 @@ class FrankenStrings(ServiceBase):
         request.result = Result()
         patterns = PatternMatch()
         self.sample_type = request.file_type
+        self.excess_extracted = 0
         # Filters for submission modes. Listed in order of use.
         if request.deep_scan:
             # Maximum size of submitted file to run this service:
