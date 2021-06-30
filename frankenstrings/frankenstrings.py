@@ -78,7 +78,7 @@ class FrankenStrings(ServiceBase):
         except MaxExtractedExceeded:
             self.excess_extracted += 1
         except Exception:
-            self.log.error(f"Error extracting {file_name}: {traceback.format_exc(limit=2)}")
+            self.log.error(f"Error extracting {file_name} from {request.sha256}: {traceback.format_exc(limit=2)}")
 
     def ioc_to_tag(self, data: bytes, patterns: PatternMatch, res: Optional[ResultSection] = None,
             taglist: bool = False, check_length: bool = False, strs_max_size: int = 0,
@@ -768,3 +768,9 @@ class FrankenStrings(ServiceBase):
             # Go over again, looking for long ASCII-HEX character strings
             if not self.sample_type.startswith('document/office'):
                 self.hex_results(request, patterns)
+
+        if self.excess_extracted:
+            self.log.warning(f"Too many files extracted from {request.sha256}, "
+                             f"{self.excess_extracted} files were not extracted")
+            request.add_section(ResultSection(f"Over extraction limit: "
+                                              f"{self.excess_extracted} files were not extracted"))
