@@ -704,6 +704,7 @@ class FrankenStrings(ServiceBase):
             for key, hex_list in sorted(asciihex_dict.items()):
                 for h in hex_list:
                     asciihex_res.add_line(f"Found {key.replace('_', ' ')} decoded HEX string: {safe_str(h)}")
+                    asciihex_res.add_tag(key, h)
 
         if asciihex_bb_dict:
             asciihex_bb_res = (ResultSection("ASCII HEX AND XOR DECODED IOC Strings:",
