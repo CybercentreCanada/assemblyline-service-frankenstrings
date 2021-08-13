@@ -43,6 +43,10 @@ class FrankenStrings(ServiceBase):
         b'&H',  # hex notation in VBA
     ]
 
+    BBCRACK_TO_TAG = {
+        'NET_FULL_URI': 'network.static.uri',
+    }
+
     def __init__(self, config: Optional[Dict] = None) -> None:
         super().__init__(config)
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
@@ -344,7 +348,6 @@ class FrankenStrings(ServiceBase):
         if len(binstr) > 500:
             if len(uniq_char) < 20:
                 return False, tags, xor
-            filefound = True
             sha256hash = hashlib.sha256(binstr).hexdigest()
             asciihex_file_name = f"{sha256hash[0:10]}_asciihex_decoded"
             self.extract_file(request, binstr, asciihex_file_name,
@@ -365,7 +368,7 @@ class FrankenStrings(ServiceBase):
                     else:
                         # noinspection PyTypeChecker
                         xor[regex] = (data, match, transform)
-                    return filefound, tags, xor
+                    return False, tags, xor
         return False, tags, xor
 
     # Executable extraction
@@ -592,7 +595,7 @@ class FrankenStrings(ServiceBase):
                                                             "See Extracted files]"))
             else:
                 if not regex.startswith("EXE_"):
-                    x_res.add_tag(regex, smatch)
+                    x_res.add_tag(BBCRACK_TO_TAG.get(regex, regex), smatch)
                 xor_al_results.append(xformat_string
                                       % (str(transform), offset, score, safe_str(smatch)))
         # Result Graph:
