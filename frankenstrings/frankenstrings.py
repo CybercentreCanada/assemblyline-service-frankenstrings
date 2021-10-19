@@ -7,7 +7,7 @@ import os
 import re
 import traceback
 
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import magic
 import pefile
@@ -86,7 +86,7 @@ class FrankenStrings(ServiceBase):
 
     def ioc_to_tag(self, data: bytes, patterns: PatternMatch, res: Optional[ResultSection] = None,
             taglist: bool = False, check_length: bool = False, strs_max_size: int = 0,
-            st_max_length: int = 300) -> Dict[str, Set[bytes]]:
+            st_max_length: int = 300) -> Dict[str, Set[str]]:
         """Searches data for patterns and adds as AL tag to result output.
 
         Args:
@@ -101,7 +101,7 @@ class FrankenStrings(ServiceBase):
         Returns: tag list as dictionary (always empty if taglist is false)
         """
 
-        tags: Dict[str, Set[bytes]] = {}
+        tags: Dict[str, Set[str]] = {}
 
         min_length = self.st_min_length if check_length else 4
 
@@ -121,7 +121,7 @@ class FrankenStrings(ServiceBase):
             just_network = True
 
         for s in strs:
-            st_value = patterns.ioc_match(s, bogon_ip=True, just_network=just_network)
+            st_value: Dict[str, Iterable[bytes]] = patterns.ioc_match(s, bogon_ip=True, just_network=just_network)
             for ty, val in st_value.items():
                 if taglist and ty not in tags:
                     tags[ty] = set()
@@ -257,7 +257,7 @@ class FrankenStrings(ServiceBase):
 
     # Base64 Parse
     def b64(self, request: ServiceRequest, b64_string: bytes,
-            patterns: PatternMatch) -> Tuple[Dict[str, Tuple[int, bytes, bytes, bytes]], Dict[str, Set[bytes]]]:
+            patterns: PatternMatch) -> Tuple[Dict[str, Tuple[int, bytes, bytes, bytes]], Dict[str, Set[str]]]:
         """Decode B64 data.
 
         Args:
@@ -269,7 +269,7 @@ class FrankenStrings(ServiceBase):
             Result information.
         """
         results: Dict[str, Tuple[int, bytes, bytes, bytes]] = {}
-        pat: Dict[str, Set[bytes]] = {}
+        pat: Dict[str, Set[str]] = {}
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
             # noinspection PyBroadException
             try:
@@ -319,7 +319,7 @@ class FrankenStrings(ServiceBase):
         return results, pat
 
     def unhexlify_ascii(self, request: ServiceRequest, data: bytes, filetype: str,
-            patterns: PatternMatch) -> Tuple[bool, Dict[str, Set[bytes]], Dict[str, Tuple[bytes, bytes, str]]]:
+            patterns: PatternMatch) -> Tuple[bool, Dict[str, Set[str]], Dict[str, Tuple[bytes, bytes, str]]]:
         """Plain ascii hex conversion.
 
         Args:
@@ -331,7 +331,7 @@ class FrankenStrings(ServiceBase):
         Returns:
             If a file was extracted, tags, and xor results
         """
-        tags: Dict[str, Set[bytes]] = {}
+        tags: Dict[str, Set[str]] = {}
         xor: Dict[str, Tuple[bytes, bytes, str]] = {}
         if len(data) % 2 != 0:
             data = data[:-1]
@@ -595,7 +595,7 @@ class FrankenStrings(ServiceBase):
                                                             "See Extracted files]"))
             else:
                 if not regex.startswith("EXE_"):
-                    x_res.add_tag(BBCRACK_TO_TAG.get(regex, regex), smatch)
+                    x_res.add_tag(self.BBCRACK_TO_TAG.get(regex, regex), smatch)
                 xor_al_results.append(xformat_string
                                       % (str(transform), offset, score, safe_str(smatch)))
         # Result Graph:
@@ -668,7 +668,7 @@ class FrankenStrings(ServiceBase):
             patterns: PatternMatch object
         """
         asciihex_file_found = False
-        asciihex_dict: Dict[str, Set[bytes]] = {}
+        asciihex_dict: Dict[str, Set[str]] = {}
         asciihex_bb_dict: Dict[str, Set[Tuple[bytes, bytes, str]]] = {}
 
         hex_pat = re.compile(b'((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})')
@@ -688,7 +688,7 @@ class FrankenStrings(ServiceBase):
                     asciihex_bb_dict[xor_key].add(xor_results)
                 else:
                     asciihex_dict.setdefault(xor_key, set())
-                    asciihex_dict[xor_key].add(xor_results[1])
+                    asciihex_dict[xor_key].add(safe_str(xor_results[1]))
 
         # Report Ascii Hex Encoded Data:
         if asciihex_file_found:
@@ -776,5 +776,5 @@ class FrankenStrings(ServiceBase):
         if self.excess_extracted:
             self.log.warning(f"Too many files extracted from {request.sha256}, "
                              f"{self.excess_extracted} files were not extracted")
-            request.add_section(ResultSection(f"Over extraction limit: "
+            request.result.add_section(ResultSection(f"Over extraction limit: "
                                               f"{self.excess_extracted} files were not extracted"))
