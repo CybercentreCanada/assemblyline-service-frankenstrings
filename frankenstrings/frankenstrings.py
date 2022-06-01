@@ -12,6 +12,9 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 import magic
 import pefile
 
+from multidecoder.multidecoder import Multidecoder
+from multidecoder.json_conversion import tree_to_json
+
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.common.str_utils import safe_str
 from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
@@ -772,6 +775,18 @@ class FrankenStrings(ServiceBase):
             # Go over again, looking for long ASCII-HEX character strings
             if not self.sample_type.startswith('document/office'):
                 self.hex_results(request, patterns)
+
+        try:
+            md = Multidecoder()
+            tree = md.scan(request.file_contents)
+            json = tree_to_json(tree)
+            filename = request.sha256[:8] + '_md.json'
+            filepath = os.path.join(self.working_directory, filename)
+            with open(filepath, 'w') as f:
+                f.write(json)
+            request.add_supplementary(filepath, filename, 'Multidecoder json')
+        except Exception:
+            pass
 
         if self.excess_extracted:
             self.log.warning(f"Too many files extracted from {request.sha256}, "
