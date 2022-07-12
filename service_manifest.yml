@@ -67,7 +67,7 @@ heuristics:
 
   - heur_id: 8
     name: ASCIIhex_strings_decoded
-    score: 500
+    score: 100
     filetype: '*'
     description: ASCII hex-like strings found and decoded in a non-document, non-executable file.
       -
