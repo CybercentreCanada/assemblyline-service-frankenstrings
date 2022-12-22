@@ -514,6 +514,9 @@ class FrankenStrings(ServiceBase):
                 .replace(b'&#xA;', b'').replace(b'&#10;', b'')
             if b64_string in b64_matches:
                 continue
+            if b64_string.endswith(b'VT') and b'A'*10 in b64_string and len(b64_string) > 500:
+                # reversed base64 encoded pe file
+                b64_string = b64_string[::-1]
             b64_matches.add(b64_string)
             uniq_char = set(b64_string)
             if len(uniq_char) > 6:
