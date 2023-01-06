@@ -83,6 +83,12 @@ heuristics:
     filetype: 'document/.*'
     description: ASCII hex-like strings found and decoded in a document file
 
+  - heur_id: 11
+    name: Base64_PE
+    score: 500
+    filetype: '*'
+    description: Base64 decoded PE file
+
 docker_config:
   image: ${REGISTRY}cccs/assemblyline-service-frankenstrings:$SERVICE_TAG
   cpu_cores: 1

@@ -23,6 +23,14 @@ from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 from frankenstrings.flarefloss import strings
 
+# Type aliases
+Tags = Dict[str, Set[str]]
+B64Result = Dict[str, Tuple[int, bytes, bytes, bytes]]
+
+# PE Strings
+PAT_EXEDOS = rb'(?s)This program cannot be run in DOS mode'
+PAT_EXEHEADER = rb'(?s)MZ.{32,1024}PE\000\000.+'
+
 
 class FrankenStrings(ServiceBase):
     """ FrankenStrings Service """
@@ -86,7 +94,7 @@ class FrankenStrings(ServiceBase):
 
     def ioc_to_tag(self, data: bytes, patterns: PatternMatch, res: Optional[ResultSection] = None,
             taglist: bool = False, check_length: bool = False, strs_max_size: int = 0,
-            st_max_length: int = 300) -> Dict[str, Set[str]]:
+            st_max_length: int = 300) -> Tags:
         """Searches data for patterns and adds as AL tag to result output.
 
         Args:
@@ -101,7 +109,7 @@ class FrankenStrings(ServiceBase):
         Returns: tag list as dictionary (always empty if taglist is false)
         """
 
-        tags: Dict[str, Set[str]] = {}
+        tags: Tags = {}
 
         min_length = self.st_min_length if check_length else 4
 
@@ -257,7 +265,7 @@ class FrankenStrings(ServiceBase):
 
     # Base64 Parse
     def b64(self, request: ServiceRequest, b64_string: bytes,
-            patterns: PatternMatch) -> Tuple[Dict[str, Tuple[int, bytes, bytes, bytes]], Dict[str, Set[str]]]:
+            patterns: PatternMatch) -> Tuple[B64Result, Tags]:
         """Decode B64 data.
 
         Args:
@@ -268,8 +276,8 @@ class FrankenStrings(ServiceBase):
         Returns:
             Result information.
         """
-        results: Dict[str, Tuple[int, bytes, bytes, bytes]] = {}
-        pat: Dict[str, Set[str]] = {}
+        results: B64Result = {}
+        pat: Tags = {}
         if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
             # noinspection PyBroadException
             try:
@@ -281,14 +289,21 @@ class FrankenStrings(ServiceBase):
                     mag = magic.Magic()
                     ftype = m.from_buffer(base64data)
                     mag_ftype = mag.from_buffer(base64data)
-                    for file_type in self.FILETYPES:
-                        if (file_type in ftype and 'octet-stream' not in ftype) or file_type in mag_ftype:
-                            b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
-                            self.extract_file(request, base64data, b64_file_name,
-                                              "Extracted b64 file during FrankenStrings analysis")
-                            results[sha256hash] = (len(b64_string), b64_string[0:50],
-                                                   b"[Possible file contents. See extracted files.]", b"")
-                            return results, pat
+                    if re.match(PAT_EXEHEADER, base64data) and re.search(PAT_EXEDOS, base64data):
+                        b64_file_name = f"{sha256hash[0:10]}_b64_decoded_exe"
+                        self.extract_file(request, base64data, b64_file_name,
+                                          "Extracted b64 executable during FrankenStrings analysis")
+                        results[sha256hash] = (len(b64_string), b64_string[0:50],
+                                               b"[Encoded PE file. See extracted files.]", b"")
+                        return results, pat
+                    elif any((file_type in ftype and 'octet-stream' not in ftype) or file_type in mag_ftype
+                             for file_type in self.FILETYPES):
+                        b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
+                        self.extract_file(request, base64data, b64_file_name,
+                                          "Extracted b64 file during FrankenStrings analysis")
+                        results[sha256hash] = (len(b64_string), b64_string[0:50],
+                                               b"[Possible file contents. See extracted files.]", b"")
+                        return results, pat
 
                 # See if any IOCs in decoded data
                 pat = self.ioc_to_tag(base64data, patterns, taglist=True)
@@ -309,7 +324,7 @@ class FrankenStrings(ServiceBase):
                 elif len(pat) > 0:
                     b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
                     self.extract_file(request, base64data, b64_file_name,
-                                       "Extracted b64 file during FrankenStrings analysis")
+                                      "Extracted b64 file during FrankenStrings analysis")
                     results[sha256hash] = (len(b64_string), b64_string[0:50],
                                            b"[IOCs discovered with other non-printable data. "
                                            b"See extracted files.]", b"")
@@ -319,7 +334,7 @@ class FrankenStrings(ServiceBase):
         return results, pat
 
     def unhexlify_ascii(self, request: ServiceRequest, data: bytes, filetype: str,
-            patterns: PatternMatch) -> Tuple[bool, Dict[str, Set[str]], Dict[str, Tuple[bytes, bytes, str]]]:
+            patterns: PatternMatch) -> Tuple[bool, Tags, Dict[str, Tuple[bytes, bytes, str]]]:
         """Plain ascii hex conversion.
 
         Args:
@@ -331,7 +346,7 @@ class FrankenStrings(ServiceBase):
         Returns:
             If a file was extracted, tags, and xor results
         """
-        tags: Dict[str, Set[str]] = {}
+        tags: Tags = {}
         xor: Dict[str, Tuple[bytes, bytes, str]] = {}
         if len(data) % 2 != 0:
             data = data[:-1]
@@ -470,13 +485,9 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        # PE Strings
-        pat_exedos = rb'(?s)This program cannot be run in DOS mode'
-        pat_exeheader = rb'(?s)MZ.{32,1024}PE\000\000.+'
-
         embedded_pe = False
-        for pos_exe in re.findall(pat_exeheader, request.file_contents[1:]):
-            if re.search(pat_exedos, pos_exe):
+        for pos_exe in re.findall(PAT_EXEHEADER, request.file_contents[1:]):
+            if re.search(PAT_EXEDOS, pos_exe):
                 pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
                 temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
 
@@ -504,8 +515,8 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        b64_al_results = []
-        b64_matches = set()
+        b64_al_results: List[Tuple[B64Result, Tags]] = []
+        b64_matches: Set[bytes] = set()
 
         # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
         for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
@@ -514,6 +525,9 @@ class FrankenStrings(ServiceBase):
                 .replace(b'&#xA;', b'').replace(b'&#10;', b'')
             if b64_string in b64_matches:
                 continue
+            if b64_string.endswith(b'VT') and b'A'*10 in b64_string and len(b64_string) > 500:
+                # reversed base64 encoded pe file
+                b64_string = b64_string[::-1]
             b64_matches.add(b64_string)
             uniq_char = set(b64_string)
             if len(uniq_char) > 6:
@@ -549,7 +563,8 @@ class FrankenStrings(ServiceBase):
                     subb_b64_res = (ResultSection("DECODED ASCII DUMP:",
                                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res))
                     subb_b64_res.add_line(safe_str(b64l[2]))
-
+                    if b64l[2] == b"[Encoded PE file. See extracted files.]":
+                        sub_b64_res.set_heuristic(11)
                     if b64l[2] not in [b"[Possible file contents. See extracted files.]",
                                        b"[IOCs discovered with other non-printable data. See extracted files.]"]:
                         b64_ascii_content.append(b64l[3])
