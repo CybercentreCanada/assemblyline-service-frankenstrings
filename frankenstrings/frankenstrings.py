@@ -466,14 +466,19 @@ class FrankenStrings(ServiceBase):
                                              check_length=chkl, strs_max_size=st_max_size,
                                              st_max_length=max_length)
 
-        if file_plainstr_iocs:
+        for k, l in sorted(file_plainstr_iocs.items()):
+            for i in sorted(l):
+                ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
+        for access_groups in re.finditer(rb'<key>keychain-access-groups</key>\s*<array>([\w\s.<>/]+)</array>',
+                                         request.file_contents):
+            for string in re.finditer(rb'<string>([\w.]+)</string>', access_groups.group(1)):
+                ascii_res.add_tag('file.string.extracted', string.group(1))
+                ascii_res.add_line(f"Found FILE STRING EXTRACTED string: {safe_str(string.group(1))}")
+        if ascii_res.tags:
             request.result.add_section(ascii_res)
-            for k, l in sorted(file_plainstr_iocs.items()):
-                for i in sorted(l):
-                    ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
-
             return ascii_res
         return None
+
 
     def embedded_pe_results(self, request: ServiceRequest) -> Optional[ResultSection]:
         """
