@@ -38,6 +38,8 @@ heuristics:
   - heur_id: 3
     name: Embedded_PE
     score: 100
+    signature_score_map:
+      reversed: 500
     filetype: '*'
     description: Embedded PE extracted.
 
