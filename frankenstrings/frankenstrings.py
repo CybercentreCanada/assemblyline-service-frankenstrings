@@ -387,8 +387,8 @@ class FrankenStrings(ServiceBase):
         return False, tags, xor
 
     # Executable extraction
-    def pe_dump(self, request: ServiceRequest, temp_file: str, offset: int, file_string: str, msg: str,
-            fail_on_except: bool = False) -> bool:
+    def pe_dump(self, request: ServiceRequest, data: bytes, offset: int, file_string: str, msg: str,
+                fail_on_except: bool = False) -> bool:
         """Use PEFile application to find the end of the file (biggest section length wins).
 
         Args:
@@ -404,6 +404,13 @@ class FrankenStrings(ServiceBase):
         """
         pe_extract = None
         mm = None
+
+        # Dump data to a temporary file
+        pe_sha256 = hashlib.sha256(data).hexdigest()
+        temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
+        with open(temp_file, 'wb') as f:
+            f.write(data)
+
         try:
             with open(temp_file, "rb") as f:
                 mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
@@ -479,7 +486,6 @@ class FrankenStrings(ServiceBase):
             return ascii_res
         return None
 
-
     def embedded_pe_results(self, request: ServiceRequest) -> Optional[ResultSection]:
         """
         Finds, extracts and reports embedded executables
@@ -493,21 +499,22 @@ class FrankenStrings(ServiceBase):
         embedded_pe = False
         for pos_exe in re.findall(PAT_EXEHEADER, request.file_contents[1:]):
             if re.search(PAT_EXEDOS, pos_exe):
-                pe_sha256 = hashlib.sha256(pos_exe).hexdigest()
-                temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
-
-                with open(temp_file, 'wb') as pedata:
-                    pedata.write(pos_exe)
-
-                embedded_pe = embedded_pe or self.pe_dump(request, temp_file, offset=0, file_string="embed_pe",
+                embedded_pe = embedded_pe or self.pe_dump(request, pos_exe, offset=0, file_string="embed_pe",
                                                           msg="PE header strings discovered in sample",
                                                           fail_on_except=True)
+        # Look for reversed PE files
+        reversed_pe = False
+        for pos_exe in re.findall(PAT_EXEHEADER, request.file_contents[::-1]):
+            if re.search(PAT_EXEDOS, pos_exe):
+                reversed_pe = reversed_pe or self.pe_dump(request, pos_exe, offset=0, file_string="reverse_pe",
+                                                          msg="Reversed PE header strings discovered in sample",
+                                                          fail_on_except=True)
         # Report embedded PEs if any are found
-        if embedded_pe:
+        if embedded_pe or reversed_pe:
             return ResultSection("Embedded PE header discovered in sample. See extracted files.",
-                                 heuristic=Heuristic(3), parent=request.result)
+                                 heuristic=Heuristic(3, signature='reversed' if reversed_pe else None),
+                                 parent=request.result)
         return None
-
 
     def base64_results(self, request: ServiceRequest, patterns: PatternMatch) -> Optional[ResultSection]:
         """
@@ -600,14 +607,9 @@ class FrankenStrings(ServiceBase):
             xresult = bbcrack(request.file_contents, level=1)
         xformat_string = '%-20s %-7s %-7s %-50s'
         xor_al_results = []
-        xindex = 0
         for transform, regex, offset, score, smatch in xresult:
             if regex == 'EXE_HEAD':
-                xindex += 1
-                xtemp_file = os.path.join(self.working_directory, f"EXE_HEAD_{xindex}_{offset}_{score}.unXORD")
-                with open(xtemp_file, 'wb') as xdata:
-                    xdata.write(smatch)
-                pe_extracted = self.pe_dump(request, xtemp_file, offset, file_string="xorpe_decoded",
+                pe_extracted = self.pe_dump(request, smatch, offset, file_string="xorpe_decoded",
                                             msg="Extracted xor file during FrakenStrings analysis.")
                 if pe_extracted:
                     xor_al_results.append(xformat_string % (str(transform), offset, score,
