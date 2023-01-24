@@ -607,10 +607,8 @@ class FrankenStrings(ServiceBase):
             xresult = bbcrack(request.file_contents, level=1)
         xformat_string = '%-20s %-7s %-7s %-50s'
         xor_al_results = []
-        xindex = 0
         for transform, regex, offset, score, smatch in xresult:
             if regex == 'EXE_HEAD':
-                xindex += 1
                 pe_extracted = self.pe_dump(request, smatch, offset, file_string="xorpe_decoded",
                                             msg="Extracted xor file during FrakenStrings analysis.")
                 if pe_extracted:
