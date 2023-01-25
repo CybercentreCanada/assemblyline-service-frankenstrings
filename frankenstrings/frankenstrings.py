@@ -31,6 +31,8 @@ B64Result = Dict[str, Tuple[int, bytes, bytes, bytes]]
 PAT_EXEDOS = rb'(?s)This program cannot be run in DOS mode'
 PAT_EXEHEADER = rb'(?s)MZ.{32,1024}PE\000\000.+'
 
+BASE64_RE = rb'(?:[A-Za-z0-9+/]{10,}(?:&#(?:xA|10);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}'
+
 
 class FrankenStrings(ServiceBase):
     """ FrankenStrings Service """
@@ -530,9 +532,8 @@ class FrankenStrings(ServiceBase):
         b64_al_results: List[Tuple[B64Result, Tags]] = []
         b64_matches: Set[bytes] = set()
 
-        # Base64 characters with possible space, newline characters and HTML line feeds (&#(XA|10);)
-        for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}'
-                                    b'(?:&#[x1][A0];)?[\r]?[\n]?){2,})', request.file_contents):
+        # Base64 characters with possible space, newline characters and HTML line feeds (&#xA; or &#10;)
+        for b64_match in re.findall(BASE64_RE, request.file_contents):
             b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')\
                 .replace(b'&#xA;', b'').replace(b'&#10;', b'')
             if b64_string in b64_matches:
@@ -549,7 +550,7 @@ class FrankenStrings(ServiceBase):
 
         # UTF-16 strings
         for ust in strings.extract_unicode_strings(request.file_contents, n=self.st_min_length):
-            for b64_match in re.findall(b'([\x20]{0,2}(?:[A-Za-z0-9+/]{10,}={0,2}[\r]?[\n]?){2,})', ust.s):
+            for b64_match in re.findall(BASE64_RE, ust.s):
                 b64_string = b64_match.replace(b'\n', b'').replace(b'\r', b'').replace(b' ', b'')
                 uniq_char = set(b64_string)
                 if len(uniq_char) > 6:
