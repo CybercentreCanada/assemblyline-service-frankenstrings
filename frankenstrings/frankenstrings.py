@@ -62,9 +62,6 @@ class FrankenStrings(ServiceBase):
         self.sample_type = ''
         self.excess_extracted = 0
 
-    def start(self) -> None:
-        self.log.debug("FrankenStrings service started")
-
 # --- Support Functions ------------------------------------------------------------------------------------------------
 
     def extract_file(self, request, data, file_name, description):
