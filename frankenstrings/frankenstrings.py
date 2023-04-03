@@ -868,17 +868,18 @@ class FrankenStrings(ServiceBase):
         self.embedded_pe_results(request)
 
         # Possible encoded strings -- all sample types except code/* (code is handled by deobfuscripter service)
-        if not self.sample_type.startswith("code"):
+        # Include html and xml for base64
+        if not self.sample_type.startswith("code") or self.sample_type in ("code/html", "code/xml"):
             self.base64_results(request, patterns)
+        if not self.sample_type.startswith("code"):
             if (len(request.file_contents) or 0) < bb_max_size:
                 self.bbcrack_results(request)
-
-        # Other possible encoded strings -- all sample types but code and executables
-        if not self.sample_type.split("/", 1)[0] in ["executable", "code"]:
-            self.unicode_results(request, patterns)
-            # Go over again, looking for long ASCII-HEX character strings
-            if not self.sample_type.startswith("document/office"):
-                self.hex_results(request, patterns)
+            # Other possible encoded strings -- all sample types but code and executables
+            if not self.sample_type.startswith("executable"):
+                self.unicode_results(request, patterns)
+                # Go over again, looking for long ASCII-HEX character strings
+                if not self.sample_type.startswith("document/office"):
+                    self.hex_results(request, patterns)
 
         if self.excess_extracted:
             self.log.warning(
