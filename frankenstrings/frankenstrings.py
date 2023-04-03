@@ -454,7 +454,7 @@ class FrankenStrings(ServiceBase):
 
         # Dump data to a temporary file
         pe_sha256 = hashlib.sha256(data).hexdigest()
-        temp_file = os.path.join(self.working_directory, "EXE_TEMP_{}".format(pe_sha256))
+        temp_file = os.path.join(self.working_directory, f"EXE_TEMP_{pe_sha256}")
         with open(temp_file, "wb") as f:
             f.write(data)
 
@@ -496,7 +496,7 @@ class FrankenStrings(ServiceBase):
 
         return bool(pe_extract)
 
-    # --- Results methods ------------------------------------------------------------------------------------------------
+    # --- Results methods ----------------------------------------------------------------------------------------------
 
     def ascii_results(
         self, request: ServiceRequest, patterns: PatternMatch, max_length: int, st_max_size: int
@@ -693,7 +693,7 @@ class FrankenStrings(ServiceBase):
                 )
                 if pe_extracted:
                     xor_al_results.append(
-                        xformat_string % (str(transform), offset, score, "[PE Header Detected. " "See Extracted files]")
+                        xformat_string % (str(transform), offset, score, "[PE Header Detected. See Extracted files]")
                     )
             else:
                 if not regex.startswith("EXE_"):
@@ -832,7 +832,7 @@ class FrankenStrings(ServiceBase):
                     asx_res.add_line(safe_str(data))
                     asciihex_bb_res.add_tag(xkey, match)
 
-    # --- Execute ----------------------------------------------------------------------------------------------------------
+    # --- Execute ------------------------------------------------------------------------------------------------------
 
     def execute(self, request: ServiceRequest) -> None:
         """Main Module. See README for details."""
