@@ -843,6 +843,12 @@ class FrankenStrings(ServiceBase):
         patterns = PatternMatch()
         self.sample_type = request.file_type
         self.excess_extracted = 0
+
+        max_size = request.get_param('max_file_size')
+        max_length = request.get_param('max_string_length')
+        st_max_size = self.config.get("st_max_size", 0)
+        bb_max_size = self.config.get("bb_max_size", 85000)
+
         # Filters for submission modes. Listed in order of use.
         if request.deep_scan:
             # Maximum size of submitted file to run this service:
@@ -856,11 +862,6 @@ class FrankenStrings(ServiceBase):
             st_max_size = 1000000
             # BBcrack maximum size of submitted file to run module:
             bb_max_size = 200000
-        else:
-            max_size = self.config.get("max_size", 3000000)
-            max_length = self.config.get("max_length", 5000)
-            st_max_size = self.config.get("st_max_size", 0)
-            bb_max_size = self.config.get("bb_max_size", 85000)
 
         # Begin analysis
         if (len(request.file_contents) or 0) >= max_size or self.sample_type.startswith("archive/"):
