@@ -17,10 +17,19 @@ is_external: false
 licence_count: 0
 
 config:
-  max_size: 3000000
-  max_length: 5000
   st_max_size: 0
   bb_max_size: 85000
+
+submission_params:
+  - name: max_file_size
+    type: int
+    value: 3000000
+    default: 3000000
+
+  - name: max_string_length
+    type: int
+    value: 5000
+    default: 5000
 
 heuristics:
   - heur_id: 1
