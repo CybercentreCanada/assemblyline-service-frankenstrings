@@ -37,6 +37,12 @@ PAT_EXEHEADER = rb"(?s)MZ.{32,1024}PE\000\000.+"
 BASE64_RE = rb"(?:[A-Za-z0-9+/]{10,}(?:&#(?:xA|10);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}"
 
 
+def truncate(text: str, length: int = 500):
+    if len(text) <= length:
+        return text
+    return text[:length] + "[...]"
+
+
 class FrankenStrings(ServiceBase):
     """FrankenStrings Service"""
 
@@ -650,7 +656,7 @@ class FrankenStrings(ServiceBase):
                     subb_b64_res = ResultSection(
                         "DECODED ASCII DUMP:", body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res
                     )
-                    subb_b64_res.add_line(safe_str(b64l[2]))
+                    subb_b64_res.add_line(truncate(safe_str(b64l[2])))
                     if b64l[2] == b"[Encoded PE file. See extracted files.]":
                         sub_b64_res.set_heuristic(11)
                     if b64l[2] not in [
@@ -844,8 +850,8 @@ class FrankenStrings(ServiceBase):
         self.sample_type = request.file_type
         self.excess_extracted = 0
 
-        max_size = request.get_param('max_file_size')
-        max_length = request.get_param('max_string_length')
+        max_size = request.get_param("max_file_size")
+        max_length = request.get_param("max_string_length")
         st_max_size = self.config.get("st_max_size", 0)
         bb_max_size = self.config.get("bb_max_size", 85000)
 
