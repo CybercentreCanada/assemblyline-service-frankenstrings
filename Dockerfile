@@ -7,10 +7,12 @@ USER root
 
 RUN apt-get update && apt-get install -y libyaml-dev && rm -rf /var/lib/apt/lists/*
 
-RUN pip install utils pefile python-magic beautifulsoup4 lxml  && rm -rf ~/.cache/pip
-
 # Switch to assemblyline user
 USER assemblyline
+
+# Install python dependencies
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir --user --requirement requirements.txt && rm -rf ~/.cache/pip
 
 # Copy FrankenStrings service code
 WORKDIR /opt/al_service
