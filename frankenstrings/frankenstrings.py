@@ -6,25 +6,21 @@ import mmap
 import os
 import re
 import traceback
-
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import magic
 import pefile
-
-from multidecoder.multidecoder import Multidecoder
-from multidecoder.json_conversion import tree_to_json
-
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.common.str_utils import safe_str
-from assemblyline_v4_service.common.balbuzard.bbcrack import bbcrack
-from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
+from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
+from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
 from assemblyline_v4_service.common.request import ServiceRequest
+from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
-
 from frankenstrings.flarefloss import strings
+from multidecoder.json_conversion import tree_to_json
+from multidecoder.multidecoder import Multidecoder
 
 # Type aliases
 Tags = Dict[str, Set[str]]
