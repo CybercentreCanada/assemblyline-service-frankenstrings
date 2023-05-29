@@ -1,0 +1,6 @@
+ assemblyline-service-utilities
+ utils
+ pefile
+ python-magic
+ beautifulsoup4
+ lxml
