@@ -3,7 +3,7 @@ version: $SERVICE_TAG
 description: This service performs file and IOC extractions using pattern matching, simple encoding decoder and script deobfuscators.
 
 accepts: .*
-rejects: empty|metadata/.*
+rejects: empty|metadata/.*|document/(email|office/email)
 
 stage: CORE
 category: Static Analysis
