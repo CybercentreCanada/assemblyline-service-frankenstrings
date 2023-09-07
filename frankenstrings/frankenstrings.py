@@ -18,6 +18,7 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
+
 from frankenstrings.flarefloss import strings
 from multidecoder.json_conversion import tree_to_json
 from multidecoder.multidecoder import Multidecoder
@@ -869,6 +870,10 @@ class FrankenStrings(ServiceBase):
         if (len(request.file_contents) or 0) >= max_size or self.sample_type.startswith("archive/"):
             # No analysis is done if the file is an archive or too large
             return
+
+        # Fix issue with line breaks in the middle of IOCs
+        if request.file_type == "text/calendar":
+            request.file_contents = request.file_contents.replace(b'\n ', b'')
 
         self.ascii_results(request, patterns, max_length, st_max_size)
         self.embedded_pe_results(request)
