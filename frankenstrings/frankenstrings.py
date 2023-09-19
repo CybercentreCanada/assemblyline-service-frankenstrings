@@ -868,7 +868,7 @@ class FrankenStrings(ServiceBase):
             bb_max_size = 200000
 
         # Begin analysis
-        if (len(request.file_contents) or 0) >= max_size or self.sample_type.startswith("archive/"):
+        if (request.task.file_size or 0) >= max_size or self.sample_type.startswith("archive/"):
             # No analysis is done if the file is an archive or too large
             return
 
