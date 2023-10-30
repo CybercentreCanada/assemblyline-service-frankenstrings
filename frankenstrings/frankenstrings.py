@@ -154,6 +154,11 @@ class FrankenStrings(ServiceBase):
                             res.add_tag(ty, safe_str(v))
                         if taglist:
                             tags[ty].add(safe_str(v))
+
+        # This is a suspicious use of URLANDEXIT to fetch a URL in a video file
+        if self.sample_type == "video/asf" and b"URLANDEXIT" in strs and len(tags.get("network.static.uri", {})) > 0:
+            res.set_heuristic(Heuristic(12))
+
         return tags
 
     @staticmethod
