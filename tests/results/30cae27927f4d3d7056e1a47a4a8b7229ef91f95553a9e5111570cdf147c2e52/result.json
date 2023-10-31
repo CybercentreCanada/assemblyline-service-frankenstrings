@@ -1,0 +1,380 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 610,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": "Found NETWORK STATIC DOMAIN string: crl.thawte.com\nFound NETWORK STATIC DOMAIN string: ocsp.thawte.com\nFound NETWORK STATIC DOMAIN string: t1.symcb.com\nFound NETWORK STATIC DOMAIN string: t2.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcd.com\nFound NETWORK STATIC DOMAIN string: ts-aia.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-crl.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-ocsp.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: vendor.Windows\nFound NETWORK STATIC DOMAIN string: www.advancedinstaller.com\nFound NETWORK STATIC DOMAIN string: www.example.com\nFound NETWORK STATIC DOMAIN string: www.google.com\nFound NETWORK STATIC DOMAIN string: www.thawte.com\nFound NETWORK STATIC DOMAIN string: www.yahoo.com\nFound NETWORK STATIC URI string: http://crl.thawte.com/ThawteTimestampingCA.crl0\nFound NETWORK STATIC URI string: http://ocsp.thawte.com0\nFound NETWORK STATIC URI string: http://t1.symcb.com/ThawtePCA.crl0\nFound NETWORK STATIC URI string: http://t2.symcb.com0\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crl0\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crt0\nFound NETWORK STATIC URI string: http://tl.symcd.com0\nFound NETWORK STATIC URI string: http://ts-aia.ws.symantec.com/tss-ca-g2.cer0\nFound NETWORK STATIC URI string: http://ts-crl.ws.symantec.com/tss-ca-g2.crl0(\nFound NETWORK STATIC URI string: http://ts-ocsp.ws.symantec.com07\nFound NETWORK STATIC URI string: http://www.advancedinstaller.com0\nFound NETWORK STATIC URI string: http://www.example.com\nFound NETWORK STATIC URI string: http://www.google.com\nFound NETWORK STATIC URI string: http://www.yahoo.com\nFound NETWORK STATIC URI string: https://www.thawte.com/cps0/\nFound NETWORK STATIC URI string: https://www.thawte.com/repository0",
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {
+          "network": {
+            "static": {
+              "domain": [
+                "ts-crl.ws.symantec.com",
+                "ts-aia.ws.symantec.com",
+                "t1.symcb.com",
+                "www.yahoo.com",
+                "tl.symcb.com",
+                "www.advancedinstaller.com",
+                "www.thawte.com",
+                "t2.symcb.com",
+                "www.google.com",
+                "www.example.com",
+                "crl.thawte.com",
+                "ocsp.thawte.com",
+                "ts-ocsp.ws.symantec.com",
+                "vendor.Windows",
+                "tl.symcd.com"
+              ],
+              "uri": [
+                "http://ts-crl.ws.symantec.com/tss-ca-g2.crl0(",
+                "http://ts-aia.ws.symantec.com/tss-ca-g2.cer0",
+                "http://t1.symcb.com/ThawtePCA.crl0",
+                "http://www.yahoo.com",
+                "http://tl.symcb.com/tl.crl0",
+                "http://www.advancedinstaller.com0",
+                "https://www.thawte.com/repository0",
+                "http://t2.symcb.com0",
+                "http://www.google.com",
+                "http://www.example.com",
+                "http://crl.thawte.com/ThawteTimestampingCA.crl0",
+                "http://ocsp.thawte.com0",
+                "http://tl.symcb.com/tl.crt0",
+                "https://www.thawte.com/cps0/",
+                "http://ts-ocsp.ws.symantec.com07",
+                "http://tl.symcd.com0"
+              ]
+            }
+          }
+        },
+        "title_text": "The following IOC were found in plain text in the file:",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 3,
+          "score": 100,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Embedded PE header discovered in sample. See extracted files.",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 1,
+          "score": 10,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Base64 Strings:",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "BASE64 TEXT SIZE: 364\nBASE64 SAMPLE TEXT: TypeTableNameAdminExecuteSequenceActionConditionSe[........]\nDECODED SHA256: addf4b33cad1dd508078ebd3783de29f4134da14806a8c5c793f727482d1ada6",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Result 1",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "O*^Mxxfq1yy'x-wb*'Izw-),-\"xbb'fsrFxe)^e),\"{-jYH+bjXxeUbu^zy(h.,+!bznX*&b^jznXv-E\"V^Lmz{\"r'~^+-z0B'~^+-z\"w=\\=\\Ly",
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "DECODED ASCII DUMP:",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Found Unicode-Like Strings in Non-Executable:",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "ENCODED TEXT SIZE: 96\nENCODED SAMPLE TEXT: \\u0034\\u0038\\u0030\\u002b\\u0044\\u0034\\u0038\\u0030\\u002b\\u0045\\u0034\\u0038\\u0030\\u002b\\u0022\\u002f\\u002f\\u0073\\u0068\\u0061\\u0037\\u0075\\u002e\\u0070\\u0061\\u0075\\u0064\\u0065\\u0061\\u0072\\u0063\\u006f\\u007a\\u[........]\nDECODED SHA256: c272d017ee19c345ea93be062db73a5a4b1a01bf398865abb1931c8ce9cdc708",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 6,
+          "score": 500,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {
+          "network": {
+            "static": {
+              "domain": [
+                "sha7u.paudearcozu.za.com"
+              ]
+            }
+          }
+        },
+        "title_text": "Result 0",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "4\\x008\\x000\\x00+\\x00D\\x004\\x008\\x000\\x00+\\x00E\\x004\\x008\\x000\\x00+\\x00\"\\x00/\\x00/\\x00s\\x00h\\x00a\\x007\\x00u\\x00.\\x00p\\x00a\\x00u\\x00d\\x00e\\x00a\\x00r\\x00c\\x00o\\x00z\\x00u\\x00.\\x00z\\x00a\\x00.\\x00c\\x00o\\x00m\\x00/\\x00?\\x001\\x00/\\x00\"\\x00)\\x00;\\x00\nSuspicious string(s) found in decoded data.",
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "DECODED ASCII DUMP:",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [
+      {
+        "name": "781195a9a7_embed_pe",
+        "sha256": "781195a9a77fc65815532ff9caaca43a616b9152ce6e44e4bce0724ca6dc5c87"
+      },
+      {
+        "name": "all_b64_addf4b3.txt",
+        "sha256": "addf4b33cad1dd508078ebd3783de29f4134da14806a8c5c793f727482d1ada6"
+      }
+    ],
+    "supplementary": []
+  },
+  "results": {
+    "heuristics": [
+      {
+        "attack_ids": [],
+        "heur_id": 1,
+        "signatures": []
+      },
+      {
+        "attack_ids": [],
+        "heur_id": 3,
+        "signatures": []
+      },
+      {
+        "attack_ids": [],
+        "heur_id": 6,
+        "signatures": []
+      }
+    ],
+    "tags": {
+      "network.static.domain": [
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "crl.thawte.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "ocsp.thawte.com"
+        },
+        {
+          "heur_id": 6,
+          "signatures": [],
+          "value": "sha7u.paudearcozu.za.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "t1.symcb.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "t2.symcb.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "tl.symcb.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "tl.symcd.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "ts-aia.ws.symantec.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "ts-crl.ws.symantec.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "ts-ocsp.ws.symantec.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "vendor.Windows"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "www.advancedinstaller.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "www.example.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "www.google.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "www.thawte.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "www.yahoo.com"
+        }
+      ],
+      "network.static.uri": [
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://crl.thawte.com/ThawteTimestampingCA.crl0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://ocsp.thawte.com0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://t1.symcb.com/ThawtePCA.crl0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://t2.symcb.com0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://tl.symcb.com/tl.crl0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://tl.symcb.com/tl.crt0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://tl.symcd.com0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://ts-aia.ws.symantec.com/tss-ca-g2.cer0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://ts-crl.ws.symantec.com/tss-ca-g2.crl0("
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://ts-ocsp.ws.symantec.com07"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://www.advancedinstaller.com0"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://www.example.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://www.google.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "http://www.yahoo.com"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "https://www.thawte.com/cps0/"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "https://www.thawte.com/repository0"
+        }
+      ]
+    },
+    "temp_submission_data": {}
+  }
+}
