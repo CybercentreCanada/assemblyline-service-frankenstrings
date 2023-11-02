@@ -141,7 +141,7 @@ class FrankenStrings(ServiceBase):
         if check_length and len(strs) > strs_max_size:
             just_network = True
 
-        for s in strs:
+        for s in sorted(strs):
             st_value: Dict[str, Iterable[bytes]] = patterns.ioc_match(s, bogon_ip=True, just_network=just_network)
             for ty, val in st_value.items():
                 if taglist and ty not in tags:
