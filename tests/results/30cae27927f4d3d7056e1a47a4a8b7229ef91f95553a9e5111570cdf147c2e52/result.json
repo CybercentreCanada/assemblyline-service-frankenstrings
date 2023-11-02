@@ -16,39 +16,39 @@
           "network": {
             "static": {
               "domain": [
-                "ts-crl.ws.symantec.com",
-                "ts-aia.ws.symantec.com",
-                "t1.symcb.com",
-                "www.yahoo.com",
-                "tl.symcb.com",
                 "www.advancedinstaller.com",
+                "t1.symcb.com",
                 "www.thawte.com",
-                "t2.symcb.com",
-                "www.google.com",
-                "www.example.com",
+                "ts-aia.ws.symantec.com",
+                "ts-crl.ws.symantec.com",
                 "crl.thawte.com",
-                "ocsp.thawte.com",
-                "ts-ocsp.ws.symantec.com",
                 "vendor.Windows",
-                "tl.symcd.com"
+                "ocsp.thawte.com",
+                "t2.symcb.com",
+                "tl.symcb.com",
+                "tl.symcd.com",
+                "ts-ocsp.ws.symantec.com",
+                "www.example.com",
+                "www.google.com",
+                "www.yahoo.com"
               ],
               "uri": [
-                "http://ts-crl.ws.symantec.com/tss-ca-g2.crl0(",
-                "http://ts-aia.ws.symantec.com/tss-ca-g2.cer0",
-                "http://t1.symcb.com/ThawtePCA.crl0",
-                "http://www.yahoo.com",
-                "http://tl.symcb.com/tl.crl0",
                 "http://www.advancedinstaller.com0",
+                "http://t1.symcb.com/ThawtePCA.crl0",
                 "https://www.thawte.com/repository0",
-                "http://t2.symcb.com0",
-                "http://www.google.com",
-                "http://www.example.com",
+                "http://ts-aia.ws.symantec.com/tss-ca-g2.cer0",
+                "http://ts-crl.ws.symantec.com/tss-ca-g2.crl0(",
                 "http://crl.thawte.com/ThawteTimestampingCA.crl0",
                 "http://ocsp.thawte.com0",
+                "http://t2.symcb.com0",
+                "http://tl.symcb.com/tl.crl0",
                 "http://tl.symcb.com/tl.crt0",
-                "https://www.thawte.com/cps0/",
+                "http://tl.symcd.com0",
                 "http://ts-ocsp.ws.symantec.com07",
-                "http://tl.symcd.com0"
+                "http://www.example.com",
+                "http://www.google.com",
+                "http://www.yahoo.com",
+                "https://www.thawte.com/cps0/"
               ]
             }
           }
