@@ -10,6 +10,10 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import magic
 import pefile
+
+from multidecoder.multidecoder import Multidecoder
+from multidecoder.json_conversion import tree_to_json
+
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.common.str_utils import safe_str
 from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
@@ -139,7 +143,7 @@ class FrankenStrings(ServiceBase):
         if check_length and len(strs) > strs_max_size:
             just_network = True
 
-        for s in strs:
+        for s in sorted(strs):
             st_value: Dict[str, Iterable[bytes]] = patterns.ioc_match(s, bogon_ip=True, just_network=just_network)
             for ty, val in st_value.items():
                 if taglist and ty not in tags:
@@ -154,6 +158,11 @@ class FrankenStrings(ServiceBase):
                             res.add_tag(ty, safe_str(v))
                         if taglist:
                             tags[ty].add(safe_str(v))
+
+        # This is a suspicious use of URLANDEXIT to fetch a URL in a video file
+        if self.sample_type == "video/asf" and b"URLANDEXIT" in strs and len(tags.get("network.static.uri", {})) > 0:
+            res.set_heuristic(Heuristic(12))
+
         return tags
 
     @staticmethod
@@ -889,6 +898,19 @@ class FrankenStrings(ServiceBase):
                 # Go over again, looking for long ASCII-HEX character strings
                 if not self.sample_type.startswith("document/office"):
                     self.hex_results(request, file_contents, patterns)
+
+        if self.config.get("add_multidecoder_output_as_supplementary", False):
+            try:
+                md = Multidecoder()
+                tree = md.scan(request.file_contents)
+                json = tree_to_json(tree)
+                filename = request.sha256[:8] + "_md.json"
+                filepath = os.path.join(self.working_directory, filename)
+                with open(filepath, "w") as f:
+                    f.write(json)
+                request.add_supplementary(filepath, filename, "Multidecoder json")
+            except Exception:
+                pass
 
         if self.excess_extracted:
             self.log.warning(
