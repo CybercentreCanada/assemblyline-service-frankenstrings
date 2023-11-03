@@ -19,6 +19,7 @@ licence_count: 0
 config:
   st_max_size: 0
   bb_max_size: 85000
+  add_multidecoder_output_as_supplementary: false
 
 submission_params:
   - name: max_file_size
@@ -35,13 +36,13 @@ heuristics:
   - heur_id: 1
     name: Base64_Decoded
     score: 10
-    filetype: '.*'
+    filetype: ".*"
     description: Base64-like strings discovered and decoded.
 
   - heur_id: 2
     name: XOR_decoded
     score: 500
-    filetype: '.*'
+    filetype: ".*"
     description: XOR'd IOC content found and decoded.
 
   - heur_id: 3
@@ -49,61 +50,62 @@ heuristics:
     score: 100
     signature_score_map:
       reversed: 500
-    filetype: '.*'
+    filetype: ".*"
     description: Embedded PE extracted.
 
   - heur_id: 4
     name: Unicode_decoded
     score: 10
-    filetype: '.*'
+    filetype: ".*"
     description: Unicode-like data found and decoded in non-exectuable file.
 
   - heur_id: 5
     name: Unicode_file_extracted
     score: 100
-    filetype: '.*'
+    filetype: ".*"
     description: Long section of unicode-like data found and extracted in non-executable file.
 
   - heur_id: 6
     name: IOC_unicode_decoded
     score: 500
-    filetype: '.*'
+    filetype: ".*"
     description: IOC(s) found in unicode encoded data in non-executable file.
 
   - heur_id: 7
     name: ASCIIhex_file_decoded
     score: 50
-    filetype: '.*'
+    filetype: ".*"
     description: Possible ASCII hex encoded file decoded in non-executable file.
 
   - heur_id: 8
     name: ASCIIhex_strings_decoded
     score: 100
-    filetype: '.*'
-    description: ASCII hex-like strings found and decoded in a non-document, non-executable file.
+    filetype: ".*"
+    description:
+      ASCII hex-like strings found and decoded in a non-document, non-executable file.
       -
   - heur_id: 9
     name: ASCIIhex_xor_string
     score: 500
-    filetype: '.*'
+    filetype: ".*"
     description: Possible ASCII hex-like string with additional xor encoding found.
 
   - heur_id: 10
     name: ASCIIhex_strings_decoded_doc
     score: 10
-    filetype: 'document/.*'
+    filetype: "document/.*"
     description: ASCII hex-like strings found and decoded in a document file
 
   - heur_id: 11
     name: Base64_PE
     score: 500
-    filetype: '.*'
+    filetype: ".*"
     description: Base64 decoded PE file
 
   - heur_id: 12
     name: URLANDEXIT Usage in Video
     score: 500
-    filetype: 'video/asf'
+    filetype: "video/asf"
     description: A URL was embedded into the stream of a video via URLANDEXIT
 
 docker_config:
