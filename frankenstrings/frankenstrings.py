@@ -12,11 +12,12 @@ import magic
 import pefile
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.common.str_utils import safe_str
+from assemblyline.odm.models.result import BODY_FORMAT
 from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
 from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
+from assemblyline_v4_service.common.result import Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 from frankenstrings.flarefloss import strings
