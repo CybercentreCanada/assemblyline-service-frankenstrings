@@ -39,6 +39,22 @@ def truncate(text: str, length: int = 500):
         return text
     return text[:length] + "[...]"
 
+# Type aliases
+Tags = Dict[str, Set[str]]
+B64Result = Dict[str, Tuple[int, bytes, bytes, bytes]]
+
+# PE Strings
+PAT_EXEDOS = rb"(?s)This program cannot be run in DOS mode"
+PAT_EXEHEADER = rb"(?s)MZ.{32,1024}PE\000\000.+"
+
+BASE64_RE = rb"(?:[A-Za-z0-9+/]{10,}(?:&#(?:xA|10);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}"
+
+
+def truncate(text: str, length: int = 500):
+    if len(text) <= length:
+        return text
+    return text[:length] + "[...]"
+
 
 class FrankenStrings(ServiceBase):
     """FrankenStrings Service"""
@@ -900,18 +916,6 @@ class FrankenStrings(ServiceBase):
                 # Go over again, looking for long ASCII-HEX character strings
                 if not self.sample_type.startswith("document/office"):
                     self.hex_results(request, file_contents, patterns)
-
-        try:
-            md = Multidecoder()
-            tree = md.scan(request.file_contents)
-            json = tree_to_json(tree)
-            filename = request.sha256[:8] + '_md.json'
-            filepath = os.path.join(self.working_directory, filename)
-            with open(filepath, 'w') as f:
-                f.write(json)
-            request.add_supplementary(filepath, filename, 'Multidecoder json')
-        except Exception:
-            pass
 
         if self.excess_extracted:
             self.log.warning(

@@ -1,7 +1,6 @@
-assemblyline-service-utilities
-utils
-pefile
-python-magic
-beautifulsoup4
-lxml
-multidecoder
+ assemblyline-service-utilities
+ utils
+ pefile
+ python-magic
+ beautifulsoup4
+ lxml
