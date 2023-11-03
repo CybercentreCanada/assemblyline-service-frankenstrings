@@ -4,3 +4,4 @@
  python-magic
  beautifulsoup4
  lxml
+ multidecoder
