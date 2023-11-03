@@ -582,10 +582,8 @@ class FrankenStrings(ServiceBase):
         return None
 
     def base64_results(
-            self,
-            request: ServiceRequest,
-            file_contents: bytes,
-            patterns: PatternMatch) -> Optional[ResultSection]:
+        self, request: ServiceRequest, file_contents: bytes, patterns: PatternMatch
+    ) -> Optional[ResultSection]:
         """
         Finds and reports Base64 encoded text
 
@@ -711,10 +709,8 @@ class FrankenStrings(ServiceBase):
         return None
 
     def unicode_results(
-            self,
-            request: ServiceRequest,
-            file_contents: bytes,
-            patterns: PatternMatch) -> Optional[ResultSection]:
+        self, request: ServiceRequest, file_contents: bytes, patterns: PatternMatch
+    ) -> Optional[ResultSection]:
         """
         Finds and report unicode encoded strings
 
@@ -873,7 +869,7 @@ class FrankenStrings(ServiceBase):
         # Fix issue with line breaks in the middle of IOCs
         file_contents = request.file_contents
         if request.file_type == "text/calendar":
-            file_contents = file_contents.replace(b'\r\n ', b'').replace(b'\n ', b'')
+            file_contents = file_contents.replace(b"\r\n ", b"").replace(b"\n ", b"")
 
         if section := self.ascii_results(file_contents, patterns, max_length, st_max_size):
             request.result.add_section(section)
