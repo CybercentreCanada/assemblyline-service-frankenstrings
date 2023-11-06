@@ -1,0 +1,8 @@
+{
+    "options": {
+        "test_extra": true
+    },
+    "config": {
+        "add_multidecoder_output_as_supplementary": true
+    }
+}
