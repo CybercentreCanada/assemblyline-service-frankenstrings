@@ -15,7 +15,7 @@ from multidecoder.multidecoder import Multidecoder
 from multidecoder.json_conversion import tree_to_json
 
 from assemblyline.common.net import is_valid_domain, is_valid_email
-from assemblyline.common.str_utils import safe_str
+from assemblyline.common.str_utils import safe_str, truncate
 from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
 from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
@@ -34,12 +34,6 @@ PAT_EXEDOS = rb"(?s)This program cannot be run in DOS mode"
 PAT_EXEHEADER = rb"(?s)MZ.{32,1024}PE\000\000.+"
 
 BASE64_RE = rb"(?:[A-Za-z0-9+/]{10,}(?:&#(?:xA|10);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}"
-
-
-def truncate(text: str, length: int = 500):
-    if len(text) <= length:
-        return text
-    return text[:length] + "[...]"
 
 
 class FrankenStrings(ServiceBase):
@@ -655,7 +649,7 @@ class FrankenStrings(ServiceBase):
                     subb_b64_res = ResultSection(
                         "DECODED ASCII DUMP:", body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res
                     )
-                    subb_b64_res.add_line(truncate(safe_str(b64l[2])))
+                    subb_b64_res.add_line(truncate(safe_str(b64l[2]), 500))
                     if b64l[2] == b"[Encoded PE file. See extracted files.]":
                         sub_b64_res.set_heuristic(11)
                     if b64l[2] not in [
