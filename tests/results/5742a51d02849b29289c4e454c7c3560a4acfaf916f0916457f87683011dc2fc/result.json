@@ -94,10 +94,6 @@
   "files": {
     "extracted": [
       {
-        "name": "all_b64_01ba471.txt",
-        "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
-      },
-      {
         "name": "559d5ca234_b64_decoded_exe",
         "sha256": "559d5ca234a68bac5a9b1130f9ec73512c1a20178daf0ce04154cbe83dcd32fe"
       },
