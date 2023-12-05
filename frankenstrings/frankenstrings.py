@@ -1,19 +1,18 @@
 """ FrankenStrings Service """
 
+from __future__ import annotations
+
 import binascii
 import hashlib
 import mmap
 import os
 import re
 import traceback
+import zlib
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import magic
 import pefile
-
-from multidecoder.multidecoder import Multidecoder
-from multidecoder.json_conversion import tree_to_json
-
 from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.common.str_utils import safe_str, truncate
 from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
@@ -22,6 +21,8 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
+from multidecoder.json_conversion import tree_to_json
+from multidecoder.multidecoder import Multidecoder
 
 from frankenstrings.flarefloss import strings
 
@@ -81,6 +82,14 @@ class FrankenStrings(ServiceBase):
             # Already over maximimum number of extracted files
             self.excess_extracted += 1
             return
+
+        m = magic.Magic(mime=True)
+        ftype = m.from_buffer(data)
+        if "octet-stream" in ftype:
+            try:
+                data = zlib.decompress(data, wbits=-15)
+            except zlib.error:
+                return  # Don't extract unidentifyable data
         try:
             # If for some reason the directory doesn't exist, create it
             if not os.path.exists(self.working_directory):
