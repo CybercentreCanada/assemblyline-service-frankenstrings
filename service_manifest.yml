@@ -15,6 +15,7 @@ disable_cache: false
 enabled: true
 is_external: false
 licence_count: 0
+privileged: true
 
 config:
   st_max_size: 0
@@ -111,4 +112,4 @@ heuristics:
 docker_config:
   image: ${REGISTRY}cccs/assemblyline-service-frankenstrings:$SERVICE_TAG
   cpu_cores: 1
-  ram_mb: 512
+  ram_mb: 3072
