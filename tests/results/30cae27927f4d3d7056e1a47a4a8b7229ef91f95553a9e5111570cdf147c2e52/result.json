@@ -58,7 +58,7 @@
       },
       {
         "auto_collapse": false,
-        "body": null,
+        "body": "PE Files:\n781195a9a7_embedded_pe",
         "body_config": {},
         "body_format": "TEXT",
         "classification": "TLP:C",
@@ -181,7 +181,7 @@
   "files": {
     "extracted": [
       {
-        "name": "781195a9a7_embed_pe",
+        "name": "781195a9a7_embedded_pe",
         "sha256": "781195a9a77fc65815532ff9caaca43a616b9152ce6e44e4bce0724ca6dc5c87"
       }
     ],
