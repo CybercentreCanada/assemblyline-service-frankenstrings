@@ -58,7 +58,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "PE Files:\n781195a9a7_embedded_pe",
+        "body": "PE Files:\n781195a9a7_embedded_pe\n",
         "body_config": {},
         "body_format": "TEXT",
         "classification": "TLP:C",
