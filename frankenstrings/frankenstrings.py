@@ -21,6 +21,7 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
+from multidecoder.decoders.pe_file import find_pe_files
 from multidecoder.json_conversion import tree_to_json
 from multidecoder.multidecoder import Multidecoder
 
@@ -551,7 +552,7 @@ class FrankenStrings(ServiceBase):
                 ascii_res.add_line(f"Found FILE STRING EXTRACTED string: {safe_str(string.group(1))}")
         return ascii_res if ascii_res.tags else None
 
-    def embedded_pe_results(self, request: ServiceRequest, file_contents: bytes) -> Optional[ResultSection]:
+    def embedded_pe_results(self, request: ServiceRequest, file_contents: bytes) -> ResultSection | None:
         """
         Finds, extracts and reports embedded executables
 
@@ -561,37 +562,29 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        embedded_pe = False
-        for pos_exe in re.findall(PAT_EXEHEADER, file_contents[1:]):
-            if re.search(PAT_EXEDOS, pos_exe):
-                embedded_pe = embedded_pe or self.pe_dump(
-                    request,
-                    pos_exe,
-                    offset=0,
-                    file_string="embed_pe",
-                    msg="PE header strings discovered in sample",
-                    fail_on_except=True,
-                )
-        # Look for reversed PE files
-        reversed_pe = False
-        for pos_exe in re.findall(PAT_EXEHEADER, file_contents[::-1]):
-            if re.search(PAT_EXEDOS, pos_exe):
-                reversed_pe = reversed_pe or self.pe_dump(
-                    request,
-                    pos_exe,
-                    offset=0,
-                    file_string="reverse_pe",
-                    msg="Reversed PE header strings discovered in sample",
-                    fail_on_except=True,
-                )
-        # Report embedded PEs if any are found
-        if embedded_pe or reversed_pe:
-            return ResultSection(
-                "Embedded PE header discovered in sample. See extracted files.",
-                heuristic=Heuristic(3, signature="reversed" if reversed_pe else None),
-                parent=request.result,
-            )
-        return None
+        pe_hits = find_pe_files(file_contents[1:])
+        reversed_pe_hits = find_pe_files(file_contents[::-1])
+        if not (pe_hits or reversed_pe_hits):
+            return None
+        pe_section = ResultSection(
+            "Embedded PE header discovered in sample. See extracted files.",
+            heuristic=Heuristic(3, signature="reversed" if reversed_pe_hits else None),
+            parent=request.result,
+        )
+        if pe_hits:
+            pe_section.add_line("PE Files:")
+            for pe_hit in pe_hits:
+                pe_file_name = f"{hashlib.sha256(pe_hit.value).hexdigest()[0:10]}_embedded_pe"
+                self.extract_file(request, pe_hit.value, pe_file_name, "PE header strings discovered in sample.")
+                pe_section.add_line(pe_file_name)
+            pe_section.add_line("")
+        if reversed_pe_hits:
+            pe_section.add_line("Reversed PE Files:")
+        for pe_hit in reversed_pe_hits:
+            pe_file_name = f"{hashlib.sha256(pe_hit.value).hexdigest()[0:10]}_reversed_pe"
+            self.extract_file(request, pe_hit.value, pe_file_name, "Reversed PE header strings discovered in sample.")
+            pe_section.add_line(pe_file_name)
+        return pe_section
 
     def base64_results(
         self, request: ServiceRequest, file_contents: bytes, patterns: PatternMatch
@@ -695,6 +688,7 @@ class FrankenStrings(ServiceBase):
         xor_al_results = []
         for transform, regex, offset, score, smatch in xresult:
             if regex == "EXE_HEAD":
+                # Todo: replace this once pe_size is merged in multidecoder
                 pe_extracted = self.pe_dump(
                     request,
                     smatch,

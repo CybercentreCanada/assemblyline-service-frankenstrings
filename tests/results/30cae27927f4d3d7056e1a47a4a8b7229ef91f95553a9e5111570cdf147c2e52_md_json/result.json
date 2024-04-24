@@ -58,7 +58,7 @@
       },
       {
         "auto_collapse": false,
-        "body": null,
+        "body": "PE Files:\n781195a9a7_embedded_pe\n",
         "body_config": {},
         "body_format": "TEXT",
         "classification": "TLP:C",
@@ -181,14 +181,14 @@
   "files": {
     "extracted": [
       {
-        "name": "781195a9a7_embed_pe",
+        "name": "781195a9a7_embedded_pe",
         "sha256": "781195a9a77fc65815532ff9caaca43a616b9152ce6e44e4bce0724ca6dc5c87"
       }
     ],
     "supplementary": [
       {
         "name": "30cae279_md.json",
-        "sha256": "1854eddcaf212d7a9bbb9133fad7273d3a821fdf9b760977c6af76848d53a8aa"
+        "sha256": "4485d1c6aec937e5e91d3756ad06240d90912c8c93062991a7682d6d97e1e260"
       }
     ]
   },
