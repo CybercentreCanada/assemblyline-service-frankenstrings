@@ -19,10 +19,9 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
+from multidecoder.decoders.codec import find_utf16
 from multidecoder.json_conversion import tree_to_json
 from multidecoder.multidecoder import Multidecoder
-
-from frankenstrings.flarefloss import strings
 
 # Type aliases
 Tags = dict[str, set[str]]
@@ -591,8 +590,9 @@ class FrankenStrings(ServiceBase):
                     b64_al_results.append((b64result, tags))
 
         # UTF-16 strings
-        for ust in strings.extract_unicode_strings(file_contents, n=self.st_min_length):
-            for b64_match in re.findall(BASE64_RE, ust.s):
+        for node in find_utf16(file_contents):
+            ust = node.value
+            for b64_match in re.findall(BASE64_RE, ust):
                 b64_string = b64_match.replace(b"\n", b"").replace(b"\r", b"").replace(b" ", b"")
                 uniq_char = set(b64_string)
                 if len(uniq_char) > 6:
