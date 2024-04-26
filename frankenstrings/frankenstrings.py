@@ -9,7 +9,6 @@ import os
 import re
 import traceback
 import zlib
-from typing import Dict, List, Optional, Set, Tuple
 
 import magic
 import pefile
@@ -26,8 +25,8 @@ from multidecoder.multidecoder import Multidecoder
 from frankenstrings.flarefloss import strings
 
 # Type aliases
-Tags = Dict[str, Set[str]]
-B64Result = Dict[str, Tuple[int, bytes, bytes, bytes]]
+Tags = dict[str, set[str]]
+B64Result = dict[str, tuple[int, bytes, bytes, bytes]]
 
 # PE Strings
 PAT_EXEDOS = rb"(?s)This program cannot be run in DOS mode"
@@ -60,7 +59,7 @@ class FrankenStrings(ServiceBase):
         "NET_FULL_URI": "network.static.uri",
     }
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         super().__init__(config)
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
@@ -106,7 +105,7 @@ class FrankenStrings(ServiceBase):
         self,
         data: bytes,
         md: Multidecoder,
-        res: Optional[ResultSection] = None,
+        res: ResultSection | None = None,
         taglist: bool = False,
     ) -> Tags:
         """Searches data for patterns and adds as AL tag to result output.
@@ -186,7 +185,7 @@ class FrankenStrings(ServiceBase):
         return decoded
 
     @staticmethod
-    def unicode_longest_string(listdata: List[bytes]) -> bytes:
+    def unicode_longest_string(listdata: list[bytes]) -> bytes:
         """Compare sizes of unicode strings.
 
         Args:
@@ -210,8 +209,8 @@ class FrankenStrings(ServiceBase):
         return newstr
 
     def decode_encoded_udata(
-        self, request: ServiceRequest, encoding: bytes, data: bytes, decoded_res: Dict[str, Tuple[bytes, bytes]]
-    ) -> List[str]:
+        self, request: ServiceRequest, encoding: bytes, data: bytes, decoded_res: dict[str, tuple[bytes, bytes]]
+    ) -> list[str]:
         """Compare sizes of unicode strings. Some code taken from bas64dump.py @ https://DidierStevens.com.
 
         Args:
@@ -223,8 +222,8 @@ class FrankenStrings(ServiceBase):
             List of hashes of extracted files submitted to AL and list of decoded unicode data information.
         """
 
-        decoded_list: List[Tuple[bytes, bytes]] = []
-        dropped: List[str] = []
+        decoded_list: list[tuple[bytes, bytes]] = []
+        dropped: list[str] = []
 
         qword = re.compile(rb"(?:" + re.escape(encoding) + b"[A-Fa-f0-9]{16})+")
         dword = re.compile(rb"(?:" + re.escape(encoding) + b"[A-Fa-f0-9]{8})+")
@@ -373,7 +372,7 @@ class FrankenStrings(ServiceBase):
             If a file was extracted, tags, and xor results
         """
         tags: Tags = {}
-        xor: Dict[str, Tuple[bytes, bytes, str]] = {}
+        xor: dict[str, tuple[bytes, bytes, str]] = {}
         if len(data) % 2 != 0:
             data = data[:-1]
         # noinspection PyBroadException
@@ -401,7 +400,7 @@ class FrankenStrings(ServiceBase):
             return False, tags, xor
         # Else look for small XOR encoded strings in code files
         if 20 < len(binstr) <= 128 and filetype.startswith("code/"):
-            xresult: List[Tuple[str, str, bytes]] = bbcrack(binstr, level="small_string")
+            xresult: list[tuple[str, str, bytes]] = bbcrack(binstr, level="small_string")
             if len(xresult) > 0:
                 for transform, regex, match in xresult:
                     if regex.startswith("EXE_"):
@@ -567,8 +566,8 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        b64_al_results: List[Tuple[B64Result, Tags]] = []
-        b64_matches: Set[bytes] = set()
+        b64_al_results: list[tuple[B64Result, Tags]] = []
+        b64_matches: set[bytes] = set()
 
         # Base64 characters with possible space, newline characters and HTML line feeds (&#xA; or &#10;)
         for b64_match in re.findall(BASE64_RE, file_contents):
@@ -603,7 +602,7 @@ class FrankenStrings(ServiceBase):
 
         # Report B64 Results
         if len(b64_al_results) > 0:
-            b64_ascii_content: List[bytes] = []
+            b64_ascii_content: list[bytes] = []
             b64_res = ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=request.result)
             b64index = 0
             for b64dict, tags in b64_al_results:
@@ -692,8 +691,8 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        unicode_al_results: Dict[str, Tuple[bytes, bytes]] = {}
-        dropped_unicode: List[Tuple[str, str]] = []
+        unicode_al_results: dict[str, tuple[bytes, bytes]] = {}
+        dropped_unicode: list[tuple[str, str]] = []
         for hes in self.HEXENC_STRINGS:
             if re.search(re.escape(hes) + b"[A-Fa-f0-9]{2}", file_contents):
                 dropped = self.decode_encoded_udata(request, hes, file_contents, unicode_al_results)
@@ -740,8 +739,8 @@ class FrankenStrings(ServiceBase):
             patterns: PatternMatch object
         """
         asciihex_file_found = False
-        asciihex_dict: Dict[str, Set[str]] = {}
-        asciihex_bb_dict: Dict[str, Set[Tuple[bytes, bytes, str]]] = {}
+        asciihex_dict: dict[str, set[str]] = {}
+        asciihex_bb_dict: dict[str, set[tuple[bytes, bytes, str]]] = {}
 
         hex_pat = re.compile(b"((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})")
         for hex_match in re.findall(hex_pat, file_contents):
