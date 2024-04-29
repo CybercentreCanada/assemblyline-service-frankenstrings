@@ -22,6 +22,7 @@ from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from multidecoder.decoders.codec import find_utf16
 from multidecoder.json_conversion import tree_to_json
 from multidecoder.multidecoder import Multidecoder
+from multidecoder.registry import build_registry
 
 # Type aliases
 Tags = dict[str, set[str]]
@@ -120,7 +121,7 @@ class FrankenStrings(ServiceBase):
 
         Returns: tag list as dictionary (always empty if taglist is false)
         """
-        raw_tags = get_tree_tags(md.scan(data, 1))
+        raw_tags = get_tree_tags(md.scan(data, 2))
         tags: Tags = {}
         for ty, vals in raw_tags.items():
             if taglist:
@@ -808,7 +809,7 @@ class FrankenStrings(ServiceBase):
     def execute(self, request: ServiceRequest) -> None:
         """Main Module. See README for details."""
         request.result = Result()
-        md = Multidecoder()
+        md = Multidecoder(decoders=build_registry(include=["codec", "filename", "network"]))
         self.sample_type = request.file_type
         self.excess_extracted = 0
 
