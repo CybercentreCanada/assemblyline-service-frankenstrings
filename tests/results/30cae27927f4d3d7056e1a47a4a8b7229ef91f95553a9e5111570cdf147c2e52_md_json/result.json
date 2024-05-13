@@ -5,7 +5,7 @@
     "sections": [
       {
         "auto_collapse": false,
-        "body": "Found NETWORK STATIC DOMAIN string: crl.thawte.com\nFound NETWORK STATIC DOMAIN string: ocsp.thawte.com\nFound NETWORK STATIC DOMAIN string: t1.symcb.com\nFound NETWORK STATIC DOMAIN string: t2.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcd.com\nFound NETWORK STATIC DOMAIN string: ts-aia.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-crl.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-ocsp.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: vendor.Windows\nFound NETWORK STATIC DOMAIN string: www.advancedinstaller.com\nFound NETWORK STATIC DOMAIN string: www.example.com\nFound NETWORK STATIC DOMAIN string: www.google.com\nFound NETWORK STATIC DOMAIN string: www.thawte.com\nFound NETWORK STATIC DOMAIN string: www.yahoo.com\nFound NETWORK STATIC URI string: http://crl.thawte.com/ThawteTimestampingCA.crl0\nFound NETWORK STATIC URI string: http://ocsp.thawte.com0\nFound NETWORK STATIC URI string: http://t1.symcb.com/ThawtePCA.crl0\nFound NETWORK STATIC URI string: http://t2.symcb.com0\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crl0\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crt0\nFound NETWORK STATIC URI string: http://tl.symcd.com0\nFound NETWORK STATIC URI string: http://ts-aia.ws.symantec.com/tss-ca-g2.cer0\nFound NETWORK STATIC URI string: http://ts-crl.ws.symantec.com/tss-ca-g2.crl0(\nFound NETWORK STATIC URI string: http://ts-ocsp.ws.symantec.com07\nFound NETWORK STATIC URI string: http://www.advancedinstaller.com0\nFound NETWORK STATIC URI string: http://www.example.com\nFound NETWORK STATIC URI string: http://www.google.com\nFound NETWORK STATIC URI string: http://www.yahoo.com\nFound NETWORK STATIC URI string: https://www.thawte.com/cps0/\nFound NETWORK STATIC URI string: https://www.thawte.com/repository0",
+        "body": "Found FILE STRING API string: AdjustTokenPrivileges\nFound FILE STRING API string: AllocateAndInitializeSid\nFound FILE STRING API string: BindImage\nFound FILE STRING API string: CloseServiceHandle\nFound FILE STRING API string: ControlService\nFound FILE STRING API string: ConvertStringSidToSid\nFound FILE STRING API string: CreateToolhelp32Snapshot\nFound FILE STRING API string: DuplicateHandle\nFound FILE STRING API string: EnumChildWindows\nFound FILE STRING API string: EnumWindows\nFound FILE STRING API string: Extract\nFound FILE STRING API string: FindClose\nFound FILE STRING API string: FreeLibrary\nFound FILE STRING API string: FreeSid\nFound FILE STRING API string: GetCurrentProcess\nFound FILE STRING API string: GetDesktopWindow\nFound FILE STRING API string: GetExitCodeProcess\nFound FILE STRING API string: GetForegroundWindow\nFound FILE STRING API string: GetProcAddress\nFound FILE STRING API string: GetProcessHeap\nFound FILE STRING API string: GetProcessId\nFound FILE STRING API string: GetSidIdentifierAuthority\nFound FILE STRING API string: GetSidLengthRequired\nFound FILE STRING API string: GetSidSubAuthority\nFound FILE STRING API string: GetSidSubAuthorityCount\nFound FILE STRING API string: GetTickCount\nFound FILE STRING API string: GetWindowThreadProcessId\nFound FILE STRING API string: InitializeSid\nFound FILE STRING API string: LocalAlloc\nFound FILE STRING API string: LocalFree\nFound FILE STRING API string: LsaAddAccountRights\nFound FILE STRING API string: LsaClose\nFound FILE STRING API string: LsaOpenPolicy\nFound FILE STRING API string: NetGroupGetInfo\nFound FILE STRING API string: NetLocalGroupGetInfo\nFound FILE STRING API string: NetQueryDisplayInformation\nFound FILE STRING API string: NetUserGetInfo\nFound FILE STRING API string: NetUserModalsGet\nFound FILE STRING API string: OpenProcess\nFound FILE STRING API string: OpenProcessToken\nFound FILE STRING API string: QueryServiceStatus\nFound FILE STRING API string: QueryServiceStatusEx\nFound FILE STRING API string: RaiseException\nFound FILE STRING API string: SHGetMalloc\nFound FILE STRING API string: SHGetSpecialFolderLocation\nFound FILE STRING API string: SetEndOfFile\nFound FILE STRING API string: SetFilePointer\nFound FILE STRING API string: SetLastError\nFound FILE STRING API string: Sleep\nFound FILE STRING API string: TerminateProcess\nFound FILE STRING API string: WinVerifyTrust\nFound FILE STRING API string: WriteFile\nFound FILE STRING API string: bind\nFound FILE STRING API string: lstrcpynW\nFound FILE STRING BLACKLISTED string: HARDWARE\\DEVICEMAP\nFound FILE STRING BLACKLISTED string: SOFTWARE\\Microsoft\nFound FILE STRING BLACKLISTED string: SeShutdownPrivilege\nFound FILE STRING BLACKLISTED string: Unique Key\nFound FILE STRING BLACKLISTED string: WScript.Shell\nFound NETWORK STATIC DOMAIN string: crl.thawte.com\nFound NETWORK STATIC DOMAIN string: ocsp.thawte.com\nFound NETWORK STATIC DOMAIN string: t1.symcb.com\nFound NETWORK STATIC DOMAIN string: t2.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcd.com\nFound NETWORK STATIC DOMAIN string: ts-aia.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-crl.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-ocsp.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: www.advancedinstaller.com\nFound NETWORK STATIC DOMAIN string: www.example.com\nFound NETWORK STATIC DOMAIN string: www.google.com\nFound NETWORK STATIC DOMAIN string: www.thawte.com\nFound NETWORK STATIC DOMAIN string: www.yahoo.com\nFound NETWORK STATIC URI string: http://crl.thawte.com/ThawteTimestampingCA.crl\nFound NETWORK STATIC URI string: http://ocsp.thawte.com\nFound NETWORK STATIC URI string: http://t1.symcb.com/ThawtePCA.crl\nFound NETWORK STATIC URI string: http://t2.symcb.com\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crl\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crt\nFound NETWORK STATIC URI string: http://tl.symcd.com\nFound NETWORK STATIC URI string: http://ts-aia.ws.symantec.com/tss-ca-g2.cer\nFound NETWORK STATIC URI string: http://ts-crl.ws.symantec.com/tss-ca-g2.crl\nFound NETWORK STATIC URI string: http://ts-ocsp.ws.symantec.com\nFound NETWORK STATIC URI string: http://www.advancedinstaller.com\nFound NETWORK STATIC URI string: http://www.example.com\nFound NETWORK STATIC URI string: http://www.google.com\nFound NETWORK STATIC URI string: http://www.yahoo.com\nFound NETWORK STATIC URI string: https://www.thawte.com/cps\nFound NETWORK STATIC URI string: https://www.thawte.com/repository",
         "body_config": {},
         "body_format": "MEMORY_DUMP",
         "classification": "TLP:C",
@@ -13,42 +13,108 @@
         "heuristic": null,
         "promote_to": null,
         "tags": {
+          "file": {
+            "string": {
+              "api": [
+                "NetUserGetInfo",
+                "TerminateProcess",
+                "bind",
+                "WriteFile",
+                "SHGetSpecialFolderLocation",
+                "CloseServiceHandle",
+                "SetFilePointer",
+                "LocalFree",
+                "InitializeSid",
+                "LsaClose",
+                "NetGroupGetInfo",
+                "AllocateAndInitializeSid",
+                "QueryServiceStatusEx",
+                "GetSidSubAuthorityCount",
+                "WinVerifyTrust",
+                "Extract",
+                "GetSidIdentifierAuthority",
+                "GetExitCodeProcess",
+                "GetCurrentProcess",
+                "BindImage",
+                "GetProcessHeap",
+                "ConvertStringSidToSid",
+                "Sleep",
+                "GetProcAddress",
+                "EnumWindows",
+                "LsaAddAccountRights",
+                "LsaOpenPolicy",
+                "AdjustTokenPrivileges",
+                "NetLocalGroupGetInfo",
+                "OpenProcess",
+                "EnumChildWindows",
+                "SetLastError",
+                "lstrcpynW",
+                "GetForegroundWindow",
+                "RaiseException",
+                "FindClose",
+                "SetEndOfFile",
+                "GetDesktopWindow",
+                "CreateToolhelp32Snapshot",
+                "DuplicateHandle",
+                "QueryServiceStatus",
+                "FreeLibrary",
+                "FreeSid",
+                "LocalAlloc",
+                "NetQueryDisplayInformation",
+                "GetProcessId",
+                "ControlService",
+                "GetWindowThreadProcessId",
+                "GetSidSubAuthority",
+                "GetSidLengthRequired",
+                "GetTickCount",
+                "NetUserModalsGet",
+                "OpenProcessToken",
+                "SHGetMalloc"
+              ],
+              "blacklisted": [
+                "SOFTWARE\\Microsoft",
+                "SeShutdownPrivilege",
+                "HARDWARE\\DEVICEMAP",
+                "WScript.Shell",
+                "Unique Key"
+              ]
+            }
+          },
           "network": {
             "static": {
               "domain": [
-                "www.advancedinstaller.com",
                 "t1.symcb.com",
-                "www.thawte.com",
                 "ts-aia.ws.symantec.com",
                 "ts-crl.ws.symantec.com",
-                "crl.thawte.com",
-                "vendor.Windows",
-                "ocsp.thawte.com",
-                "t2.symcb.com",
                 "tl.symcb.com",
                 "tl.symcd.com",
+                "www.advancedinstaller.com",
                 "ts-ocsp.ws.symantec.com",
-                "www.example.com",
+                "ocsp.thawte.com",
+                "t2.symcb.com",
+                "www.yahoo.com",
                 "www.google.com",
-                "www.yahoo.com"
+                "crl.thawte.com",
+                "www.thawte.com",
+                "www.example.com"
               ],
               "uri": [
-                "http://www.advancedinstaller.com0",
-                "http://t1.symcb.com/ThawtePCA.crl0",
-                "https://www.thawte.com/repository0",
-                "http://ts-aia.ws.symantec.com/tss-ca-g2.cer0",
-                "http://ts-crl.ws.symantec.com/tss-ca-g2.crl0(",
-                "http://crl.thawte.com/ThawteTimestampingCA.crl0",
-                "http://ocsp.thawte.com0",
-                "http://t2.symcb.com0",
-                "http://tl.symcb.com/tl.crl0",
-                "http://tl.symcb.com/tl.crt0",
-                "http://tl.symcd.com0",
-                "http://ts-ocsp.ws.symantec.com07",
                 "http://www.example.com",
-                "http://www.google.com",
+                "http://tl.symcb.com/tl.crl",
+                "http://ocsp.thawte.com",
+                "http://t1.symcb.com/ThawtePCA.crl",
                 "http://www.yahoo.com",
-                "https://www.thawte.com/cps0/"
+                "http://tl.symcd.com",
+                "http://www.advancedinstaller.com",
+                "http://crl.thawte.com/ThawteTimestampingCA.crl",
+                "http://www.google.com",
+                "http://ts-crl.ws.symantec.com/tss-ca-g2.crl",
+                "http://tl.symcb.com/tl.crt",
+                "https://www.thawte.com/repository",
+                "http://t2.symcb.com",
+                "https://www.thawte.com/cps",
+                "http://ts-ocsp.ws.symantec.com",
+                "http://ts-aia.ws.symantec.com/tss-ca-g2.cer"
               ]
             }
           }
@@ -188,7 +254,7 @@
     "supplementary": [
       {
         "name": "30cae279_md.json",
-        "sha256": "4485d1c6aec937e5e91d3756ad06240d90912c8c93062991a7682d6d97e1e260"
+        "sha256": "d5a3d03b66dbcbc61b5d9cd847e1fb603a7588c9bce856b02b48c1fb42c78369"
       }
     ]
   },
@@ -211,6 +277,305 @@
       }
     ],
     "tags": {
+      "file.string.api": [
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "AdjustTokenPrivileges"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "AllocateAndInitializeSid"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "BindImage"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "CloseServiceHandle"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "ControlService"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "ConvertStringSidToSid"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "CreateToolhelp32Snapshot"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "DuplicateHandle"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "EnumChildWindows"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "EnumWindows"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Extract"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "FindClose"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "FreeLibrary"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "FreeSid"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetCurrentProcess"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetDesktopWindow"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetExitCodeProcess"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetForegroundWindow"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetProcAddress"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetProcessHeap"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetProcessId"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetSidIdentifierAuthority"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetSidLengthRequired"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetSidSubAuthority"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetSidSubAuthorityCount"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetTickCount"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetWindowThreadProcessId"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "InitializeSid"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "LocalAlloc"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "LocalFree"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "LsaAddAccountRights"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "LsaClose"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "LsaOpenPolicy"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "NetGroupGetInfo"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "NetLocalGroupGetInfo"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "NetQueryDisplayInformation"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "NetUserGetInfo"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "NetUserModalsGet"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "OpenProcess"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "OpenProcessToken"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "QueryServiceStatus"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "QueryServiceStatusEx"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "RaiseException"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SHGetMalloc"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SHGetSpecialFolderLocation"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SetEndOfFile"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SetFilePointer"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SetLastError"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Sleep"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "TerminateProcess"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "WinVerifyTrust"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "WriteFile"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "bind"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "lstrcpynW"
+        }
+      ],
+      "file.string.blacklisted": [
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "HARDWARE\\DEVICEMAP"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SOFTWARE\\Microsoft"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SeShutdownPrivilege"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Unique Key"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "WScript.Shell"
+        }
+      ],
       "network.static.domain": [
         {
           "heur_id": null,
@@ -265,11 +630,6 @@
         {
           "heur_id": null,
           "signatures": [],
-          "value": "vendor.Windows"
-        },
-        {
-          "heur_id": null,
-          "signatures": [],
           "value": "www.advancedinstaller.com"
         },
         {
@@ -297,57 +657,57 @@
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://crl.thawte.com/ThawteTimestampingCA.crl0"
+          "value": "http://crl.thawte.com/ThawteTimestampingCA.crl"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://ocsp.thawte.com0"
+          "value": "http://ocsp.thawte.com"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://t1.symcb.com/ThawtePCA.crl0"
+          "value": "http://t1.symcb.com/ThawtePCA.crl"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://t2.symcb.com0"
+          "value": "http://t2.symcb.com"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://tl.symcb.com/tl.crl0"
+          "value": "http://tl.symcb.com/tl.crl"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://tl.symcb.com/tl.crt0"
+          "value": "http://tl.symcb.com/tl.crt"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://tl.symcd.com0"
+          "value": "http://tl.symcd.com"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://ts-aia.ws.symantec.com/tss-ca-g2.cer0"
+          "value": "http://ts-aia.ws.symantec.com/tss-ca-g2.cer"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://ts-crl.ws.symantec.com/tss-ca-g2.crl0("
+          "value": "http://ts-crl.ws.symantec.com/tss-ca-g2.crl"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://ts-ocsp.ws.symantec.com07"
+          "value": "http://ts-ocsp.ws.symantec.com"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "http://www.advancedinstaller.com0"
+          "value": "http://www.advancedinstaller.com"
         },
         {
           "heur_id": null,
@@ -367,12 +727,12 @@
         {
           "heur_id": null,
           "signatures": [],
-          "value": "https://www.thawte.com/cps0/"
+          "value": "https://www.thawte.com/cps"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "https://www.thawte.com/repository0"
+          "value": "https://www.thawte.com/repository"
         }
       ]
     },
