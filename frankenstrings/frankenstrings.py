@@ -508,9 +508,9 @@ class FrankenStrings(ServiceBase):
             taglist=True,
         )
 
-        for k, l in sorted(file_plainstr_iocs.items()):
-            for i in sorted(l):
-                ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
+        for tag_type, tags in sorted(file_plainstr_iocs.items()):
+            for tag in sorted(tags):
+                ascii_res.add_line(f"Found {tag_type.upper().replace('.', ' ')} string: {safe_str(tag)}")
         for access_groups in re.finditer(
             rb"<key>keychain-access-groups</key>\s*<array>([\w\s.<>/]+)</array>", file_contents
         ):
