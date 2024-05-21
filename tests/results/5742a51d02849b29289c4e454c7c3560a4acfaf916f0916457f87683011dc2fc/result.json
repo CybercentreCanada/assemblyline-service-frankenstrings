@@ -5,6 +5,29 @@
     "sections": [
       {
         "auto_collapse": false,
+        "body": "Found FILE STRING API string: GetCurrentProcess\nFound FILE STRING API string: GetTempPath\nFound FILE STRING API string: Sleep",
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {
+          "file": {
+            "string": {
+              "api": [
+                "GetCurrentProcess",
+                "GetTempPath",
+                "Sleep"
+              ]
+            }
+          }
+        },
+        "title_text": "The following IOC were found in plain text in the file:",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
         "body": null,
         "body_config": {},
         "body_format": "TEXT",
@@ -122,7 +145,25 @@
         "signatures": []
       }
     ],
-    "tags": {},
+    "tags": {
+      "file.string.api": [
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetCurrentProcess"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GetTempPath"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Sleep"
+        }
+      ]
+    },
     "temp_submission_data": {}
   }
 }
