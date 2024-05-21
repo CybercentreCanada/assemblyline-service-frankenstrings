@@ -16,8 +16,8 @@
           "file": {
             "string": {
               "api": [
-                "GetTempPath",
                 "GetCurrentProcess",
+                "GetTempPath",
                 "Sleep"
               ]
             }
