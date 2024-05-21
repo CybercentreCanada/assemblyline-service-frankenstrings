@@ -9,26 +9,25 @@ import os
 import re
 import traceback
 import zlib
-from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import magic
 import pefile
-from assemblyline.common.net import is_valid_domain, is_valid_email
 from assemblyline.common.str_utils import safe_str, truncate
 from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
-from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
+from assemblyline_service_utilities.common.extractor.decode_wrapper import get_tree_tags
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
+from multidecoder.decoders.codec import find_utf16
+from multidecoder.decoders.pe_file import find_pe_files
 from multidecoder.json_conversion import tree_to_json
 from multidecoder.multidecoder import Multidecoder
-
-from frankenstrings.flarefloss import strings
+from multidecoder.registry import build_registry
 
 # Type aliases
-Tags = Dict[str, Set[str]]
-B64Result = Dict[str, Tuple[int, bytes, bytes, bytes]]
+Tags = dict[str, set[str]]
+B64Result = dict[str, tuple[int, bytes, bytes, bytes]]
 
 # PE Strings
 PAT_EXEDOS = rb"(?s)This program cannot be run in DOS mode"
@@ -61,7 +60,7 @@ class FrankenStrings(ServiceBase):
         "NET_FULL_URI": "network.static.uri",
     }
 
-    def __init__(self, config: Optional[Dict] = None) -> None:
+    def __init__(self, config: dict | None = None) -> None:
         super().__init__(config)
         # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
         self.st_min_length = 7
@@ -106,12 +105,9 @@ class FrankenStrings(ServiceBase):
     def ioc_to_tag(
         self,
         data: bytes,
-        patterns: PatternMatch,
-        res: Optional[ResultSection] = None,
+        md: Multidecoder,
+        res: ResultSection | None = None,
         taglist: bool = False,
-        check_length: bool = False,
-        strs_max_size: int = 0,
-        st_max_length: int = 300,
     ) -> Tags:
         """Searches data for patterns and adds as AL tag to result output.
 
@@ -126,44 +122,25 @@ class FrankenStrings(ServiceBase):
 
         Returns: tag list as dictionary (always empty if taglist is false)
         """
-
+        raw_tags = get_tree_tags(md.scan(data, 2))
         tags: Tags = {}
-
-        min_length = self.st_min_length if check_length else 4
-
-        strs: Set[bytes] = set()
-        just_network = False
-
-        # Flare-FLOSS ascii string extract
-        for ast in strings.extract_ascii_strings(data, n=min_length):
-            if not check_length or len(ast.s) < st_max_length:
-                strs.add(ast.s)
-        # Flare-FLOSS unicode string extract
-        for ust in strings.extract_unicode_strings(data, n=min_length):
-            if not check_length or len(ust.s) < st_max_length:
-                strs.add(ust.s)
-
-        if check_length and len(strs) > strs_max_size:
-            just_network = True
-
-        for s in sorted(strs):
-            st_value: Dict[str, Iterable[bytes]] = patterns.ioc_match(s, bogon_ip=True, just_network=just_network)
-            for ty, val in st_value.items():
-                if taglist and ty not in tags:
-                    tags[ty] = set()
-                for v in val:
-                    if ty == "network.static.domain" and not is_valid_domain(v.decode("utf-8")):
-                        continue
-                    if ty == "network.email.address" and not is_valid_email(v.decode("utf-8")):
-                        continue
-                    if len(v) < 1001:
-                        if res:
-                            res.add_tag(ty, safe_str(v))
-                        if taglist:
-                            tags[ty].add(safe_str(v))
+        for ty, val_set in raw_tags.items():
+            vals = sorted(val_set)
+            if taglist:
+                tags[ty] = {safe_str(v) for v in vals}
+            for v in vals:
+                if res:
+                    res.add_tag(ty, safe_str(v))
+                if taglist:
+                    tags[ty].add(safe_str(v))
 
         # This is a suspicious use of URLANDEXIT to fetch a URL in a video file
-        if self.sample_type == "video/asf" and b"URLANDEXIT" in strs and len(tags.get("network.static.uri", {})) > 0:
+        if (
+            res
+            and self.sample_type == "video/asf"
+            and b"U\0R\0L\0A\0N\0D\0E\0X\0I\0T\0" in data
+            and "network.static.uri" in tags
+        ):
             res.set_heuristic(Heuristic(12))
 
         return tags
@@ -215,7 +192,7 @@ class FrankenStrings(ServiceBase):
         return decoded
 
     @staticmethod
-    def unicode_longest_string(listdata: List[bytes]) -> bytes:
+    def unicode_longest_string(listdata: list[bytes]) -> bytes:
         """Compare sizes of unicode strings.
 
         Args:
@@ -239,8 +216,8 @@ class FrankenStrings(ServiceBase):
         return newstr
 
     def decode_encoded_udata(
-        self, request: ServiceRequest, encoding: bytes, data: bytes, decoded_res: Dict[str, Tuple[bytes, bytes]]
-    ) -> List[str]:
+        self, request: ServiceRequest, encoding: bytes, data: bytes, decoded_res: dict[str, tuple[bytes, bytes]]
+    ) -> list[str]:
         """Compare sizes of unicode strings. Some code taken from bas64dump.py @ https://DidierStevens.com.
 
         Args:
@@ -252,8 +229,8 @@ class FrankenStrings(ServiceBase):
             List of hashes of extracted files submitted to AL and list of decoded unicode data information.
         """
 
-        decoded_list: List[Tuple[bytes, bytes]] = []
-        dropped: List[str] = []
+        decoded_list: list[tuple[bytes, bytes]] = []
+        dropped: list[str] = []
 
         qword = re.compile(rb"(?:" + re.escape(encoding) + b"[A-Fa-f0-9]{16})+")
         dword = re.compile(rb"(?:" + re.escape(encoding) + b"[A-Fa-f0-9]{8})+")
@@ -299,7 +276,7 @@ class FrankenStrings(ServiceBase):
         return dropped
 
     # Base64 Parse
-    def b64(self, request: ServiceRequest, b64_string: bytes, patterns: PatternMatch) -> Tuple[B64Result, Tags]:
+    def b64(self, request: ServiceRequest, b64_string: bytes, md: Multidecoder) -> tuple[B64Result, Tags]:
         """Decode B64 data.
 
         Args:
@@ -355,7 +332,7 @@ class FrankenStrings(ServiceBase):
                         return results, pat
 
                 # See if any IOCs in decoded data
-                pat = self.ioc_to_tag(base64data, patterns, taglist=True)
+                pat = self.ioc_to_tag(base64data, md, taglist=True)
                 # Filter printable characters then put in results
                 asc_b64 = bytes(i for i in base64data if 31 < i < 127)
                 if len(asc_b64) > 0:
@@ -388,8 +365,8 @@ class FrankenStrings(ServiceBase):
         return results, pat
 
     def unhexlify_ascii(
-        self, request: ServiceRequest, data: bytes, filetype: str, patterns: PatternMatch
-    ) -> Tuple[bool, Tags, Dict[str, Tuple[bytes, bytes, str]]]:
+        self, request: ServiceRequest, data: bytes, filetype: str, md: Multidecoder
+    ) -> tuple[bool, Tags, dict[str, tuple[bytes, bytes, str]]]:
         """Plain ascii hex conversion.
 
         Args:
@@ -402,7 +379,7 @@ class FrankenStrings(ServiceBase):
             If a file was extracted, tags, and xor results
         """
         tags: Tags = {}
-        xor: Dict[str, Tuple[bytes, bytes, str]] = {}
+        xor: dict[str, tuple[bytes, bytes, str]] = {}
         if len(data) % 2 != 0:
             data = data[:-1]
         # noinspection PyBroadException
@@ -425,12 +402,12 @@ class FrankenStrings(ServiceBase):
             )
             return True, tags, xor
         # Else look for patterns
-        tags = self.ioc_to_tag(binstr, patterns, taglist=True, st_max_length=1000)
+        tags = self.ioc_to_tag(binstr, md, taglist=True)
         if tags:
             return False, tags, xor
         # Else look for small XOR encoded strings in code files
         if 20 < len(binstr) <= 128 and filetype.startswith("code/"):
-            xresult: List[Tuple[str, str, bytes]] = bbcrack(binstr, level="small_string")
+            xresult: list[tuple[str, str, bytes]] = bbcrack(binstr, level="small_string")
             if len(xresult) > 0:
                 for transform, regex, match in xresult:
                     if regex.startswith("EXE_"):
@@ -514,35 +491,27 @@ class FrankenStrings(ServiceBase):
 
     # --- Results methods ----------------------------------------------------------------------------------------------
 
-    def ascii_results(
-        self, file_contents: bytes, patterns: PatternMatch, max_length: int, st_max_size: int
-    ) -> Optional[ResultSection]:
+    def ascii_results(self, file_contents: bytes, md: Multidecoder) -> ResultSection | None:
         """
         Finds ASCII & Unicode IOC Strings in file_contents.
 
         Creates and returns a result section with the found strings.
         Returns None if no strings are found.
         """
-        # Check the maximum length except for code files
-        chkl = not self.sample_type.startswith("code")
-
         ascii_res = ResultSection(
             "The following IOC were found in plain text in the file:", body_format=BODY_FORMAT.MEMORY_DUMP
         )
 
         file_plainstr_iocs = self.ioc_to_tag(
             file_contents,
-            patterns,
+            md,
             ascii_res,
             taglist=True,
-            check_length=chkl,
-            strs_max_size=st_max_size,
-            st_max_length=max_length,
         )
 
-        for k, l in sorted(file_plainstr_iocs.items()):
-            for i in sorted(l):
-                ascii_res.add_line(f"Found {k.upper().replace('.', ' ')} string: {safe_str(i)}")
+        for tag_type, tags in sorted(file_plainstr_iocs.items()):
+            for tag in sorted(tags):
+                ascii_res.add_line(f"Found {tag_type.upper().replace('.', ' ')} string: {safe_str(tag)}")
         for access_groups in re.finditer(
             rb"<key>keychain-access-groups</key>\s*<array>([\w\s.<>/]+)</array>", file_contents
         ):
@@ -551,7 +520,7 @@ class FrankenStrings(ServiceBase):
                 ascii_res.add_line(f"Found FILE STRING EXTRACTED string: {safe_str(string.group(1))}")
         return ascii_res if ascii_res.tags else None
 
-    def embedded_pe_results(self, request: ServiceRequest, file_contents: bytes) -> Optional[ResultSection]:
+    def embedded_pe_results(self, request: ServiceRequest, file_contents: bytes) -> ResultSection | None:
         """
         Finds, extracts and reports embedded executables
 
@@ -561,41 +530,31 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        embedded_pe = False
-        for pos_exe in re.findall(PAT_EXEHEADER, file_contents[1:]):
-            if re.search(PAT_EXEDOS, pos_exe):
-                embedded_pe = embedded_pe or self.pe_dump(
-                    request,
-                    pos_exe,
-                    offset=0,
-                    file_string="embed_pe",
-                    msg="PE header strings discovered in sample",
-                    fail_on_except=True,
-                )
-        # Look for reversed PE files
-        reversed_pe = False
-        for pos_exe in re.findall(PAT_EXEHEADER, file_contents[::-1]):
-            if re.search(PAT_EXEDOS, pos_exe):
-                reversed_pe = reversed_pe or self.pe_dump(
-                    request,
-                    pos_exe,
-                    offset=0,
-                    file_string="reverse_pe",
-                    msg="Reversed PE header strings discovered in sample",
-                    fail_on_except=True,
-                )
-        # Report embedded PEs if any are found
-        if embedded_pe or reversed_pe:
-            return ResultSection(
-                "Embedded PE header discovered in sample. See extracted files.",
-                heuristic=Heuristic(3, signature="reversed" if reversed_pe else None),
-                parent=request.result,
-            )
-        return None
+        pe_hits = find_pe_files(file_contents[1:])
+        reversed_pe_hits = find_pe_files(file_contents[::-1])
+        if not (pe_hits or reversed_pe_hits):
+            return None
+        pe_section = ResultSection(
+            "Embedded PE header discovered in sample. See extracted files.",
+            heuristic=Heuristic(3, signature="reversed" if reversed_pe_hits else None),
+            parent=request.result,
+        )
+        if pe_hits:
+            pe_section.add_line("PE Files:")
+            for pe_hit in pe_hits:
+                pe_file_name = f"{hashlib.sha256(pe_hit.value).hexdigest()[0:10]}_embedded_pe"
+                self.extract_file(request, pe_hit.value, pe_file_name, "PE header strings discovered in sample.")
+                pe_section.add_line(pe_file_name)
+            pe_section.add_line("")
+        if reversed_pe_hits:
+            pe_section.add_line("Reversed PE Files:")
+        for pe_hit in reversed_pe_hits:
+            pe_file_name = f"{hashlib.sha256(pe_hit.value).hexdigest()[0:10]}_reversed_pe"
+            self.extract_file(request, pe_hit.value, pe_file_name, "Reversed PE header strings discovered in sample.")
+            pe_section.add_line(pe_file_name)
+        return pe_section
 
-    def base64_results(
-        self, request: ServiceRequest, file_contents: bytes, patterns: PatternMatch
-    ) -> Optional[ResultSection]:
+    def base64_results(self, request: ServiceRequest, file_contents: bytes, md: Multidecoder) -> ResultSection | None:
         """
         Finds and reports Base64 encoded text
 
@@ -606,8 +565,8 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        b64_al_results: List[Tuple[B64Result, Tags]] = []
-        b64_matches: Set[bytes] = set()
+        b64_al_results: list[tuple[B64Result, Tags]] = []
+        b64_matches: set[bytes] = set()
 
         # Base64 characters with possible space, newline characters and HTML line feeds (&#xA; or &#10;)
         for b64_match in re.findall(BASE64_RE, file_contents):
@@ -626,23 +585,24 @@ class FrankenStrings(ServiceBase):
             b64_matches.add(b64_string)
             uniq_char = set(b64_string)
             if len(uniq_char) > 6:
-                b64result, tags = self.b64(request, b64_string, patterns)
+                b64result, tags = self.b64(request, b64_string, md)
                 if len(b64result) > 0:
                     b64_al_results.append((b64result, tags))
 
         # UTF-16 strings
-        for ust in strings.extract_unicode_strings(file_contents, n=self.st_min_length):
-            for b64_match in re.findall(BASE64_RE, ust.s):
+        for node in find_utf16(file_contents):
+            ust = node.value
+            for b64_match in re.findall(BASE64_RE, ust):
                 b64_string = b64_match.replace(b"\n", b"").replace(b"\r", b"").replace(b" ", b"")
                 uniq_char = set(b64_string)
                 if len(uniq_char) > 6:
-                    b64result, tags = self.b64(request, b64_string, patterns)
+                    b64result, tags = self.b64(request, b64_string, md)
                     if len(b64result) > 0:
                         b64_al_results.append((b64result, tags))
 
         # Report B64 Results
         if len(b64_al_results) > 0:
-            b64_ascii_content: List[bytes] = []
+            b64_ascii_content: list[bytes] = []
             b64_res = ResultSection("Base64 Strings:", heuristic=Heuristic(1), parent=request.result)
             b64index = 0
             for b64dict, tags in b64_al_results:
@@ -676,7 +636,7 @@ class FrankenStrings(ServiceBase):
             return b64_res
         return None
 
-    def bbcrack_results(self, request: ServiceRequest, file_contents: bytes) -> Optional[ResultSection]:
+    def bbcrack_results(self, request: ServiceRequest, file_contents: bytes) -> ResultSection | None:
         """
         Balbuzard's bbcrack XOR'd strings to find embedded patterns/PE files of interest
 
@@ -695,6 +655,7 @@ class FrankenStrings(ServiceBase):
         xor_al_results = []
         for transform, regex, offset, score, smatch in xresult:
             if regex == "EXE_HEAD":
+                # Todo: replace this once pe_size is merged in multidecoder
                 pe_extracted = self.pe_dump(
                     request,
                     smatch,
@@ -720,9 +681,7 @@ class FrankenStrings(ServiceBase):
             return x_res
         return None
 
-    def unicode_results(
-        self, request: ServiceRequest, file_contents: bytes, patterns: PatternMatch
-    ) -> Optional[ResultSection]:
+    def unicode_results(self, request: ServiceRequest, file_contents: bytes, md: Multidecoder) -> ResultSection | None:
         """
         Finds and report unicode encoded strings
 
@@ -733,8 +692,8 @@ class FrankenStrings(ServiceBase):
         Returns:
             The result section (with request.result as its parent) if one is created
         """
-        unicode_al_results: Dict[str, Tuple[bytes, bytes]] = {}
-        dropped_unicode: List[Tuple[str, str]] = []
+        unicode_al_results: dict[str, tuple[bytes, bytes]] = {}
+        dropped_unicode: list[tuple[str, str]] = []
         for hes in self.HEXENC_STRINGS:
             if re.search(re.escape(hes) + b"[A-Fa-f0-9]{2}", file_contents):
                 dropped = self.decode_encoded_udata(request, hes, file_contents, unicode_al_results)
@@ -760,7 +719,7 @@ class FrankenStrings(ServiceBase):
             subb_uni_res = ResultSection("DECODED ASCII DUMP:", body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_uni_res)
             subb_uni_res.add_line("{}".format(safe_str(decoded)))
             # Look for IOCs of interest
-            hits = self.ioc_to_tag(decoded, patterns, sub_uni_res, st_max_length=1000, taglist=True)
+            hits = self.ioc_to_tag(decoded, md, sub_uni_res, taglist=True)
             if hits:
                 sub_uni_res.set_heuristic(6)
                 subb_uni_res.add_line("Suspicious string(s) found in decoded data.")
@@ -772,7 +731,7 @@ class FrankenStrings(ServiceBase):
             return unicode_emb_res
         return None
 
-    def hex_results(self, request: ServiceRequest, file_contents: bytes, patterns: PatternMatch) -> None:
+    def hex_results(self, request: ServiceRequest, file_contents: bytes, md: Multidecoder) -> None:
         """
         Finds and reports long ascii hex strings
 
@@ -781,14 +740,14 @@ class FrankenStrings(ServiceBase):
             patterns: PatternMatch object
         """
         asciihex_file_found = False
-        asciihex_dict: Dict[str, Set[str]] = {}
-        asciihex_bb_dict: Dict[str, Set[Tuple[bytes, bytes, str]]] = {}
+        asciihex_dict: dict[str, set[str]] = {}
+        asciihex_bb_dict: dict[str, set[tuple[bytes, bytes, str]]] = {}
 
         hex_pat = re.compile(b"((?:[0-9a-fA-F]{2}[\r]?[\n]?){16,})")
         for hex_match in re.findall(hex_pat, file_contents):
             hex_string = hex_match.replace(b"\r", b"").replace(b"\n", b"")
             afile_found, asciihex_results, xorhex_results = self.unhexlify_ascii(
-                request, hex_string, request.file_type, patterns
+                request, hex_string, request.file_type, md
             )
             if afile_found:
                 asciihex_file_found = True
@@ -850,13 +809,11 @@ class FrankenStrings(ServiceBase):
     def execute(self, request: ServiceRequest) -> None:
         """Main Module. See README for details."""
         request.result = Result()
-        patterns = PatternMatch()
+        md = Multidecoder(decoders=build_registry(include=["codec", "filename", "network"]))
         self.sample_type = request.file_type
         self.excess_extracted = 0
 
         max_size = request.get_param("max_file_size")
-        max_length = request.get_param("max_string_length")
-        st_max_size = self.config.get("st_max_size", 0)
         bb_max_size = self.config.get("bb_max_size", 85000)
 
         # Filters for submission modes. Listed in order of use.
@@ -865,11 +822,9 @@ class FrankenStrings(ServiceBase):
             max_size = 8000000
             # String length maximum
             # Used in basic ASCII and UNICODE modules:
-            max_length = 1000000
             # String list maximum size
             # List produced by basic ASCII and UNICODE module results and will determine
             # if patterns.py will only evaluate network IOC patterns:
-            st_max_size = 1000000
             # BBcrack maximum size of submitted file to run module:
             bb_max_size = 200000
 
@@ -883,7 +838,7 @@ class FrankenStrings(ServiceBase):
         if request.file_type == "text/calendar":
             file_contents = file_contents.replace(b"\r\n ", b"").replace(b"\n ", b"")
 
-        if section := self.ascii_results(file_contents, patterns, max_length, st_max_size):
+        if section := self.ascii_results(file_contents, md):
             request.result.add_section(section)
 
         self.embedded_pe_results(request, file_contents)
@@ -891,16 +846,16 @@ class FrankenStrings(ServiceBase):
         # Possible encoded strings -- all sample types except code/* (code is handled by deobfuscripter service)
         # Include html and xml for base64
         if not self.sample_type.startswith("code") or self.sample_type in ("code/html", "code/xml"):
-            self.base64_results(request, file_contents, patterns)
+            self.base64_results(request, file_contents, md)
         if not self.sample_type.startswith("code"):
             if (len(file_contents) or 0) < bb_max_size:
                 self.bbcrack_results(request, file_contents)
             # Other possible encoded strings -- all sample types but code and executables
             if not self.sample_type.startswith("executable"):
-                self.unicode_results(request, file_contents, patterns)
+                self.unicode_results(request, file_contents, md)
                 # Go over again, looking for long ASCII-HEX character strings
                 if not self.sample_type.startswith("document/office"):
-                    self.hex_results(request, file_contents, patterns)
+                    self.hex_results(request, file_contents, md)
 
         if self.config.get("add_multidecoder_output_as_supplementary", False):
             try:
