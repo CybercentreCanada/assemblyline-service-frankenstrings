@@ -124,7 +124,8 @@ class FrankenStrings(ServiceBase):
         """
         raw_tags = get_tree_tags(md.scan(data, 2))
         tags: Tags = {}
-        for ty, vals in raw_tags.items():
+        for ty, val_set in raw_tags.items():
+            vals = sorted(val_set)
             if taglist:
                 tags[ty] = {safe_str(v) for v in vals}
             for v in vals:
