@@ -36,29 +36,34 @@ PAT_EXEHEADER = rb"(?s)MZ.{32,1024}PE\000\000.+"
 BASE64_RE = rb"(?:[A-Za-z0-9+/]{10,}(?:&#(?:xA|10);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}"
 
 
+def extract_pdf_content(file_contents: bytes) -> bytes:
+    """Extract a PDF file from a file that mixes PDF with other data .
+
+    PDF file parsing is notoriously loose, allowing data that is not part of the PDF to be interspersed.
+    This function extracts the PDF part of a file that mixes PDF content with other data.
+
+    Currently just removes everything before the PDF Header.
+    """
+    offset = file_contents.find(b"%PDF-", 0, 1024 + 4)  # Acrobat looks for the header in the first 1024 bytes
+    if offset < 1:  # Header is either missing or at the start like a normal pdf file
+        return b""
+    pdf_file = file_contents[offset:]
+    mime = magic.Magic(mime=True)
+    mime_type = mime.from_buffer(file_contents)
+    if mime_type == "application/pdf":
+        return pdf_file
+    else:
+        return b""  # Unsuccessful extraction
+
+
 class FrankenStrings(ServiceBase):
     """FrankenStrings Service"""
 
-    FILETYPES = [
-        "application",
-        "document",
-        "exec",
-        "image",
-        "Microsoft",
-        "text",
-    ]
+    FILETYPES = ["application", "document", "exec", "image", "Microsoft", "text"]
 
-    HEXENC_STRINGS = [
-        b"\\u",
-        b"%u",
-        b"\\x",
-        b"0x",
-        b"&H",  # hex notation in VBA
-    ]
+    HEXENC_STRINGS = [b"\\u", b"%u", b"\\x", b"0x", b"&H"]  # hex notation in VBA
 
-    BBCRACK_TO_TAG = {
-        "NET_FULL_URI": "network.static.uri",
-    }
+    BBCRACK_TO_TAG = {"NET_FULL_URI": "network.static.uri"}
 
     def __init__(self, config: dict | None = None) -> None:
         super().__init__(config)
@@ -103,11 +108,7 @@ class FrankenStrings(ServiceBase):
             self.log.error(f"Error extracting {file_name} from {request.sha256}: {traceback.format_exc(limit=2)}")
 
     def ioc_to_tag(
-        self,
-        data: bytes,
-        md: Multidecoder,
-        res: ResultSection | None = None,
-        taglist: bool = False,
+        self, data: bytes, md: Multidecoder, res: ResultSection | None = None, taglist: bool = False
     ) -> Tags:
         """Searches data for patterns and adds as AL tag to result output.
 
@@ -502,12 +503,7 @@ class FrankenStrings(ServiceBase):
             "The following IOC were found in plain text in the file:", body_format=BODY_FORMAT.MEMORY_DUMP
         )
 
-        file_plainstr_iocs = self.ioc_to_tag(
-            file_contents,
-            md,
-            ascii_res,
-            taglist=True,
-        )
+        file_plainstr_iocs = self.ioc_to_tag(file_contents, md, ascii_res, taglist=True)
 
         for tag_type, tags in sorted(file_plainstr_iocs.items()):
             for tag in sorted(tags):
@@ -553,6 +549,14 @@ class FrankenStrings(ServiceBase):
             self.extract_file(request, pe_hit.value, pe_file_name, "Reversed PE header strings discovered in sample.")
             pe_section.add_line(pe_file_name)
         return pe_section
+
+    def pdf_results(self, request: ServiceRequest, file_contents: bytes) -> None:
+        """Extracts a clean PDF file if file_contents is a mix of PDF and other data"""
+        pdf_file = extract_pdf_content(file_contents)
+        if not pdf_file:
+            return
+        pdf_name = hashlib.sha256(pdf_file).hexdigest()[:8] + ".pdf"
+        self.extract_file(request, pdf_file, pdf_name, "Clean PDF file")
 
     def base64_results(self, request: ServiceRequest, file_contents: bytes, md: Multidecoder) -> ResultSection | None:
         """
@@ -842,6 +846,8 @@ class FrankenStrings(ServiceBase):
             request.result.add_section(section)
 
         self.embedded_pe_results(request, file_contents)
+
+        self.pdf_results(request, file_contents)
 
         # Possible encoded strings -- all sample types except code/* (code is handled by deobfuscripter service)
         # Include html and xml for base64
