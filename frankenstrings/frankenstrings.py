@@ -29,6 +29,8 @@ from multidecoder.registry import build_registry
 Tags = dict[str, set[str]]
 B64Result = dict[str, tuple[int, bytes, bytes, bytes]]
 
+PDF_HEADER = b"%PDF-"
+
 # PE Strings
 PAT_EXEDOS = rb"(?s)This program cannot be run in DOS mode"
 PAT_EXEHEADER = rb"(?s)MZ.{32,1024}PE\000\000.+"
@@ -44,12 +46,12 @@ def extract_pdf_content(file_contents: bytes) -> bytes:
 
     Currently just removes everything before the PDF Header.
     """
-    offset = file_contents.find(b"%PDF-", 0, 1024 + 4)  # Acrobat looks for the header in the first 1024 bytes
+    offset = file_contents.find(PDF_HEADER, 0, 1023 + len(PDF_HEADER))  # Acrobat looks for the header in the first 1024 bytes
     if offset < 1:  # Header is either missing or at the start like a normal pdf file
         return b""
     pdf_file = file_contents[offset:]
     mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(file_contents)
+    mime_type = mime.from_buffer(pdf_file)
     if mime_type == "application/pdf":
         return pdf_file
     else:
