@@ -49,13 +49,7 @@ def extract_pdf_content(file_contents: bytes) -> bytes:
     offset = file_contents.find(PDF_HEADER, 0, 1023 + len(PDF_HEADER))  # Acrobat looks for the header in the first 1024 bytes
     if offset < 1:  # Header is either missing or at the start like a normal pdf file
         return b""
-    pdf_file = file_contents[offset:]
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(pdf_file)
-    if mime_type == "application/pdf":
-        return pdf_file
-    else:
-        return b""  # Unsuccessful extraction
+    return file_contents[offset:]
 
 
 class FrankenStrings(ServiceBase):
