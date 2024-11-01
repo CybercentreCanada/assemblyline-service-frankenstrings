@@ -83,9 +83,8 @@ class FrankenStrings(ServiceBase):
             self.excess_extracted += 1
             return
 
-        m = magic.Magic(mime=True)
-        ftype = m.from_buffer(data)
-        if "octet-stream" in ftype:
+        mime_type = magic.from_buffer(data, mime=True)
+        if "octet-stream" in mime_type:
             try:
                 data = zlib.decompress(data, wbits=-15)
             except zlib.error:
@@ -293,10 +292,8 @@ class FrankenStrings(ServiceBase):
                 sha256hash = hashlib.sha256(base64data).hexdigest()
                 # Search for embedded files of interest
                 if 200 < len(base64data) < 10000000:
-                    m = magic.Magic(mime=True)
-                    mag = magic.Magic()
-                    ftype = m.from_buffer(base64data)
-                    mag_ftype = mag.from_buffer(base64data)
+                    mime_type = magic.from_buffer(base64data, mime=True)
+                    magic_type = magic.from_buffer(base64data)
                     if re.match(PAT_EXEHEADER, base64data) and re.search(PAT_EXEDOS, base64data):
                         b64_file_name = f"{sha256hash[0:10]}_b64_decoded_exe"
                         self.extract_file(
@@ -313,7 +310,7 @@ class FrankenStrings(ServiceBase):
                         )
                         return results, pat
                     elif any(
-                        (file_type in ftype and "octet-stream" not in ftype) or file_type in mag_ftype
+                        (file_type in mime_type and "octet-stream" not in mime_type) or file_type in magic_type
                         for file_type in self.FILETYPES
                     ):
                         b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
