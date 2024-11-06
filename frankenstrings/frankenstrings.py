@@ -46,7 +46,9 @@ def extract_pdf_content(file_contents: bytes) -> bytes:
 
     Currently just removes everything before the PDF Header.
     """
-    offset = file_contents.find(PDF_HEADER, 0, 1023 + len(PDF_HEADER))  # Acrobat looks for the header in the first 1024 bytes
+    offset = file_contents.find(
+        PDF_HEADER, 0, 1023 + len(PDF_HEADER)
+    )  # Acrobat looks for the header in the first 1024 bytes
     if offset < 1:  # Header is either missing or at the start like a normal pdf file
         return b""
     return file_contents[offset:]
@@ -57,7 +59,13 @@ class FrankenStrings(ServiceBase):
 
     FILETYPES = ["application", "document", "exec", "image", "Microsoft", "text"]
 
-    HEXENC_STRINGS = [b"\\u", b"%u", b"\\x", b"0x", b"&H"]  # hex notation in VBA
+    HEXENC_STRINGS = [
+        b"\\u",
+        b"%u",
+        b"\\x",
+        b"0x",
+        b"&H",  # hex notation in VBA
+    ]
 
     BBCRACK_TO_TAG = {"NET_FULL_URI": "network.static.uri"}
 
