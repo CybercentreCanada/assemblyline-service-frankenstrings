@@ -128,6 +128,15 @@ class FrankenStrings(ServiceBase):
         """
         raw_tags = get_tree_tags(md.scan(data, 2))
         tags: Tags = {}
+        # .one domains in onenote files are much more likely to be .one filenames
+        if self.sample_type == "document/office/onenote" and "network.static.domain" in raw_tags:
+            one_domains = {domain for domain in raw_tags["network.static.domain"] if domain.endswith(b".one")}
+            raw_tags["network.static.domain"].difference_update(one_domains)
+            if "file.name.extracted" in raw_tags:
+                raw_tags["file.name.extracted"].update(one_domains)
+            else:
+                raw_tags["file.name.extracted"] = one_domains
+
         for ty, val_set in raw_tags.items():
             vals = sorted(val_set)
             if taglist:
