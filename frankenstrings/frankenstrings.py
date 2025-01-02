@@ -384,7 +384,7 @@ class FrankenStrings(ServiceBase):
             request: AL request object (for submitting extracted files to AL when needed).
             data: Data to examine.
             filetype: request file type.
-            patterns: Frankenstrings patterns object.
+            patterns: FrankenStrings patterns object.
 
         Returns:
             If a file was extracted, tags, and xor results
