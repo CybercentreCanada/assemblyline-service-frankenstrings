@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/CybercentreCanada/assemblyline-service-template.git",
-  "commit": "6a32666117e30dbfb990bfaf6e7c9eb25badd03a",
+  "commit": "99becf8ed2990a4063a5bb1f8ce878824a5a1a7b",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -8,15 +8,15 @@
       "__svc_name": "frankenstrings",
       "__repository": "assemblyline-service-frankenstrings",
       "__pkg_name": "frankenstrings",
+      "class_name": "FrankenStrings",
       "short_description": "This service performs file and IOC extractions using pattern matching, simple encoding decoder and script deobfuscators.",
-      "short_description_fr": "Ce service effectue des extractions de fichiers et d'IOC \u00e0 l'aide de la recherche de motifs, d'un d\u00e9codeur d'encodage simple et de d\u00e9sobfuscateurs de scripts.",
+      "short_description_fr": "Ce service effectue des extractions de fichiers et d'IOC à l'aide de la recherche de motifs, d'un décodeur d'encodage simple et de désobfuscateurs de scripts.",
       "stage": "CORE",
       "category": "Static Analysis",
       "org_name_full": "CybercentreCanada",
       "org_name_short": "cccs",
       "license": "mit",
-      "_template": "https://github.com/CybercentreCanada/assemblyline-service-template.git",
-      "class_name": "FrankenStrings"
+      "_template": "https://github.com/CybercentreCanada/assemblyline-service-template.git"
     }
   },
   "directory": null
