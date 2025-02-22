@@ -34,8 +34,7 @@ PDF_HEADER = b"%PDF-"
 # PE Strings
 PAT_EXEDOS = rb"(?s)This program cannot be run in DOS mode"
 PAT_EXEHEADER = rb"(?s)MZ.{32,1024}PE\000\000.+"
-
-BASE64_RE = rb"(?:[A-Za-z0-9+/]{10,}(?:&#(?:xA|10);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}"
+BASE64_RE = rb"={0,2}(?:[A-Za-z0-9+/]{10,}(?:&#(?:xA|10);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}"
 
 
 def extract_pdf_content(file_contents: bytes) -> bytes:
@@ -596,6 +595,8 @@ class FrankenStrings(ServiceBase):
             if b64_string.endswith(b"VT") and b"A" * 10 in b64_string and len(b64_string) > 500:
                 # reversed base64 encoded pe file
                 b64_string = b64_string[::-1]
+            elif b64_string.startswith(b"="):
+                b64_string = b64_string[::-1] if not b64_string.endswith(b"=") else b64_string.lstrip(b"=")
             b64_matches.add(b64_string)
             uniq_char = set(b64_string)
             if len(uniq_char) > 6:
@@ -607,7 +608,21 @@ class FrankenStrings(ServiceBase):
         for node in find_utf16(file_contents):
             ust = node.value
             for b64_match in re.findall(BASE64_RE, ust):
-                b64_string = b64_match.replace(b"\n", b"").replace(b"\r", b"").replace(b" ", b"")
+                b64_string = (
+                    b64_match.replace(b"\n", b"")
+                    .replace(b"\r", b"")
+                    .replace(b" ", b"")
+                    .replace(b"&#xA;", b"")
+                    .replace(b"&#10;", b"")
+                )
+                if b64_string in b64_matches:
+                    continue
+                if b64_string.endswith(b"VT") and b"A" * 10 in b64_string and len(b64_string) > 500:
+                    # reversed base64 encoded pe file
+                    b64_string = b64_string[::-1]
+                elif b64_string.startswith(b"="):
+                    b64_string = b64_string[::-1] if not b64_string.endswith(b"=") else b64_string.lstrip(b"=")
+                b64_matches.add(b64_string)
                 uniq_char = set(b64_string)
                 if len(uniq_char) > 6:
                     b64result, tags = self.b64(request, b64_string, md)
