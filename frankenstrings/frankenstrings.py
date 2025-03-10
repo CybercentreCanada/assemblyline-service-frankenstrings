@@ -838,7 +838,7 @@ class FrankenStrings(ServiceBase):
     def execute(self, request: ServiceRequest) -> None:
         """Main Module. See README for details."""
         request.result = Result()
-        md = Multidecoder(decoders=build_registry(include=["codec", "filename", "network"]))
+        md = Multidecoder(decoders=build_registry(include=["codec", "filename", "network", "path"]))
         self.sample_type = request.file_type
         self.excess_extracted = 0
 
