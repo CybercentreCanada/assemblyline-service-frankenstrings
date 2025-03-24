@@ -10,8 +10,8 @@ import re
 import traceback
 import zlib
 
-import magic
 import pefile
+from assemblyline.common.identify import Identify
 from assemblyline.common.str_utils import safe_str, truncate
 from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
 from assemblyline_service_utilities.common.extractor.decode_wrapper import get_tree_tags
@@ -74,10 +74,11 @@ class FrankenStrings(ServiceBase):
         self.st_min_length = 7
         self.sample_type = ""
         self.excess_extracted = 0
+        self.identify = Identify(use_cache=False)
 
     # --- Support Functions --------------------------------------------------------------------------------------------
 
-    def extract_file(self, request, data, file_name, description):
+    def extract_file(self, request: ServiceRequest, data: bytes, file_name: str, description: str) -> bool:
         """Adds data to a request as an extracted file
 
         request: the request
@@ -88,14 +89,13 @@ class FrankenStrings(ServiceBase):
         if self.excess_extracted:
             # Already over maximimum number of extracted files
             self.excess_extracted += 1
-            return
+            return False
 
-        mime_type = magic.from_buffer(data, mime=True)
-        if "octet-stream" in mime_type:
-            try:
-                data = zlib.decompress(data, wbits=-15)
-            except zlib.error:
-                return  # Don't extract unidentifyable data
+        # Check for zlib compression
+        try:
+            data = zlib.decompress(data, wbits=-15)
+        except zlib.error:
+            pass
         try:
             # If for some reason the directory doesn't exist, create it
             if not os.path.exists(self.working_directory):
@@ -103,11 +103,15 @@ class FrankenStrings(ServiceBase):
             file_path = os.path.join(self.working_directory, file_name)
             with open(file_path, "wb") as f:
                 f.write(data)
-            request.add_extracted(file_path, file_name, description, safelist_interface=self.api_interface)
+            info = self.identify.fileinfo(file_path, generate_hashes=False, calculate_entropy=False)
+            if info["type"] != "unknown":  # Don't extract if unidentifiable
+                request.add_extracted(file_path, file_name, description, safelist_interface=self.api_interface)
+                return True
         except MaxExtractedExceeded:
             self.excess_extracted += 1
         except Exception:
             self.log.error(f"Error extracting {file_name} from {request.sha256}: {traceback.format_exc(limit=2)}")
+        return False
 
     def ioc_to_tag(
         self, data: bytes, md: Multidecoder, res: ResultSection | None = None, taglist: bool = False
@@ -308,37 +312,32 @@ class FrankenStrings(ServiceBase):
                 sha256hash = hashlib.sha256(base64data).hexdigest()
                 # Search for embedded files of interest
                 if 200 < len(base64data) < 10000000:
-                    mime_type = magic.from_buffer(base64data, mime=True)
-                    magic_type = magic.from_buffer(base64data)
                     if re.match(PAT_EXEHEADER, base64data) and re.search(PAT_EXEDOS, base64data):
                         b64_file_name = f"{sha256hash[0:10]}_b64_decoded_exe"
-                        self.extract_file(
+                        if self.extract_file(
                             request,
                             base64data,
                             b64_file_name,
                             "Extracted b64 executable during FrankenStrings analysis",
-                        )
-                        results[sha256hash] = (
-                            len(b64_string),
-                            b64_string[0:50],
-                            b"[Encoded PE file. See extracted files.]",
-                            b"",
-                        )
+                        ):
+                            results[sha256hash] = (
+                                len(b64_string),
+                                b64_string[0:50],
+                                b"[Encoded PE file. See extracted files.]",
+                                b"",
+                            )
                         return results, pat
-                    elif any(
-                        (file_type in mime_type and "octet-stream" not in mime_type) or file_type in magic_type
-                        for file_type in self.FILETYPES
-                    ):
+                    else:
                         b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
-                        self.extract_file(
+                        if self.extract_file(
                             request, base64data, b64_file_name, "Extracted b64 file during FrankenStrings analysis"
-                        )
-                        results[sha256hash] = (
-                            len(b64_string),
-                            b64_string[0:50],
-                            b"[Possible file contents. See extracted files.]",
-                            b"",
-                        )
+                        ):
+                            results[sha256hash] = (
+                                len(b64_string),
+                                b64_string[0:50],
+                                b"[Possible file contents. See extracted files.]",
+                                b"",
+                            )
                         return results, pat
 
                 # See if any IOCs in decoded data

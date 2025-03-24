@@ -1,7 +1,7 @@
 {
   "extra": {
     "drop_file": false,
-    "score": 610,
+    "score": 600,
     "sections": [
       {
         "auto_collapse": false,
@@ -151,52 +151,6 @@
         "auto_collapse": false,
         "body": null,
         "body_config": {},
-        "body_format": "TEXT",
-        "classification": "TLP:C",
-        "depth": 0,
-        "heuristic": {
-          "attack_ids": [],
-          "frequency": 1,
-          "heur_id": 1,
-          "score": 10,
-          "score_map": {},
-          "signatures": {}
-        },
-        "promote_to": null,
-        "tags": {},
-        "title_text": "Base64 Strings:",
-        "zeroize_on_tag_safe": false
-      },
-      {
-        "auto_collapse": false,
-        "body": "BASE64 TEXT SIZE: 364\nBASE64 SAMPLE TEXT: TypeTableNameAdminExecuteSequenceActionConditionSe[........]\nDECODED SHA256: addf4b33cad1dd508078ebd3783de29f4134da14806a8c5c793f727482d1ada6",
-        "body_config": {},
-        "body_format": "TEXT",
-        "classification": "TLP:C",
-        "depth": 1,
-        "heuristic": null,
-        "promote_to": null,
-        "tags": {},
-        "title_text": "Result 1",
-        "zeroize_on_tag_safe": false
-      },
-      {
-        "auto_collapse": false,
-        "body": "O*^Mxxfq1yy'x-wb*'Izw-),-\"xbb'fsrFxe)^e),\"{-jYH+bjXxeUbu^zy(h.,+!bznX*&b^jznXv-E\"V^Lmz{\"r'~^+-z0B'~^+-z\"w=\\=\\Ly",
-        "body_config": {},
-        "body_format": "MEMORY_DUMP",
-        "classification": "TLP:C",
-        "depth": 2,
-        "heuristic": null,
-        "promote_to": null,
-        "tags": {},
-        "title_text": "DECODED ASCII DUMP:",
-        "zeroize_on_tag_safe": false
-      },
-      {
-        "auto_collapse": false,
-        "body": null,
-        "body_config": {},
         "body_format": "MEMORY_DUMP",
         "classification": "TLP:C",
         "depth": 0,
@@ -260,11 +214,6 @@
   },
   "results": {
     "heuristics": [
-      {
-        "attack_ids": [],
-        "heur_id": 1,
-        "signatures": []
-      },
       {
         "attack_ids": [],
         "heur_id": 3,
