@@ -20,6 +20,7 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from multidecoder.decoders.codec import find_utf16
+from multidecoder.decoders.network import find_urls
 from multidecoder.decoders.pe_file import find_pe_files
 from multidecoder.json_conversion import tree_to_json
 from multidecoder.multidecoder import Multidecoder
@@ -858,6 +859,7 @@ class FrankenStrings(ServiceBase):
 
         # Begin analysis
         if (request.task.file_size or 0) >= max_size:
+            urls = find_urls(request.file_contents)
             # No analysis is done if the file is an archive or too large
             return
 
