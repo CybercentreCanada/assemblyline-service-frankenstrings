@@ -873,10 +873,8 @@ class FrankenStrings(ServiceBase):
 
         self.pdf_results(request, file_contents)
 
-        # Possible encoded strings -- all sample types except code/* (code is handled by deobfuscripter service)
-        # Include html and xml for base64
-        if not self.sample_type.startswith("code") or self.sample_type in ("code/html", "code/xml"):
-            self.base64_results(request, file_contents, md)
+        self.base64_results(request, file_contents, md)
+
         if not self.sample_type.startswith("code"):
             if (len(file_contents) or 0) < bb_max_size:
                 self.bbcrack_results(request, file_contents)
