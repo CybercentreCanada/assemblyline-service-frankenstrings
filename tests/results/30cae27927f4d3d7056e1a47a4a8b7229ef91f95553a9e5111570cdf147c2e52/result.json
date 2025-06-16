@@ -5,6 +5,26 @@
     "sections": [
       {
         "auto_collapse": false,
+        "body": "PE Files:\n781195a9a7_embedded_pe\n",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 3,
+          "score": 100,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Embedded PE header discovered in sample. See extracted files.",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
         "body": "Found FILE NAME EXTRACTED string: AICustAct.pdb\nFound FILE STRING API string: AdjustTokenPrivileges\nFound FILE STRING API string: AllocateAndInitializeSid\nFound FILE STRING API string: BindImage\nFound FILE STRING API string: CloseServiceHandle\nFound FILE STRING API string: ControlService\nFound FILE STRING API string: ConvertStringSidToSid\nFound FILE STRING API string: CreateToolhelp32Snapshot\nFound FILE STRING API string: DuplicateHandle\nFound FILE STRING API string: EnumChildWindows\nFound FILE STRING API string: EnumWindows\nFound FILE STRING API string: Extract\nFound FILE STRING API string: FindClose\nFound FILE STRING API string: FreeLibrary\nFound FILE STRING API string: FreeSid\nFound FILE STRING API string: GetCurrentProcess\nFound FILE STRING API string: GetDesktopWindow\nFound FILE STRING API string: GetExitCodeProcess\nFound FILE STRING API string: GetForegroundWindow\nFound FILE STRING API string: GetProcAddress\nFound FILE STRING API string: GetProcessHeap\nFound FILE STRING API string: GetProcessId\nFound FILE STRING API string: GetSidIdentifierAuthority\nFound FILE STRING API string: GetSidLengthRequired\nFound FILE STRING API string: GetSidSubAuthority\nFound FILE STRING API string: GetSidSubAuthorityCount\nFound FILE STRING API string: GetTickCount\nFound FILE STRING API string: GetWindowThreadProcessId\nFound FILE STRING API string: InitializeSid\nFound FILE STRING API string: LocalAlloc\nFound FILE STRING API string: LocalFree\nFound FILE STRING API string: LsaAddAccountRights\nFound FILE STRING API string: LsaClose\nFound FILE STRING API string: LsaOpenPolicy\nFound FILE STRING API string: NetGroupGetInfo\nFound FILE STRING API string: NetLocalGroupGetInfo\nFound FILE STRING API string: NetQueryDisplayInformation\nFound FILE STRING API string: NetUserGetInfo\nFound FILE STRING API string: NetUserModalsGet\nFound FILE STRING API string: OpenProcess\nFound FILE STRING API string: OpenProcessToken\nFound FILE STRING API string: QueryServiceStatus\nFound FILE STRING API string: QueryServiceStatusEx\nFound FILE STRING API string: RaiseException\nFound FILE STRING API string: SHGetMalloc\nFound FILE STRING API string: SHGetSpecialFolderLocation\nFound FILE STRING API string: SetEndOfFile\nFound FILE STRING API string: SetFilePointer\nFound FILE STRING API string: SetLastError\nFound FILE STRING API string: Sleep\nFound FILE STRING API string: TerminateProcess\nFound FILE STRING API string: WinVerifyTrust\nFound FILE STRING API string: WriteFile\nFound FILE STRING API string: bind\nFound FILE STRING API string: lstrcpynW\nFound FILE STRING BLACKLISTED string: HARDWARE\\DEVICEMAP\nFound FILE STRING BLACKLISTED string: SOFTWARE\\Microsoft\nFound FILE STRING BLACKLISTED string: SeShutdownPrivilege\nFound FILE STRING BLACKLISTED string: Unique Key\nFound FILE STRING BLACKLISTED string: WScript.Shell\nFound NETWORK STATIC DOMAIN string: crl.thawte.com\nFound NETWORK STATIC DOMAIN string: ocsp.thawte.com\nFound NETWORK STATIC DOMAIN string: t1.symcb.com\nFound NETWORK STATIC DOMAIN string: t2.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcd.com\nFound NETWORK STATIC DOMAIN string: ts-aia.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-crl.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-ocsp.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: www.advancedinstaller.com\nFound NETWORK STATIC DOMAIN string: www.example.com\nFound NETWORK STATIC DOMAIN string: www.google.com\nFound NETWORK STATIC DOMAIN string: www.thawte.com\nFound NETWORK STATIC DOMAIN string: www.yahoo.com\nFound NETWORK STATIC URI string: http://crl.thawte.com/ThawteTimestampingCA.crl\nFound NETWORK STATIC URI string: http://ocsp.thawte.com\nFound NETWORK STATIC URI string: http://t1.symcb.com/ThawtePCA.crl\nFound NETWORK STATIC URI string: http://t2.symcb.com\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crl\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crt\nFound NETWORK STATIC URI string: http://tl.symcd.com\nFound NETWORK STATIC URI string: http://ts-aia.ws.symantec.com/tss-ca-g2.cer\nFound NETWORK STATIC URI string: http://ts-crl.ws.symantec.com/tss-ca-g2.crl\nFound NETWORK STATIC URI string: http://ts-ocsp.ws.symantec.com\nFound NETWORK STATIC URI string: http://www.advancedinstaller.com\nFound NETWORK STATIC URI string: http://www.example.com\nFound NETWORK STATIC URI string: http://www.google.com\nFound NETWORK STATIC URI string: http://www.yahoo.com\nFound NETWORK STATIC URI string: https://www.thawte.com/cps\nFound NETWORK STATIC URI string: https://www.thawte.com/repository",
         "body_config": {},
         "body_format": "MEMORY_DUMP",
@@ -125,26 +145,6 @@
           }
         },
         "title_text": "The following IOC were found in plain text in the file:",
-        "zeroize_on_tag_safe": false
-      },
-      {
-        "auto_collapse": false,
-        "body": "PE Files:\n781195a9a7_embedded_pe\n",
-        "body_config": {},
-        "body_format": "TEXT",
-        "classification": "TLP:C",
-        "depth": 0,
-        "heuristic": {
-          "attack_ids": [],
-          "frequency": 1,
-          "heur_id": 3,
-          "score": 100,
-          "score_map": {},
-          "signatures": {}
-        },
-        "promote_to": null,
-        "tags": {},
-        "title_text": "Embedded PE header discovered in sample. See extracted files.",
         "zeroize_on_tag_safe": false
       },
       {
