@@ -24,14 +24,14 @@ privileged: true
 
 config:
   st_max_size: 0
-  bb_max_size: 85000
+  bb_max_size: 8388608
   add_multidecoder_output_as_supplementary: false
 
 submission_params:
   - name: max_file_size
     type: int
-    value: 3000000
-    default: 3000000
+    value: 16777216
+    default: 16777216
 
   - name: max_string_length
     type: int
