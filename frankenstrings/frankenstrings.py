@@ -313,7 +313,7 @@ class FrankenStrings(ServiceBase):
                 base64data = binascii.a2b_base64(b64_string)
                 sha256hash = hashlib.sha256(base64data).hexdigest()
                 # Search for embedded files of interest
-                if 200 < len(base64data) < 10000000:
+                if 200 < len(base64data):
                     if re.match(PAT_EXEHEADER, base64data) and re.search(PAT_EXEDOS, base64data):
                         b64_file_name = f"{sha256hash[0:10]}_b64_decoded_exe"
                         if self.extract_file(
