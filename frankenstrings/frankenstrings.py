@@ -844,19 +844,19 @@ class FrankenStrings(ServiceBase):
         self.excess_extracted = 0
 
         max_size = request.get_param("max_file_size")
-        bb_max_size = self.config.get("bb_max_size", 85000)
+        bb_max_size = self.config.get("bb_max_size", 8_388_608)
 
         # Filters for submission modes. Listed in order of use.
         if request.deep_scan:
             # Maximum size of submitted file to run this service:
-            max_size = 8000000
+            max_size = 67_108_864
             # String length maximum
             # Used in basic ASCII and UNICODE modules:
             # String list maximum size
             # List produced by basic ASCII and UNICODE module results and will determine
             # if patterns.py will only evaluate network IOC patterns:
             # BBcrack maximum size of submitted file to run module:
-            bb_max_size = 200000
+            bb_max_size = 16_777_216
 
         # Begin analysis
 
