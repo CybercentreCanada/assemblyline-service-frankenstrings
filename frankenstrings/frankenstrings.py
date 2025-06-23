@@ -9,9 +9,10 @@ import os
 import re
 import traceback
 import zlib
+from collections import defaultdict
 
-import magic
 import pefile
+from assemblyline.common.identify import Identify
 from assemblyline.common.str_utils import safe_str, truncate
 from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
 from assemblyline_service_utilities.common.extractor.decode_wrapper import get_tree_tags
@@ -20,6 +21,7 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from multidecoder.decoders.codec import find_utf16
+from multidecoder.decoders.network import find_urls
 from multidecoder.decoders.pe_file import find_pe_files
 from multidecoder.json_conversion import tree_to_json
 from multidecoder.multidecoder import Multidecoder
@@ -74,10 +76,11 @@ class FrankenStrings(ServiceBase):
         self.st_min_length = 7
         self.sample_type = ""
         self.excess_extracted = 0
+        self.identify = Identify(use_cache=False)
 
     # --- Support Functions --------------------------------------------------------------------------------------------
 
-    def extract_file(self, request, data, file_name, description):
+    def extract_file(self, request: ServiceRequest, data: bytes, file_name: str, description: str) -> bool:
         """Adds data to a request as an extracted file
 
         request: the request
@@ -88,14 +91,13 @@ class FrankenStrings(ServiceBase):
         if self.excess_extracted:
             # Already over maximimum number of extracted files
             self.excess_extracted += 1
-            return
+            return False
 
-        mime_type = magic.from_buffer(data, mime=True)
-        if "octet-stream" in mime_type:
-            try:
-                data = zlib.decompress(data, wbits=-15)
-            except zlib.error:
-                return  # Don't extract unidentifyable data
+        # Check for zlib compression
+        try:
+            data = zlib.decompress(data, wbits=-15)
+        except zlib.error:
+            pass
         try:
             # If for some reason the directory doesn't exist, create it
             if not os.path.exists(self.working_directory):
@@ -103,11 +105,15 @@ class FrankenStrings(ServiceBase):
             file_path = os.path.join(self.working_directory, file_name)
             with open(file_path, "wb") as f:
                 f.write(data)
-            request.add_extracted(file_path, file_name, description, safelist_interface=self.api_interface)
+            info = self.identify.fileinfo(file_path, generate_hashes=False, calculate_entropy=False)
+            if info["type"] != "unknown":  # Don't extract if unidentifiable
+                request.add_extracted(file_path, file_name, description, safelist_interface=self.api_interface)
+                return True
         except MaxExtractedExceeded:
             self.excess_extracted += 1
         except Exception:
             self.log.error(f"Error extracting {file_name} from {request.sha256}: {traceback.format_exc(limit=2)}")
+        return False
 
     def ioc_to_tag(
         self, data: bytes, md: Multidecoder, res: ResultSection | None = None, taglist: bool = False
@@ -308,37 +314,32 @@ class FrankenStrings(ServiceBase):
                 sha256hash = hashlib.sha256(base64data).hexdigest()
                 # Search for embedded files of interest
                 if 200 < len(base64data) < 10000000:
-                    mime_type = magic.from_buffer(base64data, mime=True)
-                    magic_type = magic.from_buffer(base64data)
                     if re.match(PAT_EXEHEADER, base64data) and re.search(PAT_EXEDOS, base64data):
                         b64_file_name = f"{sha256hash[0:10]}_b64_decoded_exe"
-                        self.extract_file(
+                        if self.extract_file(
                             request,
                             base64data,
                             b64_file_name,
                             "Extracted b64 executable during FrankenStrings analysis",
-                        )
-                        results[sha256hash] = (
-                            len(b64_string),
-                            b64_string[0:50],
-                            b"[Encoded PE file. See extracted files.]",
-                            b"",
-                        )
+                        ):
+                            results[sha256hash] = (
+                                len(b64_string),
+                                b64_string[0:50],
+                                b"[Encoded PE file. See extracted files.]",
+                                b"",
+                            )
                         return results, pat
-                    elif any(
-                        (file_type in mime_type and "octet-stream" not in mime_type) or file_type in magic_type
-                        for file_type in self.FILETYPES
-                    ):
+                    else:
                         b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
-                        self.extract_file(
+                        if self.extract_file(
                             request, base64data, b64_file_name, "Extracted b64 file during FrankenStrings analysis"
-                        )
-                        results[sha256hash] = (
-                            len(b64_string),
-                            b64_string[0:50],
-                            b"[Possible file contents. See extracted files.]",
-                            b"",
-                        )
+                        ):
+                            results[sha256hash] = (
+                                len(b64_string),
+                                b64_string[0:50],
+                                b"[Possible file contents. See extracted files.]",
+                                b"",
+                            )
                         return results, pat
 
                 # See if any IOCs in decoded data
@@ -838,7 +839,7 @@ class FrankenStrings(ServiceBase):
     def execute(self, request: ServiceRequest) -> None:
         """Main Module. See README for details."""
         request.result = Result()
-        md = Multidecoder(decoders=build_registry(include=["codec", "filename", "network"]))
+        md = Multidecoder(decoders=build_registry(include=["codec", "filename", "network", "path"]))
         self.sample_type = request.file_type
         self.excess_extracted = 0
 
@@ -858,28 +859,41 @@ class FrankenStrings(ServiceBase):
             bb_max_size = 200000
 
         # Begin analysis
-        if (request.task.file_size or 0) >= max_size or self.sample_type.startswith("archive/"):
-            # No analysis is done if the file is an archive or too large
-            return
 
         # Fix issue with line breaks in the middle of IOCs
         file_contents = request.file_contents
         if request.file_type == "text/calendar":
             file_contents = file_contents.replace(b"\r\n ", b"").replace(b"\n ", b"")
 
-        if section := self.ascii_results(file_contents, md):
-            request.result.add_section(section)
-
         self.embedded_pe_results(request, file_contents)
 
         self.pdf_results(request, file_contents)
 
-        # Possible encoded strings -- all sample types except code/* (code is handled by deobfuscripter service)
-        # Include html and xml for base64
-        if not self.sample_type.startswith("code") or self.sample_type in ("code/html", "code/xml"):
-            self.base64_results(request, file_contents, md)
+        self.base64_results(request, file_contents, md)
+
+        if request.task.file_size >= max_size:
+            url_section = ResultSection("URLs found in plaintext of file.")
+            urls = find_urls(request.file_contents)
+            tags = defaultdict(set)
+            for url in urls:
+                url_str = url.value.decode()
+                url_section.add_line(url_str)
+                tags["network.static.url"].add(url_str)
+                url_tags = get_tree_tags(url)
+                for key, values in url_tags.items():
+                    for val in values:
+                        tags[key].add(val.decode())
+            url_section.set_tags({key: sorted(values) for key, values in tags.items()})
+            if tags:
+                request.result.add_section(url_section)
+            request.result.add_section(ResultSection("Large file: some analysis omitted"))
+            # only do partial analysis
+            return
+        if section := self.ascii_results(file_contents, md):
+            request.result.add_section(section)
+
         if not self.sample_type.startswith("code"):
-            if (len(file_contents) or 0) < bb_max_size:
+            if request.task.file_size < bb_max_size:
                 self.bbcrack_results(request, file_contents)
             # Other possible encoded strings -- all sample types but code and executables
             if not self.sample_type.startswith("executable"):
