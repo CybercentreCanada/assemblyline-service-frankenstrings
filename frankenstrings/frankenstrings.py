@@ -9,6 +9,7 @@ import os
 import re
 import traceback
 import zlib
+from collections import defaultdict
 
 import pefile
 from assemblyline.common.identify import Identify
@@ -20,6 +21,7 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from multidecoder.decoders.codec import find_utf16
+from multidecoder.decoders.network import find_urls
 from multidecoder.decoders.pe_file import find_pe_files
 from multidecoder.json_conversion import tree_to_json
 from multidecoder.multidecoder import Multidecoder
@@ -857,17 +859,11 @@ class FrankenStrings(ServiceBase):
             bb_max_size = 200000
 
         # Begin analysis
-        if (request.task.file_size or 0) >= max_size or self.sample_type.startswith("archive/"):
-            # No analysis is done if the file is an archive or too large
-            return
 
         # Fix issue with line breaks in the middle of IOCs
         file_contents = request.file_contents
         if request.file_type == "text/calendar":
             file_contents = file_contents.replace(b"\r\n ", b"").replace(b"\n ", b"")
-
-        if section := self.ascii_results(file_contents, md):
-            request.result.add_section(section)
 
         self.embedded_pe_results(request, file_contents)
 
@@ -875,8 +871,29 @@ class FrankenStrings(ServiceBase):
 
         self.base64_results(request, file_contents, md)
 
+        if request.task.file_size >= max_size:
+            url_section = ResultSection("URLs found in plaintext of file.")
+            urls = find_urls(request.file_contents)
+            tags = defaultdict(set)
+            for url in urls:
+                url_str = url.value.decode()
+                url_section.add_line(url_str)
+                tags["network.static.url"].add(url_str)
+                url_tags = get_tree_tags(url)
+                for key, values in url_tags.items():
+                    for val in values:
+                        tags[key].add(val.decode())
+            url_section.set_tags({key: sorted(values) for key, values in tags.items()})
+            if tags:
+                request.result.add_section(url_section)
+            request.result.add_section(ResultSection("Large file: some analysis omitted"))
+            # only do partial analysis
+            return
+        if section := self.ascii_results(file_contents, md):
+            request.result.add_section(section)
+
         if not self.sample_type.startswith("code"):
-            if (len(file_contents) or 0) < bb_max_size:
+            if request.task.file_size < bb_max_size:
                 self.bbcrack_results(request, file_contents)
             # Other possible encoded strings -- all sample types but code and executables
             if not self.sample_type.startswith("executable"):
