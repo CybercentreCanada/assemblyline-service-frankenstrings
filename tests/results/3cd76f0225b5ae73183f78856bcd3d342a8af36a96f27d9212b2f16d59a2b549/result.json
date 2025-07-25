@@ -1,0 +1,90 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 10,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 1,
+          "score": 10,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {
+          "network": {
+            "static": {
+              "domain": [
+                "llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch.co.uk"
+              ]
+            }
+          }
+        },
+        "title_text": "Base64 Strings:",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "BASE64 TEXT SIZE: 88\nBASE64 SAMPLE TEXT: bGxhbmZhaXJwd2xsZ3d5bmd5bGxnb2dlcnljaHd5cm5kcm9id2[........]\nDECODED SHA256: 1414b31e0199d4d0e54093c2cda17d811f355c6d2c76efdb43eaaa97f75b2d3a",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Result 1",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch.co.uk",
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "DECODED ASCII DUMP:",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [
+      {
+        "name": "all_b64_1414b31.txt",
+        "sha256": "1414b31e0199d4d0e54093c2cda17d811f355c6d2c76efdb43eaaa97f75b2d3a"
+      }
+    ],
+    "supplementary": []
+  },
+  "results": {
+    "heuristics": [
+      {
+        "attack_ids": [],
+        "heur_id": 1,
+        "signatures": []
+      }
+    ],
+    "tags": {
+      "network.static.domain": [
+        {
+          "heur_id": 1,
+          "signatures": [],
+          "value": "llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch.co.uk"
+        }
+      ]
+    },
+    "temp_submission_data": {}
+  }
+}

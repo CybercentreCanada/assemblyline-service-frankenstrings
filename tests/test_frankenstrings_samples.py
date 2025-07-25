@@ -15,7 +15,7 @@ SAMPLES_FOLDER = os.path.join(os.path.dirname(__file__), "samples")
 service_class = load_module_by_path(
     "frankenstrings.frankenstrings.FrankenStrings", os.path.join(os.path.dirname(__file__), "..")
 )
-th = TestHelper(service_class, RESULTS_FOLDER)
+th = TestHelper(service_class, RESULTS_FOLDER, SAMPLES_FOLDER)
 
 
 @pytest.mark.parametrize("sample", th.result_list())

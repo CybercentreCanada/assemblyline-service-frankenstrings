@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "RunServiceOnce",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "assemblyline_v4_service.dev.run_service_once",
             "cwd": "${workspaceFolder}",
@@ -15,6 +15,14 @@
                 "frankenstrings.frankenstrings.FrankenStrings",
                 "${file}"
             ],
+            "justMyCode": false,
+        },
+        {
+            "name": "Generate Sample Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "tests.gentests",
+            "cwd": "${workspaceFolder}",
             "justMyCode": false,
         },
     ]

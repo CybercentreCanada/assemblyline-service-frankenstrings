@@ -1,4 +1,4 @@
-""" FrankenStrings Service """
+"""FrankenStrings Service"""
 
 from __future__ import annotations
 
@@ -367,7 +367,7 @@ class FrankenStrings(ServiceBase):
                     results[sha256hash] = (
                         len(b64_string),
                         b64_string[0:50],
-                        b"[IOCs discovered with other non-printable data. " b"See extracted files.]",
+                        b"[IOCs discovered with other non-printable data. See extracted files.]",
                         b"",
                     )
 
@@ -583,7 +583,49 @@ class FrankenStrings(ServiceBase):
         b64_matches: set[bytes] = set()
 
         # Base64 characters with possible space, newline characters and HTML line feeds (&#xA; or &#10;)
-        for b64_match in re.findall(BASE64_RE, file_contents):
+
+        # Check to see if the matches are part of a multi-line base64 string
+        matches = re.findall(BASE64_RE, file_contents)
+        b64_string = b""
+        checkpoint = 0
+        b64_strings = []
+        for i, curr in enumerate(matches):
+            # Check the current match against the next match to see if there's any characters that repeat
+            # The assumption is that if there are repeating characters between each match, then this is a multi-line base64 string (possibly separated by newlines or comment-like characters)
+            next = matches[i + 1] if i + 1 < len(matches) else None
+
+            if next:
+                # Calculate the character difference between the two matches
+                curr_start = file_contents.index(curr, checkpoint)
+                curr_end = curr_start + len(curr)
+                next_start = file_contents.index(next, curr_end)
+                character_diff = file_contents[curr_end:next_start]
+
+                # Check to see if that character difference is the same at the current match
+                preceed_curr = max(curr_start - len(character_diff), 0)
+                preceeding_characters = file_contents[preceed_curr:curr_start]
+
+                # If the preceeding characters are an exact match, then we can assume that this is part of a multi-line base64 string
+                if preceeding_characters == character_diff:
+                    # If the preceeding characters are an exact match, then this is a multi-line base64 string with repeating characters separating the matches
+                    b64_string += curr
+                elif preceed_curr == 0 and character_diff.endswith(preceeding_characters):
+                    # The preceeding characters aren't an exact match (possibly because of the inclusion of a newline or any whitespace characters)
+                    b64_string += curr
+                else:
+                    # If the preceeding characters aren't an exact match, then this is the end of a potential multi-line base64 string or this is a single line base64 string
+                    b64_string += curr
+                    b64_strings.append(b64_string)
+                    b64_string = b""
+
+                # Move the checkpoint to the end of the current match
+                checkpoint = curr_end
+            else:
+                # If this is the last match, then we can assume that this is a single line base64 string
+                b64_string += curr
+                b64_strings.append(b64_string)
+
+        for b64_match in b64_strings:
             b64_string = (
                 b64_match.replace(b"\n", b"")
                 .replace(b"\r", b"")
@@ -921,8 +963,8 @@ class FrankenStrings(ServiceBase):
 
         if self.excess_extracted:
             self.log.warning(
-                f"Too many files extracted from {request.sha256}, " f"{self.excess_extracted} files were not extracted"
+                f"Too many files extracted from {request.sha256}, {self.excess_extracted} files were not extracted"
             )
             request.result.add_section(
-                ResultSection(f"Over extraction limit: " f"{self.excess_extracted} files were not extracted")
+                ResultSection(f"Over extraction limit: {self.excess_extracted} files were not extracted")
             )
