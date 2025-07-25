@@ -1,4 +1,4 @@
-""" FrankenStrings Service """
+"""FrankenStrings Service"""
 
 from __future__ import annotations
 
@@ -372,7 +372,7 @@ class FrankenStrings(ServiceBase):
                     results[sha256hash] = (
                         len(b64_string),
                         b64_string[0:50],
-                        b"[IOCs discovered with other non-printable data. " b"See extracted files.]",
+                        b"[IOCs discovered with other non-printable data. See extracted files.]",
                         b"",
                     )
 
@@ -608,7 +608,7 @@ class FrankenStrings(ServiceBase):
 
                 # Check to see if that character difference is the same at the current match
                 preceed_curr = max(curr_start - len(character_diff), 0)
-                preceeding_characters = file_contents[preceed_curr : curr_start]
+                preceeding_characters = file_contents[preceed_curr:curr_start]
 
                 # If the preceeding characters are an exact match, then we can assume that this is part of a multi-line base64 string
                 if preceeding_characters == character_diff:
@@ -629,7 +629,6 @@ class FrankenStrings(ServiceBase):
                 # If this is the last match, then we can assume that this is a single line base64 string
                 b64_string += curr
                 b64_strings.append(b64_string)
-
 
         for b64_match in b64_strings:
             b64_string = (
@@ -969,8 +968,8 @@ class FrankenStrings(ServiceBase):
 
         if self.excess_extracted:
             self.log.warning(
-                f"Too many files extracted from {request.sha256}, " f"{self.excess_extracted} files were not extracted"
+                f"Too many files extracted from {request.sha256}, {self.excess_extracted} files were not extracted"
             )
             request.result.add_section(
-                ResultSection(f"Over extraction limit: " f"{self.excess_extracted} files were not extracted")
+                ResultSection(f"Over extraction limit: {self.excess_extracted} files were not extracted")
             )
