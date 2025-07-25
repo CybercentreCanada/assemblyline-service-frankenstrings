@@ -1,2 +1,5 @@
 [tool.cruft]
 skip = ["pkglist.txt", "README.md", "frankenstrings", "tests"]
+
+[tool.ruff]
+line-length = 120
