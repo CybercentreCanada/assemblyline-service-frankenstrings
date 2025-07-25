@@ -18,12 +18,7 @@ from assemblyline_service_utilities.common.balbuzard.bbcrack import bbcrack
 from assemblyline_service_utilities.common.extractor.decode_wrapper import get_tree_tags
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import (
-    BODY_FORMAT,
-    Heuristic,
-    Result,
-    ResultSection,
-)
+from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from multidecoder.decoders.codec import find_utf16
 from multidecoder.decoders.network import find_urls
