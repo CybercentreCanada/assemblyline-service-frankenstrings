@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import binascii
 import hashlib
+import importlib.metadata
 import mmap
 import os
 import re
@@ -880,10 +881,15 @@ class FrankenStrings(ServiceBase):
                     asx_res.add_line(safe_str(data))
                     asciihex_bb_res.add_tag(xkey, match)
 
+    # --- Service Methods ----------------------------------------------------------------------------------------------
+    def get_tool_version(self) -> str | None:
+        return "Multidecoder v" + importlib.metadata.version("multidecoder")
+
     # --- Execute ------------------------------------------------------------------------------------------------------
 
     def execute(self, request: ServiceRequest) -> None:
         """Main Module. See README for details."""
+        request.set_service_context(self.get_tool_version())
         request.result = Result()
         md = Multidecoder(decoders=build_registry(include=["codec", "filename", "network", "path"]))
         self.sample_type = request.file_type
