@@ -930,7 +930,7 @@ class FrankenStrings(ServiceBase):
             for url in urls:
                 url_str = url.value.decode()
                 url_section.add_line(url_str)
-                tags["network.static.url"].add(url_str)
+                tags["network.static.uri"].add(url_str)
                 url_tags = get_tree_tags(url)
                 for key, values in url_tags.items():
                     for val in values:
