@@ -306,74 +306,75 @@ class FrankenStrings(ServiceBase):
         Returns:
             Result information.
         """
+        if len(b64_string) < 16 or len(b64_string) % 4:
+            return {}, {}
         results: B64Result = {}
         pat: Tags = {}
-        if len(b64_string) >= 16 and len(b64_string) % 4 == 0:
-            # noinspection PyBroadException
-            try:
-                base64data = binascii.a2b_base64(b64_string)
-                sha256hash = hashlib.sha256(base64data).hexdigest()
-                # Search for embedded files of interest
-                if 200 < len(base64data):
-                    if re.match(PAT_EXEHEADER, base64data) and re.search(PAT_EXEDOS, base64data):
-                        b64_file_name = f"{sha256hash[0:10]}_b64_decoded_exe"
-                        if self.extract_file(
-                            request,
-                            base64data,
-                            b64_file_name,
-                            "Extracted b64 executable during FrankenStrings analysis",
-                        ):
-                            results[sha256hash] = (
-                                len(b64_string),
-                                b64_string[0:50],
-                                b"[Encoded PE file. See extracted files.]",
-                                b"",
-                            )
-                        return results, pat
-                    else:
-                        b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
-                        if self.extract_file(
-                            request, base64data, b64_file_name, "Extracted b64 file during FrankenStrings analysis"
-                        ):
-                            results[sha256hash] = (
-                                len(b64_string),
-                                b64_string[0:50],
-                                b"[Possible file contents. See extracted files.]",
-                                b"",
-                            )
-                        return results, pat
-
-                # See if any IOCs in decoded data
-                pat = self.ioc_to_tag(base64data, md, taglist=True)
-                # Filter printable characters then put in results
-                asc_b64 = bytes(i for i in base64data if 31 < i < 127)
-                if len(asc_b64) > 0:
-                    # If patterns exists, report. If not, report only if string looks interesting
-                    if len(pat) > 0:
-                        results[sha256hash] = (len(b64_string), b64_string[0:50], asc_b64, base64data)
-                    # PDF and Office documents have too many FPS
-                    elif not self.sample_type.startswith("document/office") and not self.sample_type.startswith(
-                        "document/pdf"
+        # noinspection PyBroadException
+        try:
+            base64data = binascii.a2b_base64(b64_string)
+            sha256hash = hashlib.sha256(base64data).hexdigest()
+            # Search for embedded files of interest
+            if len(base64data) > 200:
+                if re.match(PAT_EXEHEADER, base64data) and re.search(PAT_EXEDOS, base64data):
+                    b64_file_name = f"{sha256hash[0:10]}_b64_decoded_exe"
+                    if self.extract_file(
+                        request,
+                        base64data,
+                        b64_file_name,
+                        "Extracted b64 executable during FrankenStrings analysis",
                     ):
-                        # If data has length greater than 50, and unique character to length ratio is high
-                        uniq_char = set(asc_b64)
-                        if len(uniq_char) > 12 and len(re.sub(b"[^A-Za-z0-9]+", b"", asc_b64)) > 50:
-                            results[sha256hash] = (len(b64_string), b64_string[0:50], asc_b64, base64data)
-                # If not all printable characters but IOCs discovered, extract to file
-                elif len(pat) > 0:
+                        results[sha256hash] = (
+                            len(b64_string),
+                            b64_string[0:50],
+                            b"[Encoded PE file. See extracted files.]",
+                            b"",
+                        )
+                    return results, pat
+                else:
                     b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
-                    self.extract_file(
+                    if self.extract_file(
                         request, base64data, b64_file_name, "Extracted b64 file during FrankenStrings analysis"
-                    )
-                    results[sha256hash] = (
-                        len(b64_string),
-                        b64_string[0:50],
-                        b"[IOCs discovered with other non-printable data. See extracted files.]",
-                        b"",
-                    )
+                    ):
+                        results[sha256hash] = (
+                            len(b64_string),
+                            b64_string[0:50],
+                            b"[Possible file contents. See extracted files.]",
+                            b"",
+                        )
+                    return results, pat
 
-            except Exception:
-                return results, pat
+            # See if any IOCs in decoded data
+            pat = self.ioc_to_tag(base64data, md, taglist=True)
+            # Filter printable characters then put in results
+            asc_b64 = bytes(i for i in base64data if 31 < i < 127)
+            if len(asc_b64) > 0:
+                # If patterns exists, report. If not, report only if string looks interesting
+                if len(pat) > 0:
+                    results[sha256hash] = (len(b64_string), b64_string[0:50], asc_b64, base64data)
+                # PDF and Office documents have too many FPS
+                elif not self.sample_type.startswith("document/office") and not self.sample_type.startswith(
+                    "document/pdf"
+                ):
+                    # If data has length greater than 50, and unique character to length ratio is high
+                    uniq_char = set(asc_b64)
+                    if len(uniq_char) > 12 and len(re.sub(b"[^A-Za-z0-9]+", b"", asc_b64)) > 50:
+                        results[sha256hash] = (len(b64_string), b64_string[0:50], asc_b64, base64data)
+            # If not all printable characters but IOCs discovered, extract to file
+            elif len(pat) > 0:
+                b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
+                self.extract_file(
+                    request, base64data, b64_file_name, "Extracted b64 file during FrankenStrings analysis"
+                )
+                results[sha256hash] = (
+                    len(b64_string),
+                    b64_string[0:50],
+                    b"[IOCs discovered with other non-printable data. See extracted files.]",
+                    b"",
+                )
+
+        except Exception:
+            return results, pat
         return results, pat
 
     def unhexlify_ascii(
