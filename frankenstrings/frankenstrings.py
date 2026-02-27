@@ -35,8 +35,6 @@ B64Result = dict[str, tuple[int, bytes, bytes, bytes]]
 PDF_HEADER = b"%PDF-"
 
 # PE Strings
-PAT_EXEDOS = rb"(?s)This program cannot be run in DOS mode"
-PAT_EXEHEADER = rb"(?s)MZ.{32,1024}PE\000\000.+"
 BASE64_RE = rb"={0,2}(?:[A-Za-z0-9+/]{10,}(?:&#(?:x[AD]|1[03]);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}"
 
 _ENCODED_PE_LABEL = b"[Encoded PE file. See extracted files.]"
