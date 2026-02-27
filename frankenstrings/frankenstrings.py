@@ -39,6 +39,8 @@ PAT_EXEDOS = rb"(?s)This program cannot be run in DOS mode"
 PAT_EXEHEADER = rb"(?s)MZ.{32,1024}PE\000\000.+"
 BASE64_RE = rb"={0,2}(?:[A-Za-z0-9+/]{10,}(?:&#(?:x[AD]|1[03]);)?[\r]?[\n]?){2,}[A-Za-z0-9+/]{2,}={0,2}"
 
+_ENCODED_PE_LABEL = (b"[Encoded PE file. See extracted files.]",)
+
 
 def extract_pdf_content(file_contents: bytes) -> bytes:
     """Extract a PDF file from a file that mixes PDF with other data .
@@ -316,22 +318,24 @@ class FrankenStrings(ServiceBase):
             sha256hash = hashlib.sha256(base64data).hexdigest()
             # Search for embedded files of interest
             if len(base64data) > 200:
-                if re.match(PAT_EXEHEADER, base64data) and re.search(PAT_EXEDOS, base64data):
-                    b64_file_name = f"{sha256hash[0:10]}_b64_decoded_exe"
+                embedded_pe = find_pe_files(base64data)
+                for pe in embedded_pe:
+                    pe_data = pe.value
+                    pe_sha256 = hashlib.sha256(pe_data).hexdigest()
+                    pe_file_name = f"{pe_sha256[0:10]}_b64_decoded_exe"
                     if self.extract_file(
                         request,
-                        base64data,
-                        b64_file_name,
-                        "Extracted b64 executable during FrankenStrings analysis",
+                        pe_data,
+                        pe_file_name,
+                        "Extracted Base64 encoded executable during FrankenStrings analysis",
                     ):
                         results[sha256hash] = (
                             len(b64_string),
                             b64_string[0:50],
-                            b"[Encoded PE file. See extracted files.]",
+                            _ENCODED_PE_LABEL,
                             b"",
                         )
-                    return results, pat
-                else:
+                if not embedded_pe:
                     b64_file_name = f"{sha256hash[0:10]}_b64_decoded"
                     if self.extract_file(
                         request, base64data, b64_file_name, "Extracted b64 file during FrankenStrings analysis"
@@ -342,7 +346,7 @@ class FrankenStrings(ServiceBase):
                             b"[Possible file contents. See extracted files.]",
                             b"",
                         )
-                    return results, pat
+                return results, pat
 
             # See if any IOCs in decoded data
             pat = self.ioc_to_tag(base64data, md, taglist=True)
@@ -697,7 +701,7 @@ class FrankenStrings(ServiceBase):
                         "DECODED ASCII DUMP:", body_format=BODY_FORMAT.MEMORY_DUMP, parent=sub_b64_res
                     )
                     subb_b64_res.add_line(truncate(safe_str(b64l[2]), 500))
-                    if b64l[2] == b"[Encoded PE file. See extracted files.]":
+                    if b64l[2] == _ENCODED_PE_LABEL:
                         sub_b64_res.set_heuristic(11)
                     if b64l[2] not in [
                         b"[Possible file contents. See extracted files.]",
