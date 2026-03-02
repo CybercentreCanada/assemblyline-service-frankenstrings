@@ -317,6 +317,7 @@ class FrankenStrings(ServiceBase):
             # Search for embedded files of interest
             if len(base64data) > 200:
                 embedded_pe = find_pe_files(base64data)
+                embedded_pe.extend(find_pe_files(base64data[::-1]))
                 for pe in embedded_pe:
                     pe_data = pe.value
                     pe_sha256 = hashlib.sha256(pe_data).hexdigest()
