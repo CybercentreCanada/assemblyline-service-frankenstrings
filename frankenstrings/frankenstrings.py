@@ -642,7 +642,14 @@ class FrankenStrings(ServiceBase):
             )
             if b64_string in b64_matches:
                 continue
-            if b64_string.endswith(b"VT") and b"A" * 10 in b64_string and len(b64_string) > 500:
+            if (
+                # MZ? encodes to TV?? in base64
+                # If the PE is also reversed and the length is a multiple of 3, ?ZM encodes to ??pN
+                # Other lengths have padding and will start with =
+                (b64_string.endswith(b"VT") or (b64_string.startswith(b"Np") and not b64_string.endswith(b"=")))
+                and b"A" * 10 in b64_string
+                and len(b64_string) > 500
+            ):
                 # reversed base64 encoded pe file
                 b64_string = b64_string[::-1]
             elif b64_string.startswith(b"="):
