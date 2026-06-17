@@ -73,8 +73,6 @@ class FrankenStrings(ServiceBase):
 
     def __init__(self, config: dict | None = None) -> None:
         super().__init__(config)
-        # Unless patterns are added/adjusted to patterns.py, the following should remain at 7:
-        self.st_min_length = 7
         self.sample_type = ""
         self.excess_extracted = 0
         self.identify = Identify(use_cache=False)
