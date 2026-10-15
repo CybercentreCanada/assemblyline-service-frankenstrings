@@ -91,7 +91,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "Found FILE STRING API string: GetCurrentProcess\nFound FILE STRING API string: GetTempPath\nFound FILE STRING API string: Sleep",
+        "body": "Found FILE NAME EXTRACTED string: executable.exe\nFound FILE NAME EXTRACTED string: mscoree.dll\nFound FILE STRING API string: GetCurrentProcess\nFound FILE STRING API string: GetTempPath\nFound FILE STRING API string: Sleep",
         "body_config": {},
         "body_format": "MEMORY_DUMP",
         "classification": "TLP:C",
@@ -100,6 +100,12 @@
         "promote_to": null,
         "tags": {
           "file": {
+            "name": {
+              "extracted": [
+                "executable.exe",
+                "mscoree.dll"
+              ]
+            },
             "string": {
               "api": [
                 "GetCurrentProcess",
@@ -146,6 +152,18 @@
       }
     ],
     "tags": {
+      "file.name.extracted": [
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "executable.exe"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "mscoree.dll"
+        }
+      ],
       "file.string.api": [
         {
           "heur_id": null,
