@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "RunServiceOnce",
+            "name": "RunServiceOnce FrankenStrings",
             "type": "debugpy",
             "request": "launch",
             "module": "assemblyline_v4_service.dev.run_service_once",
@@ -15,6 +15,21 @@
                 "frankenstrings.frankenstrings.FrankenStrings",
                 "${file}"
             ],
+            "justMyCode": false,
+        },
+        {
+            "name": "[Service] FrankenStrings - Privileged",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "assemblyline_v4_service.run_privileged_service",
+            "env": {
+                "SERVICE_MANIFEST_PATH": "service_manifest.yml",
+                "PRIVILEGED": "true",
+                "SERVICE_PATH": "frankenstrings.frankenstrings.FrankenStrings",
+                "TASKING_DIR": "/tmp/FrankenStrings"
+            },
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}",
             "justMyCode": false,
         },
         {
