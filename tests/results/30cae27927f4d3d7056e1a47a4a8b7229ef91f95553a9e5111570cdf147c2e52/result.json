@@ -25,7 +25,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "Found FILE NAME EXTRACTED string: AICustAct.pdb\nFound FILE STRING API string: AdjustTokenPrivileges\nFound FILE STRING API string: AllocateAndInitializeSid\nFound FILE STRING API string: BindImage\nFound FILE STRING API string: CloseServiceHandle\nFound FILE STRING API string: ControlService\nFound FILE STRING API string: ConvertStringSidToSid\nFound FILE STRING API string: CreateToolhelp32Snapshot\nFound FILE STRING API string: DuplicateHandle\nFound FILE STRING API string: EnumChildWindows\nFound FILE STRING API string: EnumWindows\nFound FILE STRING API string: Extract\nFound FILE STRING API string: FindClose\nFound FILE STRING API string: FreeLibrary\nFound FILE STRING API string: FreeSid\nFound FILE STRING API string: GetCurrentProcess\nFound FILE STRING API string: GetDesktopWindow\nFound FILE STRING API string: GetExitCodeProcess\nFound FILE STRING API string: GetForegroundWindow\nFound FILE STRING API string: GetProcAddress\nFound FILE STRING API string: GetProcessHeap\nFound FILE STRING API string: GetProcessId\nFound FILE STRING API string: GetSidIdentifierAuthority\nFound FILE STRING API string: GetSidLengthRequired\nFound FILE STRING API string: GetSidSubAuthority\nFound FILE STRING API string: GetSidSubAuthorityCount\nFound FILE STRING API string: GetTickCount\nFound FILE STRING API string: GetWindowThreadProcessId\nFound FILE STRING API string: InitializeSid\nFound FILE STRING API string: LocalAlloc\nFound FILE STRING API string: LocalFree\nFound FILE STRING API string: LsaAddAccountRights\nFound FILE STRING API string: LsaClose\nFound FILE STRING API string: LsaOpenPolicy\nFound FILE STRING API string: NetGroupGetInfo\nFound FILE STRING API string: NetLocalGroupGetInfo\nFound FILE STRING API string: NetQueryDisplayInformation\nFound FILE STRING API string: NetUserGetInfo\nFound FILE STRING API string: NetUserModalsGet\nFound FILE STRING API string: OpenProcess\nFound FILE STRING API string: OpenProcessToken\nFound FILE STRING API string: QueryServiceStatus\nFound FILE STRING API string: QueryServiceStatusEx\nFound FILE STRING API string: RaiseException\nFound FILE STRING API string: SHGetMalloc\nFound FILE STRING API string: SHGetSpecialFolderLocation\nFound FILE STRING API string: SetEndOfFile\nFound FILE STRING API string: SetFilePointer\nFound FILE STRING API string: SetLastError\nFound FILE STRING API string: Sleep\nFound FILE STRING API string: TerminateProcess\nFound FILE STRING API string: WinVerifyTrust\nFound FILE STRING API string: WriteFile\nFound FILE STRING API string: bind\nFound FILE STRING API string: lstrcpynW\nFound FILE STRING BLACKLISTED string: HARDWARE\\DEVICEMAP\nFound FILE STRING BLACKLISTED string: SOFTWARE\\Microsoft\nFound FILE STRING BLACKLISTED string: SeShutdownPrivilege\nFound FILE STRING BLACKLISTED string: Unique Key\nFound FILE STRING BLACKLISTED string: WScript.Shell\nFound NETWORK STATIC DOMAIN string: crl.thawte.com\nFound NETWORK STATIC DOMAIN string: ocsp.thawte.com\nFound NETWORK STATIC DOMAIN string: t1.symcb.com\nFound NETWORK STATIC DOMAIN string: t2.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcd.com\nFound NETWORK STATIC DOMAIN string: ts-aia.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-crl.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-ocsp.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: www.advancedinstaller.com\nFound NETWORK STATIC DOMAIN string: www.example.com\nFound NETWORK STATIC DOMAIN string: www.google.com\nFound NETWORK STATIC DOMAIN string: www.thawte.com\nFound NETWORK STATIC DOMAIN string: www.yahoo.com\nFound NETWORK STATIC URI string: http://crl.thawte.com/ThawteTimestampingCA.crl\nFound NETWORK STATIC URI string: http://ocsp.thawte.com\nFound NETWORK STATIC URI string: http://t1.symcb.com/ThawtePCA.crl\nFound NETWORK STATIC URI string: http://t2.symcb.com\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crl\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crt\nFound NETWORK STATIC URI string: http://tl.symcd.com\nFound NETWORK STATIC URI string: http://ts-aia.ws.symantec.com/tss-ca-g2.cer\nFound NETWORK STATIC URI string: http://ts-crl.ws.symantec.com/tss-ca-g2.crl\nFound NETWORK STATIC URI string: http://ts-ocsp.ws.symantec.com\nFound NETWORK STATIC URI string: http://www.advancedinstaller.com\nFound NETWORK STATIC URI string: http://www.example.com\nFound NETWORK STATIC URI string: http://www.google.com\nFound NETWORK STATIC URI string: http://www.yahoo.com\nFound NETWORK STATIC URI string: https://www.thawte.com/cps\nFound NETWORK STATIC URI string: https://www.thawte.com/repository",
+        "body": "Found FILE NAME EXTRACTED string: ADVAPI32.dll\nFound FILE NAME EXTRACTED string: AICustAct.dll\nFound FILE NAME EXTRACTED string: AICustAct.pdb\nFound FILE NAME EXTRACTED string: Advapi32.dll\nFound FILE NAME EXTRACTED string: CABINET.DLL\nFound FILE NAME EXTRACTED string: COMDLG32.dll\nFound FILE NAME EXTRACTED string: GDI32.dll\nFound FILE NAME EXTRACTED string: IMAGEHLP.DLL\nFound FILE NAME EXTRACTED string: KERNEL32.dll\nFound FILE NAME EXTRACTED string: Kernel32.dll\nFound FILE NAME EXTRACTED string: NETAPI32.dll\nFound FILE NAME EXTRACTED string: RICHED20.DLL\nFound FILE NAME EXTRACTED string: Riched20.dll\nFound FILE NAME EXTRACTED string: SHELL32.dll\nFound FILE NAME EXTRACTED string: SHLWAPI.dll\nFound FILE NAME EXTRACTED string: USER32.dll\nFound FILE NAME EXTRACTED string: WININET.dll\nFound FILE NAME EXTRACTED string: WS2_32.dll\nFound FILE NAME EXTRACTED string: WShell32.dll\nFound FILE NAME EXTRACTED string: aicustact.dll\nFound FILE NAME EXTRACTED string: kernel32.dll\nFound FILE NAME EXTRACTED string: msi.dll\nFound FILE NAME EXTRACTED string: ole32.dll\nFound FILE STRING API string: AdjustTokenPrivileges\nFound FILE STRING API string: AllocateAndInitializeSid\nFound FILE STRING API string: BindImage\nFound FILE STRING API string: CloseServiceHandle\nFound FILE STRING API string: ControlService\nFound FILE STRING API string: ConvertStringSidToSid\nFound FILE STRING API string: CreateToolhelp32Snapshot\nFound FILE STRING API string: DuplicateHandle\nFound FILE STRING API string: EnumChildWindows\nFound FILE STRING API string: EnumWindows\nFound FILE STRING API string: Extract\nFound FILE STRING API string: FindClose\nFound FILE STRING API string: FreeLibrary\nFound FILE STRING API string: FreeSid\nFound FILE STRING API string: GetCurrentProcess\nFound FILE STRING API string: GetDesktopWindow\nFound FILE STRING API string: GetExitCodeProcess\nFound FILE STRING API string: GetForegroundWindow\nFound FILE STRING API string: GetProcAddress\nFound FILE STRING API string: GetProcessHeap\nFound FILE STRING API string: GetProcessId\nFound FILE STRING API string: GetSidIdentifierAuthority\nFound FILE STRING API string: GetSidLengthRequired\nFound FILE STRING API string: GetSidSubAuthority\nFound FILE STRING API string: GetSidSubAuthorityCount\nFound FILE STRING API string: GetTickCount\nFound FILE STRING API string: GetWindowThreadProcessId\nFound FILE STRING API string: InitializeSid\nFound FILE STRING API string: LocalAlloc\nFound FILE STRING API string: LocalFree\nFound FILE STRING API string: LsaAddAccountRights\nFound FILE STRING API string: LsaClose\nFound FILE STRING API string: LsaOpenPolicy\nFound FILE STRING API string: NetGroupGetInfo\nFound FILE STRING API string: NetLocalGroupGetInfo\nFound FILE STRING API string: NetQueryDisplayInformation\nFound FILE STRING API string: NetUserGetInfo\nFound FILE STRING API string: NetUserModalsGet\nFound FILE STRING API string: OpenProcess\nFound FILE STRING API string: OpenProcessToken\nFound FILE STRING API string: QueryServiceStatus\nFound FILE STRING API string: QueryServiceStatusEx\nFound FILE STRING API string: RaiseException\nFound FILE STRING API string: SHGetMalloc\nFound FILE STRING API string: SHGetSpecialFolderLocation\nFound FILE STRING API string: SetEndOfFile\nFound FILE STRING API string: SetFilePointer\nFound FILE STRING API string: SetLastError\nFound FILE STRING API string: Sleep\nFound FILE STRING API string: TerminateProcess\nFound FILE STRING API string: WinVerifyTrust\nFound FILE STRING API string: WriteFile\nFound FILE STRING API string: bind\nFound FILE STRING API string: lstrcpynW\nFound FILE STRING BLACKLISTED string: HARDWARE\\DEVICEMAP\nFound FILE STRING BLACKLISTED string: SOFTWARE\\Microsoft\nFound FILE STRING BLACKLISTED string: SeShutdownPrivilege\nFound FILE STRING BLACKLISTED string: Server 2008\nFound FILE STRING BLACKLISTED string: Unique Key\nFound FILE STRING BLACKLISTED string: Vista\nFound FILE STRING BLACKLISTED string: WScript.Shell\nFound FILE STRING BLACKLISTED string: Windows 2000\nFound FILE STRING BLACKLISTED string: Windows Vista\nFound NETWORK STATIC DOMAIN string: crl.thawte.com\nFound NETWORK STATIC DOMAIN string: ocsp.thawte.com\nFound NETWORK STATIC DOMAIN string: t1.symcb.com\nFound NETWORK STATIC DOMAIN string: t2.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcb.com\nFound NETWORK STATIC DOMAIN string: tl.symcd.com\nFound NETWORK STATIC DOMAIN string: ts-aia.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-crl.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: ts-ocsp.ws.symantec.com\nFound NETWORK STATIC DOMAIN string: www.advancedinstaller.com\nFound NETWORK STATIC DOMAIN string: www.example.com\nFound NETWORK STATIC DOMAIN string: www.google.com\nFound NETWORK STATIC DOMAIN string: www.thawte.com\nFound NETWORK STATIC DOMAIN string: www.yahoo.com\nFound NETWORK STATIC URI string: http://crl.thawte.com/ThawteTimestampingCA.crl\nFound NETWORK STATIC URI string: http://ocsp.thawte.com\nFound NETWORK STATIC URI string: http://t1.symcb.com/ThawtePCA.crl\nFound NETWORK STATIC URI string: http://t2.symcb.com\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crl\nFound NETWORK STATIC URI string: http://tl.symcb.com/tl.crt\nFound NETWORK STATIC URI string: http://tl.symcd.com\nFound NETWORK STATIC URI string: http://ts-aia.ws.symantec.com/tss-ca-g2.cer\nFound NETWORK STATIC URI string: http://ts-crl.ws.symantec.com/tss-ca-g2.crl\nFound NETWORK STATIC URI string: http://ts-ocsp.ws.symantec.com\nFound NETWORK STATIC URI string: http://www.advancedinstaller.com\nFound NETWORK STATIC URI string: http://www.example.com\nFound NETWORK STATIC URI string: http://www.google.com\nFound NETWORK STATIC URI string: http://www.yahoo.com\nFound NETWORK STATIC URI string: https://www.thawte.com/cps\nFound NETWORK STATIC URI string: https://www.thawte.com/repository",
         "body_config": {},
         "body_format": "MEMORY_DUMP",
         "classification": "TLP:C",
@@ -36,7 +36,29 @@
           "file": {
             "name": {
               "extracted": [
-                "AICustAct.pdb"
+                "ADVAPI32.dll",
+                "AICustAct.dll",
+                "AICustAct.pdb",
+                "Advapi32.dll",
+                "CABINET.DLL",
+                "COMDLG32.dll",
+                "GDI32.dll",
+                "IMAGEHLP.DLL",
+                "KERNEL32.dll",
+                "Kernel32.dll",
+                "NETAPI32.dll",
+                "RICHED20.DLL",
+                "Riched20.dll",
+                "SHELL32.dll",
+                "SHLWAPI.dll",
+                "USER32.dll",
+                "WININET.dll",
+                "WS2_32.dll",
+                "WShell32.dll",
+                "aicustact.dll",
+                "kernel32.dll",
+                "msi.dll",
+                "ole32.dll"
               ]
             },
             "string": {
@@ -100,8 +122,12 @@
                 "HARDWARE\\DEVICEMAP",
                 "SOFTWARE\\Microsoft",
                 "SeShutdownPrivilege",
+                "Server 2008",
                 "Unique Key",
-                "WScript.Shell"
+                "Vista",
+                "WScript.Shell",
+                "Windows 2000",
+                "Windows Vista"
               ]
             }
           },
@@ -230,7 +256,117 @@
         {
           "heur_id": null,
           "signatures": [],
+          "value": "ADVAPI32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "AICustAct.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
           "value": "AICustAct.pdb"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Advapi32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "CABINET.DLL"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "COMDLG32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "GDI32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "IMAGEHLP.DLL"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "KERNEL32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Kernel32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "NETAPI32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "RICHED20.DLL"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Riched20.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SHELL32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "SHLWAPI.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "USER32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "WININET.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "WS2_32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "WShell32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "aicustact.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "kernel32.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "msi.dll"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "ole32.dll"
         }
       ],
       "file.string.api": [
@@ -524,12 +660,32 @@
         {
           "heur_id": null,
           "signatures": [],
+          "value": "Server 2008"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
           "value": "Unique Key"
         },
         {
           "heur_id": null,
           "signatures": [],
+          "value": "Vista"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
           "value": "WScript.Shell"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Windows 2000"
+        },
+        {
+          "heur_id": null,
+          "signatures": [],
+          "value": "Windows Vista"
         }
       ],
       "network.static.domain": [
